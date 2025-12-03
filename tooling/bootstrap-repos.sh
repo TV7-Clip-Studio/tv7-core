@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Clone all TV7 repos (if missing) and ensure the shared submodule is mounted as 00-tv7-core/.
+# Leaves existing non-git directories untouched (prints a warning).
+
+REPO_ROOT="${REPO_ROOT:-..}"
+CORE_URL="${CORE_URL:-git@github.com:TV7-Clip-Studio/tv7-core.git}"
+
+declare -A REPO_URLS=(
+  ["tv7-axum-engine"]="git@github.com:TV7-Clip-Studio/tv7-axum-engine.git"
+  ["tv7-fastapi-backend"]="git@github.com:TV7-Clip-Studio/tv7-fastapi-backend.git"
+  ["tv7-flutter-studio"]="git@github.com:TV7-Clip-Studio/tv7-flutter-studio.git"
+  ["tv7-astro-site"]="git@github.com:TV7-Clip-Studio/tv7-astro-site.git"
+)
+
+for repo in "${!REPO_URLS[@]}"; do
+  url="${REPO_URLS[$repo]}"
+  path="$REPO_ROOT/$repo"
+
+  if [ ! -d "$path/.git" ]; then
+    if [ -d "$path" ]; then
+      echo "!! $repo exists but is not a git repo at $path — skipping clone. Clean it up or init git manually."
+    else
+      echo "== Cloning $repo =="
+      git clone "$url" "$path"
+    fi
+  fi
+
+  if [ -d "$path/.git" ]; then
+    if [ ! -d "$path/00-tv7-core" ]; then
+      echo "== Adding 00-tv7-core submodule to $repo =="
+      git -C "$path" submodule add "$CORE_URL" 00-tv7-core || true
+    fi
+    echo "== Initializing/updating 00-tv7-core in $repo =="
+    git -C "$path" submodule update --init --recursive 00-tv7-core
+  fi
+done
+
+echo "Done. Commit submodule additions in each repo as needed."

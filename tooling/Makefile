@@ -4,7 +4,7 @@ REPO_ROOT ?= ..
 REPOS ?= tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site
 SUBMODULE_PATH ?= 00-tv7-core
 
-.PHONY: status pull-all submodules-init submodules-update
+.PHONY: status pull-all submodules-init submodules-update bootstrap-repos
 
 status:
 	@for repo in $(REPOS); do \
@@ -40,3 +40,6 @@ submodules-update:
 			git -C "$(REPO_ROOT)/$$repo" add $(SUBMODULE_PATH) || true; \
 		fi; \
 	done
+
+bootstrap-repos:
+	@bash "$(CURDIR)/bootstrap-repos.sh"

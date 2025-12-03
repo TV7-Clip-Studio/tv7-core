@@ -24,12 +24,14 @@ A minimal FastAPI backend acts as the control plane for:
 
 This architecture keeps backend cost extremely low and allows a one-time purchase model for Core and subscription for Pro.
 
-### Repos & shared docs (tv7-*)
-- `tv7-flutter-studio` — Flutter desktop/mobile app that orchestrates the local engine (HTTP on desktop, FFI on mobile).
-- `tv7-axum-engine` — Rust `engine-core` + Axum `engine-service` sidecar; future `engine-ffi` for mobile.
-- `tv7-fastapi-backend` — FastAPI control plane with Dramatiq worker for scheduling; no heavy media work.
-- `tv7-astro-site` — Astro marketing + downloads site that links to installers/docs.
-- `tv7-docs` — Single source-of-truth docs repo (this file). Mount as `/docs` submodule in every code repo. Clone with `git clone --recurse-submodules` or run `git submodule update --init --recursive` after cloning to pull docs; update docs in `tv7-docs` then bump each repo’s submodule pointer.
+### Repos & shared docs (TV7-Clip-Studio org)
+- `tv7-core` — Canonical docs + automation workspace (target `00-tv7-core` submodule for every repo) — `git@github.com:TV7-Clip-Studio/tv7-core.git`.
+- `tv7-flutter-studio` — Flutter desktop/mobile app that orchestrates the local engine (HTTP on desktop, FFI on mobile) — `git@github.com:TV7-Clip-Studio/tv7-flutter-studio.git`.
+- `tv7-axum-engine` — Rust `engine-core` + Axum `engine-service` sidecar; future `engine-ffi` for mobile — `git@github.com:TV7-Clip-Studio/tv7-axum-engine.git`.
+- `tv7-fastapi-backend` — FastAPI control plane with Dramatiq worker for scheduling; no heavy media work — `git@github.com:TV7-Clip-Studio/tv7-fastapi-backend.git`.
+- `tv7-astro-site` — Astro marketing + downloads site that links to installers/docs — `git@github.com:TV7-Clip-Studio/tv7-astro-site.git`.
+
+Docs flow: edit shared docs in `tv7-core` (e.g., `architecture/`), then update each repo’s `00-tv7-core` submodule pointer (`git submodule update --remote 00-tv7-core` in each repo, commit the pointer). Clone with `git clone --recurse-submodules` or run `git submodule update --init --recursive` after cloning to pull docs.
 
 ---
 
@@ -136,12 +138,12 @@ Responsibilities:
 
 ---
 
-### 3.7 Shared Docs (`tv7-docs` submodule)
+### 3.7 Shared Docs (`tv7-core` submodule target)
 Responsibilities:
 
 - Canonical, versioned documentation for architecture, API contracts, and runbooks.
-- Lives in the `tv7-docs` repo; mounted at `/docs` inside each `tv7-*` codebase via Git submodule to keep all teams aligned.
-- Update docs once in `tv7-docs`, then update each repo’s submodule ref so app/backend/engine/site all ship the same documentation snapshot.
+- Lives in the `tv7-core` repo; mount it as `00-tv7-core/` inside each `tv7-*` codebase via Git submodule to keep all teams aligned.
+- Update docs once in `tv7-core`, then update each repo’s submodule ref so app/backend/engine/site all ship the same documentation snapshot.
 
 ## 4. App ↔ Backend Interactions
 

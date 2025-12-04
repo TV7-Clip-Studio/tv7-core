@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="${REPO_ROOT:-..}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="${REPO_ROOT:-$SCRIPT_DIR/../..}"
 SUBMODULE_PATH="${SUBMODULE_PATH:-00-tv7-core}"
 REPOS=${REPOS:-"tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site"}
 

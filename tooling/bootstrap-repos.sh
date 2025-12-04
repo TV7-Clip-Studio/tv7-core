@@ -20,15 +20,20 @@ for repo in "${!REPO_URLS[@]}"; do
 
   if [ ! -d "$path/.git" ]; then
     if [ -d "$path" ]; then
-      echo "!! $repo exists but is not a git repo at $path — skipping clone. Clean it up or init git manually."
-    else
-      echo "== Cloning $repo =="
-      git clone "$url" "$path"
+      echo "!! $repo exists but is not a git repo at $path — skipping. Clean it up or init git manually."
+      continue
     fi
+    echo "== Cloning $repo =="
+    git clone "$url" "$path"
   fi
 
   if [ -d "$path/.git" ]; then
-    if [ ! -d "$path/00-tv7-core" ]; then
+    origin_url="$(git -C "$path" config --get remote.origin.url || true)"
+    if [ "$origin_url" != "$url" ]; then
+      echo "!! $repo origin mismatch: found '$origin_url', expected '$url' — skipping submodule setup. Fix origin then rerun."
+      continue
+    fi
+    if [ ! -d "$path/00-tv7-core/.git" ] && [ ! -d "$path/00-tv7-core" ]; then
       echo "== Adding 00-tv7-core submodule to $repo =="
       git -C "$path" submodule add "$CORE_URL" 00-tv7-core || true
     fi

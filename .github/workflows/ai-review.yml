@@ -1,0 +1,10 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  deepseek-review:
+    uses: TV7-Clip-Studio/tv7-core/.github/workflows/deepseek-review.yml@main
+    secrets: inherit

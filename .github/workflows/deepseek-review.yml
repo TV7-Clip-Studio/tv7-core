@@ -1,0 +1,152 @@
+# Reusable DeepSeek review workflow.
+# Purpose: run DeepSeek on PR diffs with branch/size guardrails and post a single PR comment.
+# Required secret: DEEPSEEK_API_KEY (inherit secrets in the caller).
+# Usage: `uses: TV7-Clip-Studio/tv7-core/.github/workflows/deepseek-review.yml@main`
+
+name: DeepSeek Review (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      run_on_branches:
+        description: "Comma/space-separated base branches allowed to run DeepSeek on (default: main)."
+        required: false
+        type: string
+        default: "main"
+      min_changed_lines:
+        description: "Minimum total changed lines (additions + deletions) to run DeepSeek."
+        required: false
+        type: number
+        default: 5
+
+jobs:
+  deepseek-review:
+    name: DeepSeek Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Guard - branch and change thresholds
+        id: guard
+        shell: bash
+        env:
+          RUN_ON_BRANCHES: ${{ inputs.run_on_branches }}
+          MIN_CHANGED: ${{ inputs.min_changed_lines }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -eo pipefail
+          should_run=true
+          reason="ok"
+          changed_lines=0
+
+          if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
+            should_run=false
+            reason="Not a pull_request event; skipping"
+          else
+            changed_lines=$(git diff --numstat "$BASE_SHA" "$HEAD_SHA" | awk '{add+=$1; del+=$2} END {print add+del+0}')
+            match=false
+            for raw in $(echo "$RUN_ON_BRANCHES" | tr ',' ' '); do
+              branch=$(echo "$raw" | xargs)
+              [ -z "$branch" ] && continue
+              if [ "$BASE_REF" = "$branch" ]; then
+                match=true
+              fi
+            done
+            if [ "$match" != "true" ]; then
+              should_run=false
+              reason="Base branch '$BASE_REF' not in run_on_branches '$RUN_ON_BRANCHES'"
+            elif [ "$changed_lines" -lt "$MIN_CHANGED" ]; then
+              should_run=false
+              reason="Changed lines $changed_lines below threshold $MIN_CHANGED"
+            fi
+          fi
+
+          {
+            echo "should-run=$should_run"
+            echo "reason=$reason"
+            echo "changed-lines=$changed_lines"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Skip DeepSeek review
+        if: steps.guard.outputs.should-run != 'true'
+        run: |
+          echo "Skipping DeepSeek review: ${{ steps.guard.outputs.reason }}"
+
+      - name: Collect PR diff (truncated for cost control)
+        if: steps.guard.outputs.should-run == 'true'
+        id: diff
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eo pipefail
+          git diff --unified=3 --no-color "$BASE_SHA" "$HEAD_SHA" | head -c 120000 > /tmp/pr_diff.txt
+          bytes=$(wc -c < /tmp/pr_diff.txt | tr -d ' ')
+          echo "diff-bytes=$bytes" >> "$GITHUB_OUTPUT"
+
+      - name: Call DeepSeek
+        if: steps.guard.outputs.should-run == 'true'
+        id: deepseek
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DIFF_PATH: /tmp/pr_diff.txt
+        shell: bash
+        run: |
+          set -eo pipefail
+          if [ ! -s "$DIFF_PATH" ]; then
+            echo "No diff content found; skipping call."
+            exit 0
+          fi
+
+          payload=$(jq -n --arg diff "$(cat "$DIFF_PATH")" '{
+            model: "deepseek-coder",
+            messages: [
+              {
+                role: "system",
+                content: "You are a senior backend engineer reviewing a pull request. You only see the diff. Identify bugs, logic errors, security risks, edge cases, and suggest improvements. Output concise, high-signal commentary in Markdown."
+              },
+              {
+                role: "user",
+                content: "Review this PR diff:\n\n" + $diff
+              }
+            ],
+            temperature: 0.2
+          }')
+
+          response=$(curl -sS -X POST https://api.deepseek.com/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
+            -d "$payload")
+
+          echo "$response" > /tmp/deepseek_response.json
+          content=$(jq -r '.choices[0].message.content // ""' /tmp/deepseek_response.json)
+          echo "content<<'EOF'" >> "$GITHUB_OUTPUT"
+          echo "$content" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Post DeepSeek feedback as PR comment
+        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
+        uses: actions/github-script@v7
+        env:
+          DEEPSEEK_CONTENT: ${{ steps.deepseek.outputs.content }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const body = `### DeepSeek review\n${process.env.DEEPSEEK_CONTENT}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body,
+            });

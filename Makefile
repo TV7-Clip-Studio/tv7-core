@@ -2,23 +2,16 @@
 
 REPO_ROOT ?= ..
 REPO_ROOT := $(abspath $(REPO_ROOT))
-REPOS ?= tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site
+REPOS ?= tv7-core tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site
 SUBMODULE_PATH ?= 00-tv7-core
 CORE_URL ?= git@github.com:TV7-Clip-Studio/tv7-core.git
 TOOLING_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/tooling
 SYNC_BASE ?= origin/main
 
-.PHONY: status pull-all submodules-init submodules-update bootstrap sync update
+.PHONY: status pull-all submodules-init submodules-update bootstrap sync update set-secret update-secrets sync-core bump-core-all update-core
 
 status:
-	@for repo in $(REPOS); do \
-		if [ -d "$(REPO_ROOT)/$$repo/.git" ]; then \
-			echo "== $$repo =="; \
-			git -C "$(REPO_ROOT)/$$repo" status --short; \
-		else \
-			echo "!! $$repo missing at $(REPO_ROOT)/$$repo"; \
-		fi; \
-	done
+	@bash "$(TOOLING_DIR)/status.sh"
 
 pull-all:
 	@for repo in $(REPOS); do \
@@ -135,3 +128,15 @@ sync update:
 			echo "$$status $$repo ($$branch)"; \
 		fi; \
 	done
+
+set-secret:
+	@SECRET_NAME=$(SECRET_NAME) SECRET_VALUE=$(SECRET_VALUE) REPOS="$(REPOS)" ALL=$(ALL) ORG=$(ORG) bash "$(CURDIR)/tooling/set-secret.sh"
+
+sync-core:
+	@bash "$(TOOLING_DIR)/sync_core_submodules.sh"
+
+bump-core-all:
+	@MODE=bump bash "$(TOOLING_DIR)/sync_core_submodules.sh"
+
+update-core:
+	@MODE=bump AUTO_PR=1 bash "$(TOOLING_DIR)/sync_core_submodules.sh"

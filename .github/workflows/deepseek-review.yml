@@ -18,6 +18,11 @@ on:
         required: false
         type: number
         default: 5
+      project_context:
+        description: "Short project context string provided by the caller (SDK/framework versions, key deps)."
+        required: false
+        type: string
+        default: "General Codebase (context not provided)"
 
 jobs:
   deepseek-review:
@@ -101,6 +106,7 @@ jobs:
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           DIFF_PATH: /tmp/pr_diff.txt
+          PROJECT_CONTEXT: ${{ inputs.project_context }}
         shell: bash
         run: |
           set -eo pipefail
@@ -109,7 +115,34 @@ jobs:
             exit 0
           fi
 
-          payload=$(python -c 'import json, sys; from pathlib import Path; diff=Path(sys.argv[1]).read_text(encoding="utf-8"); print(json.dumps({"model":"deepseek-coder","messages":[{"role":"system","content":"You are a senior backend engineer reviewing a pull request. You only see the diff. Identify bugs, logic errors, security risks, edge cases, and suggest improvements. Output concise, high-signal commentary in Markdown."},{"role":"user","content":f"Review this PR diff:\\n\\n{diff}"}],"temperature":0.2}))' "$DIFF_PATH")
+          payload=$(python - <<'PY'
+import json, os, sys
+from pathlib import Path
+
+diff = Path(sys.argv[1]).read_text(encoding="utf-8")
+context = os.environ.get("PROJECT_CONTEXT") or "General Codebase (context not provided)"
+
+system_prompt = (
+    "You are a senior code reviewer. Use the provided project context to interpret APIs and patterns.\n"
+    f"Project context: {context}\n"
+    "- If an API or symbol is unfamiliar, assume it may be project-defined; avoid claiming it does not exist.\n"
+    "- Use version information to reason about availability; do not suggest downgrades to older APIs.\n"
+    "- Prioritize logic errors, security issues, edge cases, and architectural risks.\n"
+    "- Be concise and high-signal. Do not restate diffs."
+)
+
+payload = {
+    "model": "deepseek-coder",
+    "messages": [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Review this PR diff:\\n\\n{diff}"},
+    ],
+    "temperature": 0.2,
+}
+
+print(json.dumps(payload))
+PY
+ "$DIFF_PATH")
 
           response=$(curl -sS --max-time 30 --retry 2 --retry-delay 2 -X POST https://api.deepseek.com/v1/chat/completions \
             -H "Content-Type: application/json" \

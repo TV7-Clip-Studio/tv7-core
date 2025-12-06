@@ -115,7 +115,7 @@ jobs:
             exit 0
           fi
 
-          payload=$(python - <<'PY' "$DIFF_PATH")
+          payload=$(python - "$DIFF_PATH" <<'PY'
 import json, os, sys
 from pathlib import Path
 
@@ -142,7 +142,7 @@ payload = {
 
 print(json.dumps(payload))
 PY
-)
+          )
 
           response=$(curl -sS --max-time 30 --retry 2 --retry-delay 2 -X POST https://api.deepseek.com/v1/chat/completions             -H "Content-Type: application/json"             -H "Authorization: Bearer $DEEPSEEK_API_KEY"             -d "$payload" || true)
 

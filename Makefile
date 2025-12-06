@@ -14,24 +14,7 @@ status:
 	@bash "$(TOOLING_DIR)/status.sh"
 
 pull-all:
-	@for repo in $(REPOS); do \
-		path="$(REPO_ROOT)/$$repo"; \
-		if [ ! -d "$$path/.git" ]; then \
-			echo "!! $$repo missing at $$path"; \
-			continue; \
-		fi; \
-		current_branch="$$(git -C "$$path" rev-parse --abbrev-ref HEAD)"; \
-		echo "== pulling $$repo (branch $$current_branch) =="; \
-		if git -C "$$path" rev-parse --abbrev-ref --symbolic-full-name "@{u}" >/dev/null 2>&1; then \
-			git -C "$$path" pull --ff-only; \
-		elif git -C "$$path" ls-remote --exit-code --heads origin "$$current_branch" >/dev/null 2>&1; then \
-			echo "== setting upstream to origin/$$current_branch =="; \
-			git -C "$$path" branch --set-upstream-to="origin/$$current_branch" "$$current_branch"; \
-			git -C "$$path" pull --ff-only; \
-		else \
-			echo "!! no upstream for $$repo (branch $$current_branch not on origin) — skipping pull"; \
-		fi; \
-	done
+	@bash "$(TOOLING_DIR)/pull_all.sh"
 
 submodules-init:
 	@for repo in $(REPOS); do \

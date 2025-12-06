@@ -109,31 +109,30 @@ jobs:
             exit 0
           fi
 
-          payload=$(jq -n --arg diff "$(cat "$DIFF_PATH")" '{
-            model: "deepseek-coder",
-            messages: [
-              {
-                role: "system",
-                content: "You are a senior backend engineer reviewing a pull request. You only see the diff. Identify bugs, logic errors, security risks, edge cases, and suggest improvements. Output concise, high-signal commentary in Markdown."
-              },
-              {
-                role: "user",
-                content: "Review this PR diff:\n\n" + $diff
-              }
-            ],
-            temperature: 0.2
-          }')
+          payload=$(python -c 'import json, sys; from pathlib import Path; diff=Path(sys.argv[1]).read_text(encoding="utf-8"); print(json.dumps({"model":"deepseek-coder","messages":[{"role":"system","content":"You are a senior backend engineer reviewing a pull request. You only see the diff. Identify bugs, logic errors, security risks, edge cases, and suggest improvements. Output concise, high-signal commentary in Markdown."},{"role":"user","content":f"Review this PR diff:\\n\\n{diff}"}],"temperature":0.2}))' "$DIFF_PATH")
 
-          response=$(curl -sS -X POST https://api.deepseek.com/v1/chat/completions \
+          response=$(curl -sS --max-time 30 --retry 2 --retry-delay 2 -X POST https://api.deepseek.com/v1/chat/completions \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
-            -d "$payload")
+            -d "$payload" || true)
 
           echo "$response" > /tmp/deepseek_response.json
           content=$(jq -r '.choices[0].message.content // ""' /tmp/deepseek_response.json)
-          echo "content<<'EOF'" >> "$GITHUB_OUTPUT"
-          echo "$content" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          content_bytes=$(printf "%s" "$content" | wc -c | tr -d ' ')
+
+          if [ -z "$content" ]; then
+            echo "No DeepSeek content returned; skipping comment."
+            exit 0
+          elif [ "$content_bytes" -gt 20000 ]; then
+            echo "DeepSeek content too large (${content_bytes} bytes); skipping comment to control cost."
+            exit 0
+          fi
+
+          {
+            echo "content<<CONTENT_EOF"
+            echo "$content"
+            echo "CONTENT_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Post DeepSeek feedback as PR comment
         if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''

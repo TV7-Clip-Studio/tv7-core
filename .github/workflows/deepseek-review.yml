@@ -115,7 +115,7 @@ jobs:
             exit 0
           fi
 
-          payload=$(python - <<'PY'
+          payload=$(python - <<'PY' "$DIFF_PATH")
 import json, os, sys
 from pathlib import Path
 
@@ -142,12 +142,9 @@ payload = {
 
 print(json.dumps(payload))
 PY
- "$DIFF_PATH")
+)
 
-          response=$(curl -sS --max-time 30 --retry 2 --retry-delay 2 -X POST https://api.deepseek.com/v1/chat/completions \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
-            -d "$payload" || true)
+          response=$(curl -sS --max-time 30 --retry 2 --retry-delay 2 -X POST https://api.deepseek.com/v1/chat/completions             -H "Content-Type: application/json"             -H "Authorization: Bearer $DEEPSEEK_API_KEY"             -d "$payload" || true)
 
           echo "$response" > /tmp/deepseek_response.json
           content=$(jq -r '.choices[0].message.content // ""' /tmp/deepseek_response.json)
@@ -175,7 +172,8 @@ PY
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const body = `### DeepSeek review\n${process.env.DEEPSEEK_CONTENT}`;
+            const body = `### DeepSeek review
+${process.env.DEEPSEEK_CONTENT}`;
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

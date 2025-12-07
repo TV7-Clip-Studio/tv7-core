@@ -116,6 +116,10 @@ jobs:
             exit 0
           fi
 
+          if [ -z "${PROJECT_CONTEXT:-}" ]; then
+            echo "No project_context provided; using default context."
+          fi
+
           payload=$(python - "$DIFF_PATH" << 'PY'
           import json, os, sys
           from pathlib import Path

@@ -4,7 +4,27 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
+  determine-context:
+    runs-on: ubuntu-latest
+    outputs:
+      info: ${{ steps.context.outputs.info }}
+    steps:
+      - name: Determine tv7-core context
+        id: context
+        run: |
+          {
+            echo "info=TV7 Core: shared standards, workflows, and tooling"
+          } >> "$GITHUB_OUTPUT"
+
   deepseek-review:
-    uses: TV7-Clip-Studio/tv7-core/.github/workflows/deepseek-review.yml@main
+    needs: determine-context
+    uses: ./.github/workflows/deepseek-review.yml
+    with:
+      project_context: ${{ needs.determine-context.outputs.info }}
     secrets: inherit

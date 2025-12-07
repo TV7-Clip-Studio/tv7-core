@@ -178,7 +178,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const body = `### DeepSeek review
-${process.env.DEEPSEEK_CONTENT}`;
+            ${process.env.DEEPSEEK_CONTENT}`;
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

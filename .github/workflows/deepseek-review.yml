@@ -1,4 +1,8 @@
 # Reusable DeepSeek review workflow.
+# Purpose: run DeepSeek on PR diffs with branch/size guardrails and post a single PR comment.
+# Required secret: DEEPSEEK_API_KEY (inherit secrets in the caller).
+# Usage (same repo): uses: ./.github/workflows/deepseek-review.yml
+# Usage (from other repos): uses: TV7-Clip-Studio/tv7-core/.github/workflows/deepseek-review.yml@main
 
 name: DeepSeek Review (reusable)
 
@@ -16,13 +20,14 @@ on:
         type: number
         default: 5
       project_context:
-        description: "Short project context string provided by the caller."
+        description: "Short project context string provided by the caller (SDK/framework versions, key deps)."
         required: false
         type: string
         default: "General Codebase (context not provided)"
 
 jobs:
   deepseek-review:
+    name: DeepSeek Review
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -46,28 +51,30 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -eo pipefail
-
           should_run=true
           reason="ok"
           changed_lines=0
 
-          changed_lines=$(git diff --numstat "$BASE_SHA" "$HEAD_SHA" | awk '{add+=$1; del+=$2} END {print add+del+0}')
-
-          match=false
-          for raw in $(echo "$RUN_ON_BRANCHES" | tr ',' ' '); do
-            branch=$(echo "$raw" | xargs)
-            [ -z "$branch" ] && continue
-            if [ "$BASE_REF" = "$branch" ]; then
-              match=true
+          if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
+            should_run=false
+            reason="Not a pull_request event; skipping"
+          else
+            changed_lines=$(git diff --numstat "$BASE_SHA" "$HEAD_SHA" | awk '{add+=$1; del+=$2} END {print add+del+0}')
+            match=false
+            for raw in $(echo "$RUN_ON_BRANCHES" | tr ',' ' '); do
+              branch=$(echo "$raw" | xargs)
+              [ -z "$branch" ] && continue
+              if [ "$BASE_REF" = "$branch" ]; then
+                match=true
+              fi
+            done
+            if [ "$match" != "true" ]; then
+              should_run=false
+              reason="Base branch '$BASE_REF' not in run_on_branches '$RUN_ON_BRANCHES'"
+            elif [ "$changed_lines" -lt "$MIN_CHANGED" ]; then
+              should_run=false
+              reason="Changed lines $changed_lines below threshold $MIN_CHANGED"
             fi
-          done
-
-          if [ "$match" != "true" ]; then
-            should_run=false
-            reason="Base branch mismatch"
-          elif [ "$changed_lines" -lt "$MIN_CHANGED" ]; then
-            should_run=false
-            reason="Changed lines below threshold"
           fi
 
           {
@@ -78,9 +85,10 @@ jobs:
 
       - name: Skip DeepSeek review
         if: steps.guard.outputs.should-run != 'true'
-        run: echo "Skipping: ${{ steps.guard.outputs.reason }}"
+        run: |
+          echo "Skipping DeepSeek review: ${{ steps.guard.outputs.reason }}"
 
-      - name: Collect PR diff
+      - name: Collect PR diff (truncated for cost control)
         if: steps.guard.outputs.should-run == 'true'
         id: diff
         shell: bash
@@ -88,7 +96,10 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          set -eo pipefail
           git diff --unified=3 --no-color "$BASE_SHA" "$HEAD_SHA" | head -c 120000 > /tmp/pr_diff.txt
+          bytes=$(wc -c < /tmp/pr_diff.txt | tr -d ' ')
+          echo "diff-bytes=$bytes" >> "$GITHUB_OUTPUT"
 
       - name: Call DeepSeek
         if: steps.guard.outputs.should-run == 'true'
@@ -99,19 +110,26 @@ jobs:
           DIFF_PATH: /tmp/pr_diff.txt
           PROJECT_CONTEXT: ${{ inputs.project_context }}
         run: |
+          set -eo pipefail
+          if [ ! -s "$DIFF_PATH" ]; then
+            echo "No diff content found; skipping call."
+            exit 0
+          fi
+
           payload=$(python - "$DIFF_PATH" << 'PY'
           import json, os, sys
           from pathlib import Path
 
           diff = Path(sys.argv[1]).read_text(encoding="utf-8")
-          context = os.environ.get("PROJECT_CONTEXT") or "General Codebase"
+          context = os.environ.get("PROJECT_CONTEXT") or "General Codebase (context not provided)"
 
           system_prompt = (
-              "You are a senior code reviewer.\n"
+              "You are a senior code reviewer. Use the provided project context to interpret APIs and patterns.\n"
               f"Project context: {context}\n"
-              "- If an API is unfamiliar, assume it might be new or project-defined.\n"
-              "- Prioritize logic, security, architecture.\n"
-              "- Avoid incorrect 'API does not exist' claims.\n"
+              "- If an API or symbol is unfamiliar, assume it may be project-defined; avoid claiming it does not exist.\n"
+              "- Use version information to reason about availability; do not suggest downgrades to older APIs.\n"
+              "- Prioritize logic errors, security issues, edge cases, and architectural risks.\n"
+              "- Be concise and high-signal. Do not restate diffs."
           )
 
           payload = {
@@ -127,31 +145,40 @@ jobs:
           PY
           )
 
-          response=$(curl -sS \
+          response=$(curl -sS --max-time 30 --retry 2 --retry-delay 2 \
             -X POST https://api.deepseek.com/v1/chat/completions \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
             -d "$payload" || true)
 
           echo "$response" > /tmp/deepseek_response.json
-
           content=$(jq -r '.choices[0].message.content // ""' /tmp/deepseek_response.json)
+          content_bytes=$(printf "%s" "$content" | wc -c | tr -d ' ')
+
+          if [ -z "$content" ]; then
+            echo "No DeepSeek content returned; skipping comment."
+            exit 0
+          elif [ "$content_bytes" -gt 20000 ]; then
+            echo "DeepSeek content too large (${content_bytes} bytes); skipping comment to control cost."
+            exit 0
+          fi
 
           {
-            echo "content<<EOF"
+            echo "content<<CONTENT_EOF"
             echo "$content"
-            echo "EOF"
+            echo "CONTENT_EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Post DeepSeek feedback
-        if: steps.deepseek.outputs.content != ''
+      - name: Post DeepSeek feedback as PR comment
+        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
         uses: actions/github-script@v7
         env:
           DEEPSEEK_CONTENT: ${{ steps.deepseek.outputs.content }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const body = "### DeepSeek review\n\n" + process.env.DEEPSEEK_CONTENT;
+            const body = `### DeepSeek review
+${process.env.DEEPSEEK_CONTENT}`;
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

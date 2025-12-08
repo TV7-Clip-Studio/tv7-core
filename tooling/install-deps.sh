@@ -22,39 +22,47 @@ install_flutter() {
   log_info "Flutter project detected."
   if command -v flutter >/dev/null; then
     flutter pub get
+    return $?
   else
     log_err "Flutter not found. Skipping."
+    return 1
   fi
 }
 
 install_python() {
   log_info "Python project detected."
   if [ -f "pyproject.toml" ] && command -v poetry >/dev/null; then
-    poetry install
+    poetry install || return $?
   elif [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt
+    pip install -r requirements.txt || return $?
   else
     log_info "No supported Python installer found (poetry/pip)."
+    return 1
   fi
+  return 0
 }
 
 install_rust() {
   log_info "Rust project detected."
   if command -v cargo >/dev/null; then
     # We don't necessarily want to build, just fetch deps
-    cargo fetch
+    cargo fetch || return $?
   else
     log_err "Cargo not found. Skipping."
+    return 1
   fi
+  return 0
 }
 
 install_node() {
   log_info "Node project detected."
   if command -v npm >/dev/null; then
-    npm install
+    npm install || return $?
   else
     log_err "npm not found. Skipping."
+    return 1
   fi
+  return 0
 }
 
 # Iterate through repos
@@ -70,20 +78,21 @@ find "$REPO_ROOT" -maxdepth 1 -mindepth 1 -type d | grep -v "\.git" | sort | whi
   fi
   
   cd "$repo_path"
+  rc=0
 
   if [ -f "pubspec.yaml" ]; then
-    install_flutter
+    install_flutter || rc=$?
   elif [ -f "Cargo.toml" ]; then
-    install_rust
+    install_rust || rc=$?
   elif [ -f "package.json" ]; then
-    install_node
+    install_node || rc=$?
   elif [ -f "pyproject.toml" ] || [ -f "requirements.txt" ]; then
-    install_python
+    install_python || rc=$?
   else
     log_info "Unknown project type. Skipping."
   fi
 
-  if [ "$SKIP_DEPS" = "0" ] && [ "${PIPESTATUS[0]:-0}" != "0" ]; then
+  if [ "$SKIP_DEPS" = "0" ] && [ "$rc" -ne 0 ]; then
     log_err "Dependency install may have failed for $repo_name."
   fi
 done

@@ -40,6 +40,7 @@ submodules-update:
 bootstrap:
 	@REPO_ROOT="$(REPO_ROOT)" CORE_URL="$(CORE_URL)" bash "$(TOOLING_DIR)/bootstrap-repos.sh"
 	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/setup-secrets.sh" --defaults
+	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/setup-ide.sh"
 	@REPO_ROOT="$(REPO_ROOT)" SKIP_DEPS="$(SKIP_DEPS)" bash "$(TOOLING_DIR)/install-deps.sh"
 	@echo "Bootstrap complete. To skip deps next time, set SKIP_DEPS=1. To override clone URL, set CORE_URL / REPO_URLS."
 

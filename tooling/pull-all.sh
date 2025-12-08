@@ -1,5 +1,5 @@
 #!/bin/bash
-# tv7-core/tooling/pull_all.sh
+# tv7-core/tooling/pull-all.sh
 # Pull all TV7 repositories with safety flags and readable output.
 #
 # Usage:

@@ -3,21 +3,23 @@ set -euo pipefail
 
 # Clone all TV7 repos (if missing) and ensure the shared submodule is mounted as 00-tv7-core/.
 # Leaves existing non-git directories untouched (prints a warning).
+# Defaults to SSH URLs (override via TV7_*_URL envs or CORE_URL for tv7-core).
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Default to parent folder of tv7-core (sibling repos live alongside it)
 REPO_ROOT="${REPO_ROOT:-$SCRIPT_DIR/../..}"
 CORE_URL="${CORE_URL:-git@github.com:TV7-Clip-Studio/tv7-core.git}"
+# Override REPO_URLS by exporting REPO_URLS_JSON='{"repo":"url",...}' or setting CORE_URL.
 
 quiet="${QUIET:-0}"
 log() { [ "$quiet" = "1" ] || echo "$@"; }
 warn() { echo "$@" >&2; }
 
 declare -A REPO_URLS=(
-  ["tv7-axum-engine"]="git@github.com:TV7-Clip-Studio/tv7-axum-engine.git"
-  ["tv7-fastapi-backend"]="git@github.com:TV7-Clip-Studio/tv7-fastapi-backend.git"
-  ["tv7-flutter-studio"]="git@github.com:TV7-Clip-Studio/tv7-flutter-studio.git"
-  ["tv7-astro-site"]="git@github.com:TV7-Clip-Studio/tv7-astro-site.git"
+  ["tv7-axum-engine"]="${TV7_AXUM_URL:-git@github.com:TV7-Clip-Studio/tv7-axum-engine.git}"
+  ["tv7-fastapi-backend"]="${TV7_FASTAPI_URL:-git@github.com:TV7-Clip-Studio/tv7-fastapi-backend.git}"
+  ["tv7-flutter-studio"]="${TV7_FLUTTER_URL:-git@github.com:TV7-Clip-Studio/tv7-flutter-studio.git}"
+  ["tv7-astro-site"]="${TV7_ASTRO_URL:-git@github.com:TV7-Clip-Studio/tv7-astro-site.git}"
 )
 
 for repo in "${!REPO_URLS[@]}"; do

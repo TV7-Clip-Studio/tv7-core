@@ -39,6 +39,8 @@ submodules-update:
 
 bootstrap:
 	@REPO_ROOT="$(REPO_ROOT)" CORE_URL="$(CORE_URL)" bash "$(TOOLING_DIR)/bootstrap-repos.sh"
+	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/setup_secrets.sh" --defaults
+	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/install_deps.sh"
 
 sync update:
 	@REPO_ROOT="$(REPO_ROOT)" CORE_URL="$(CORE_URL)" QUIET=1 bash "$(TOOLING_DIR)/bootstrap-repos.sh"

@@ -7,17 +7,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Default to parent folder of tv7-core (sibling repos live alongside it)
 REPO_ROOT="${REPO_ROOT:-$SCRIPT_DIR/../..}"
-CORE_URL="${CORE_URL:-git@github.com:TV7-Clip-Studio/tv7-core.git}"
+CORE_URL="${CORE_URL:-https://github.com/TV7-Clip-Studio/tv7-core.git}"
 
 quiet="${QUIET:-0}"
 log() { [ "$quiet" = "1" ] || echo "$@"; }
 warn() { echo "$@" >&2; }
 
 declare -A REPO_URLS=(
-  ["tv7-axum-engine"]="git@github.com:TV7-Clip-Studio/tv7-axum-engine.git"
-  ["tv7-fastapi-backend"]="git@github.com:TV7-Clip-Studio/tv7-fastapi-backend.git"
-  ["tv7-flutter-studio"]="git@github.com:TV7-Clip-Studio/tv7-flutter-studio.git"
-  ["tv7-astro-site"]="git@github.com:TV7-Clip-Studio/tv7-astro-site.git"
+  ["tv7-axum-engine"]="https://github.com/TV7-Clip-Studio/tv7-axum-engine.git"
+  ["tv7-fastapi-backend"]="https://github.com/TV7-Clip-Studio/tv7-fastapi-backend.git"
+  ["tv7-flutter-studio"]="https://github.com/TV7-Clip-Studio/tv7-flutter-studio.git"
+  ["tv7-astro-site"]="https://github.com/TV7-Clip-Studio/tv7-astro-site.git"
 )
 
 for repo in "${!REPO_URLS[@]}"; do

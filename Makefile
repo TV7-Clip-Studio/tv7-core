@@ -7,6 +7,8 @@ SUBMODULE_PATH ?= 00-tv7-core
 CORE_URL ?= git@github.com:TV7-Clip-Studio/tv7-core.git
 TOOLING_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/tooling
 SYNC_BASE ?= origin/main
+SKIP_DEPS ?= 0
+SKIP_IDE ?= 0
 
 .PHONY: status pull-all submodules-init submodules-update bootstrap sync update set-secret update-secrets sync-core bump-core-all update-core
 
@@ -40,9 +42,9 @@ submodules-update:
 bootstrap:
 	@REPO_ROOT="$(REPO_ROOT)" CORE_URL="$(CORE_URL)" bash "$(TOOLING_DIR)/bootstrap-repos.sh"
 	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/setup-secrets.sh" --defaults
-	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/setup-ide.sh"
 	@REPO_ROOT="$(REPO_ROOT)" SKIP_DEPS="$(SKIP_DEPS)" bash "$(TOOLING_DIR)/install-deps.sh"
-	@echo "Bootstrap complete. To skip deps next time, set SKIP_DEPS=1. To override clone URL, set CORE_URL / REPO_URLS."
+	@if [ "$(SKIP_IDE)" != "1" ]; then REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/setup-ide.sh"; fi
+	@echo "Bootstrap complete. To skip deps, set SKIP_DEPS=1. To skip IDE setup, set SKIP_IDE=1."
 
 sync update:
 	@REPO_ROOT="$(REPO_ROOT)" CORE_URL="$(CORE_URL)" QUIET=1 bash "$(TOOLING_DIR)/bootstrap-repos.sh"

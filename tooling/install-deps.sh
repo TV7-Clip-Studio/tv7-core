@@ -1,5 +1,5 @@
 #!/bin/bash
-# tv7-core/tooling/install_deps.sh
+# tv7-core/tooling/install-deps.sh
 # Auto-detects project type and installs dependencies.
 
 set -euo pipefail

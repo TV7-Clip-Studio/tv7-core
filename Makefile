@@ -14,7 +14,7 @@ status:
 	@bash "$(TOOLING_DIR)/status.sh"
 
 pull-all:
-	@bash "$(TOOLING_DIR)/pull_all.sh"
+	@bash "$(TOOLING_DIR)/pull-all.sh"
 
 submodules-init:
 	@for repo in $(REPOS); do \
@@ -39,8 +39,8 @@ submodules-update:
 
 bootstrap:
 	@REPO_ROOT="$(REPO_ROOT)" CORE_URL="$(CORE_URL)" bash "$(TOOLING_DIR)/bootstrap-repos.sh"
-	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/setup_secrets.sh" --defaults
-	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/install_deps.sh"
+	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/setup-secrets.sh" --defaults
+	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/install-deps.sh"
 
 sync update:
 	@REPO_ROOT="$(REPO_ROOT)" CORE_URL="$(CORE_URL)" QUIET=1 bash "$(TOOLING_DIR)/bootstrap-repos.sh"
@@ -118,10 +118,10 @@ set-secret:
 	@SECRET_NAME=$(SECRET_NAME) SECRET_VALUE=$(SECRET_VALUE) REPOS="$(REPOS)" ALL=$(ALL) ORG=$(ORG) bash "$(CURDIR)/tooling/set-secret.sh"
 
 sync-core:
-	@bash "$(TOOLING_DIR)/sync_core_submodules.sh"
+	@bash "$(TOOLING_DIR)/sync-core-submodules.sh"
 
 bump-core-all:
-	@MODE=bump bash "$(TOOLING_DIR)/sync_core_submodules.sh"
+	@MODE=bump bash "$(TOOLING_DIR)/sync-core-submodules.sh"
 
 update-core:
-	@MODE=bump AUTO_PR=1 bash "$(TOOLING_DIR)/sync_core_submodules.sh"
+	@MODE=bump AUTO_PR=1 bash "$(TOOLING_DIR)/sync-core-submodules.sh"

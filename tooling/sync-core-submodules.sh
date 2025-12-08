@@ -1,5 +1,5 @@
 #!/bin/bash
-# tv7-core/tooling/sync_core_submodules.sh
+# tv7-core/tooling/sync-core-submodules.sh
 # Syncs the tv7-core submodule in sibling repositories to the current HEAD of tv7-core.
 
 set -e

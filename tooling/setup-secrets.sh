@@ -1,5 +1,5 @@
 #!/bin/bash
-# tv7-core/tooling/setup_secrets.sh
+# tv7-core/tooling/setup-secrets.sh
 # Interactive wrapper to set up .env files and configure secrets across repos.
 
 set -euo pipefail

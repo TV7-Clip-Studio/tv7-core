@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Default to parent folder of tv7-core (sibling repos live alongside it)
 REPO_ROOT="${REPO_ROOT:-$SCRIPT_DIR/../..}"
-CORE_URL="${CORE_URL:-https://github.com/TV7-Clip-Studio/tv7-core.git}"
+CORE_URL="${CORE_URL:-git@github.com:TV7-Clip-Studio/tv7-core.git}"
 
 quiet="${QUIET:-0}"
 log() { [ "$quiet" = "1" ] || echo "$@"; }

@@ -1,6 +1,11 @@
 #!/bin/bash
 # tv7-core/tooling/setup-secrets.sh
 # Interactive wrapper to set up .env files and configure secrets across repos.
+# Behavior:
+# - Copies .env.example to .env if missing (never overwrites existing .env).
+# - Prompts can be added later; current mode is “copy defaults.”
+# Usage: ./setup-secrets.sh [--defaults]
+# Requires: standard shell utils; run from tv7-core or with REPO_ROOT set.
 
 set -euo pipefail
 
@@ -8,7 +13,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${REPO_ROOT:-$SCRIPT_DIR/../..}"
 USE_DEFAULTS=0
 
-RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; BLUE='\033[34m'; BOLD='\033[1m'; RESET='\033[0m'
+RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; BLUE='\033[34m'; MAGENTA='\033[35m'; BOLD='\033[1m'; RESET='\033[0m'
 log_info(){ printf " ${BLUE}ℹ %s${RESET}\n" "$1"; }
 log_ok()  { printf " ${GREEN}✓ %s${RESET}\n" "$1"; }
 log_warn(){ printf " ${YELLOW}! %s${RESET}\n" "$1"; }
@@ -38,7 +43,7 @@ find "$REPO_ROOT" -maxdepth 2 -name ".env.example" | while read -r example_file;
   printf "\n${BOLD}Configuring secrets for ${MAGENTA}%s${RESET}...\n" "$repo_name"
 
   if [ -f "$env_file" ]; then
-    log_ok ".env already exists."
+    log_warn ".env already exists; leaving it unchanged."
   else
     cp "$example_file" "$env_file"
     log_ok "Created .env from .env.example"

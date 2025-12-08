@@ -1,13 +1,19 @@
 #!/bin/bash
 # tv7-core/tooling/install-deps.sh
 # Auto-detects project type and installs dependencies.
+# Behavior:
+# - Visits each repo under REPO_ROOT and installs deps unless SKIP_DEPS=1.
+# - Requires relevant package managers to be pre-installed (poetry/pip, npm, cargo, flutter).
+# Usage: SKIP_DEPS=1 ./install-deps.sh  # skip installs
+#        ./install-deps.sh              # install deps
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${REPO_ROOT:-$SCRIPT_DIR/../..}"
+SKIP_DEPS="${SKIP_DEPS:-0}"
 
-RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; BLUE='\033[34m'; BOLD='\033[1m'; RESET='\033[0m'
+RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; BLUE='\033[34m'; MAGENTA='\033[35m'; BOLD='\033[1m'; RESET='\033[0m'
 log_info(){ printf " ${BLUE}ℹ %s${RESET}\n" "$1"; }
 log_ok()  { printf " ${GREEN}✓ %s${RESET}\n" "$1"; }
 log_err() { printf " ${RED}✗ %s${RESET}\n" "$1"; }
@@ -58,6 +64,10 @@ find "$REPO_ROOT" -maxdepth 1 -mindepth 1 -type d | grep -v "\.git" | sort | whi
   [ ! -d "$repo_path/.git" ] && continue
 
   printf "\n${BOLD}Installing dependencies for ${MAGENTA}%s${RESET}...\n" "$repo_name"
+  if [ "$SKIP_DEPS" = "1" ]; then
+    log_info "Skipping installs (SKIP_DEPS=1)."
+    continue
+  fi
   
   cd "$repo_path"
 
@@ -71,5 +81,9 @@ find "$REPO_ROOT" -maxdepth 1 -mindepth 1 -type d | grep -v "\.git" | sort | whi
     install_python
   else
     log_info "Unknown project type. Skipping."
+  fi
+
+  if [ "$SKIP_DEPS" = "0" ] && [ "${PIPESTATUS[0]:-0}" != "0" ]; then
+    log_err "Dependency install may have failed for $repo_name."
   fi
 done

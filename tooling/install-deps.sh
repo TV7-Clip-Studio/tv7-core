@@ -31,8 +31,13 @@ install_flutter() {
 
 install_python() {
   log_info "Python project detected."
+  if ! command -v python >/dev/null; then
+    log_err "Python not found. Skipping."
+    return 1
+  fi
+  export POETRY_VIRTUALENVS_IN_PROJECT=1
   if [ -f "pyproject.toml" ] && command -v poetry >/dev/null; then
-    poetry install || return $?
+    poetry install --no-root || return $?
   elif [ -f "requirements.txt" ]; then
     pip install -r requirements.txt || return $?
   else
@@ -57,6 +62,16 @@ install_rust() {
 install_node() {
   log_info "Node project detected."
   if command -v npm >/dev/null; then
+    if [ -f package.json ]; then
+      engine_node="$(jq -r '.engines.node // empty' package.json 2>/dev/null || true)"
+      engine_npm="$(jq -r '.engines.npm // empty' package.json 2>/dev/null || true)"
+      if [ -n "$engine_node" ]; then
+        log_warn "package.json engines.node=$engine_node; current node=$(node -v)"
+      fi
+      if [ -n "$engine_npm" ]; then
+        log_warn "package.json engines.npm=$engine_npm; current npm=$(npm -v)"
+      fi
+    fi
     npm install || return $?
   else
     log_err "npm not found. Skipping."
@@ -66,6 +81,8 @@ install_node() {
 }
 
 # Iterate through repos
+failures=()
+
 find "$REPO_ROOT" -maxdepth 1 -mindepth 1 -type d | grep -v "\.git" | sort | while read -r repo_path; do
   repo_name="$(basename "$repo_path")"
   # skip core itself if needed, or non-repo dirs
@@ -80,19 +97,30 @@ find "$REPO_ROOT" -maxdepth 1 -mindepth 1 -type d | grep -v "\.git" | sort | whi
   cd "$repo_path"
   rc=0
 
-  if [ -f "pubspec.yaml" ]; then
-    install_flutter || rc=$?
-  elif [ -f "Cargo.toml" ]; then
-    install_rust || rc=$?
-  elif [ -f "package.json" ]; then
-    install_node || rc=$?
-  elif [ -f "pyproject.toml" ] || [ -f "requirements.txt" ]; then
-    install_python || rc=$?
+  # shallow manifest search (depth 2)
+  manifest_pub=$(find . -maxdepth 2 -name "pubspec.yaml" | head -n 1)
+  manifest_cargo=$(find . -maxdepth 2 -name "Cargo.toml" | head -n 1)
+  manifest_pkg=$(find . -maxdepth 2 -name "package.json" | head -n 1)
+  manifest_py=$(find . -maxdepth 2 -name "pyproject.toml" -o -name "requirements.txt" | head -n 1)
+
+  if [ -n "$manifest_pub" ]; then
+    cd "$(dirname "$manifest_pub")" && install_flutter || rc=$?
+  elif [ -n "$manifest_cargo" ]; then
+    cd "$(dirname "$manifest_cargo")" && install_rust || rc=$?
+  elif [ -n "$manifest_pkg" ]; then
+    cd "$(dirname "$manifest_pkg")" && install_node || rc=$?
+  elif [ -n "$manifest_py" ]; then
+    cd "$(dirname "$manifest_py")" && install_python || rc=$?
   else
     log_info "Unknown project type. Skipping."
   fi
 
   if [ "$SKIP_DEPS" = "0" ] && [ "$rc" -ne 0 ]; then
     log_err "Dependency install may have failed for $repo_name."
+    failures+=("$repo_name")
   fi
 done
+
+if [ "$SKIP_DEPS" = "0" ] && [ "${#failures[@]}" -gt 0 ]; then
+  printf "\n${RED}Install issues for: %s${RESET}\n" "${failures[*]}"
+fi

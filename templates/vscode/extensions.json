@@ -1,0 +1,17 @@
+{
+    "recommendations": [
+        "GitHub.copilot",
+        "eamodio.gitlens",
+        "ms-azuretools.vscode-docker",
+        "mikestead.dotenv",
+        "Dart-Code.flutter",
+        "Dart-Code.dart-code",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "astro-build.astro-vscode",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+    ]
+}

@@ -43,9 +43,13 @@ install_python() {
     fi
   fi
   if [ -f "pyproject.toml" ] && command -v poetry >/dev/null; then
-    POETRY_VIRTUALENVS_IN_PROJECT=1 poetry install --no-root || return $?
+    env POETRY_VIRTUALENVS_IN_PROJECT=1 poetry install --no-root || return $?
   elif [ -f "requirements.txt" ]; then
-    "$PYBIN" -m pip install -r requirements.txt || return $?
+    venv_dir=".venv"
+    if [ ! -d "$venv_dir" ]; then
+      "$PYBIN" -m venv "$venv_dir" || return $?
+    fi
+    "$venv_dir/bin/pip" install -r requirements.txt || return $?
   else
     log_info "No supported Python installer found (poetry/pip)."
     return 1
@@ -104,7 +108,7 @@ while read -r repo_path; do
   
   rc=0
 
-  # shallow manifest search (prefer repo root, then depth 2)
+  # prefer root-level manifests for known repo layouts
   manifest_pub=""
   manifest_cargo=""
   manifest_pkg=""
@@ -113,17 +117,8 @@ while read -r repo_path; do
   [ -f "$repo_path/pubspec.yaml" ] && manifest_pub="$repo_path/pubspec.yaml"
   [ -f "$repo_path/Cargo.toml" ] && manifest_cargo="$repo_path/Cargo.toml"
   [ -f "$repo_path/package.json" ] && manifest_pkg="$repo_path/package.json"
-  find "$repo_path" -maxdepth 2 -name "pyproject.toml" -o -name "requirements.txt" | head -n 1 | read -r manifest_py || true
-
-  if [ -z "$manifest_pub" ]; then
-    find "$repo_path" -maxdepth 2 -name "pubspec.yaml" | head -n 1 | read -r manifest_pub || true
-  fi
-  if [ -z "$manifest_cargo" ]; then
-    find "$repo_path" -maxdepth 2 -name "Cargo.toml" | head -n 1 | read -r manifest_cargo || true
-  fi
-  if [ -z "$manifest_pkg" ]; then
-    find "$repo_path" -maxdepth 2 -name "package.json" | head -n 1 | read -r manifest_pkg || true
-  fi
+  [ -f "$repo_path/pyproject.toml" ] && manifest_py="$repo_path/pyproject.toml"
+  [ -z "$manifest_py" ] && [ -f "$repo_path/requirements.txt" ] && manifest_py="$repo_path/requirements.txt"
 
   if [ -n "$manifest_pub" ]; then
     (cd "$(dirname "$manifest_pub")" && install_flutter) || rc=$?

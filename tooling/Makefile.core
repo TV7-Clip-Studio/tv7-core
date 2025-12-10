@@ -1,0 +1,12 @@
+# Shared helper targets for tv7-core when symlinked into sibling repos.
+
+CORE_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/..
+
+.PHONY: core-status core-commit
+
+core-status:
+	@cd "$(CORE_ROOT)" && git status
+
+core-commit:
+	@if [ -z "$(m)" ]; then echo "Use: make core-commit m=\"message\""; exit 1; fi
+	@cd "$(CORE_ROOT)" && git commit -am "$(m)"

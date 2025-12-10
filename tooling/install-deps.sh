@@ -17,6 +17,7 @@ RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; BLUE='\033[34m'; MAGENTA='\
 log_info(){ printf " ${BLUE}ℹ %s${RESET}\n" "$1"; }
 log_ok()  { printf " ${GREEN}✓ %s${RESET}\n" "$1"; }
 log_err() { printf " ${RED}✗ %s${RESET}\n" "$1"; }
+log_warn(){ printf " ${YELLOW}! %s${RESET}\n" "$1"; }
 
 install_flutter() {
   log_info "Flutter project detected."

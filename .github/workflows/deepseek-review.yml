@@ -264,21 +264,45 @@ jobs:
             const body = `### DeepSeek review (${verdictLine || event})
             ${content}`;
 
-            const res = await github.rest.pulls.createReview({
-              owner,
-              repo,
-              pull_number: prNumber,
-              body,
-              event,
-            });
+            let finalEvent = event;
+            let url = '(unknown)';
 
-            const url = res?.data?.html_url || '(unknown)';
-            console.log(`Submitted DeepSeek review (${event}) to PR #${prNumber}: ${url}`);
+            try {
+              const res = await github.rest.pulls.createReview({
+                owner,
+                repo,
+                pull_number: prNumber,
+                body,
+                event: finalEvent,
+              });
+              url = res?.data?.html_url || url;
+              console.log(`Submitted DeepSeek review (${finalEvent}) to PR #${prNumber}: ${url}`);
+            } catch (err) {
+              const msg = `${err}`;
+              const forbiddenApprove =
+                event === 'APPROVE' &&
+                err.status === 422 &&
+                msg.includes('not permitted to approve');
+              if (forbiddenApprove) {
+                console.log('Cannot approve via GitHub Actions token; falling back to COMMENT event.');
+                finalEvent = 'COMMENT';
+                const res = await github.rest.pulls.createReview({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  body,
+                  event: finalEvent,
+                });
+                url = res?.data?.html_url || url;
+              } else {
+                throw err;
+              }
+            }
 
             const summaryPath = process.env.GITHUB_STEP_SUMMARY;
             if (summaryPath) {
               fs.appendFileSync(
                 summaryPath,
-                `DeepSeek review submitted (${event}) to PR #${prNumber}: ${url}\n`
+                `DeepSeek review submitted (${finalEvent}) to PR #${prNumber}: ${url}\n`
               );
             }

@@ -35,7 +35,6 @@ ICON_DIRTY="*"
 REPO_ROOT="${REPO_ROOT:-..}"
 REPO_ROOT=$(cd "$REPO_ROOT" && pwd)
 REPOS="${REPOS:-tv7-core tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site}"
-SUBMODULE_PATH="${SUBMODULE_PATH:-00-tv7-core}"
 
 # Header
 printf "${BOLD}%-25s %-20s %-30s %-20s${RESET}\n" "REPOSITORY" "BRANCH" "SYNC STATUS" "CHANGES"
@@ -92,26 +91,7 @@ for repo in $REPOS; do
         if [ "$untracked" -gt 0 ]; then changes_str="${changes_str}${RED}?${untracked}${RESET} "; fi
     fi
 
-    # 5. Check Submodule (tv7-core)
-    # Only check if it's NOT tv7-core itself (avoid recursion confusion, though technically it doesn't have itself as submodule usually)
-    # Actually, tv7-core is the parent, other repos have it as submodule.
-    # But the list includes tv7-core. tv7-core doesn't have 00-tv7-core submodule.
-    
-    sub_status=""
-    if [ "$repo" != "tv7-core" ]; then
-         if [ -d "$path/$SUBMODULE_PATH" ]; then
-            subdirty=$(git -C "$path" status --porcelain "$SUBMODULE_PATH" | wc -l | tr -d ' ')
-            if [ "$subdirty" -gt 0 ]; then
-                sub_status="${RED}(sub: dirty)${RESET}"
-            fi
-         else
-             # Some repos might not have it yet or it's optional? Assuming standard structure.
-             # If it's missing but expected, maybe warn. For now, ignore if not found to avoid noise.
-             :
-         fi
-    fi
-
-    # 6. Last Commit Age
+    # 5. Last Commit Age
     last_commit_time=$(git -C "$path" log -1 --format="%cr" 2>/dev/null || echo "-")
     
     # Repo Name Color
@@ -124,7 +104,7 @@ for repo in $REPOS; do
         "$repo" \
         "${branch:0:19}" \
         "$sync_str" \
-        "$changes_str $sub_status" \
+        "$changes_str" \
         "$last_commit_time"
 
 done

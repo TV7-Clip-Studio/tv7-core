@@ -25,13 +25,13 @@ A minimal FastAPI backend acts as the control plane for:
 This architecture keeps backend cost extremely low and allows a one-time purchase model for Core and subscription for Pro.
 
 ### Repos & shared docs (TV7-Clip-Studio org)
-- `tv7-core` — Canonical docs + automation workspace (target `00-tv7-core` submodule for every repo) — `git@github.com:TV7-Clip-Studio/tv7-core.git`.
+- `tv7-core` — Canonical docs + automation workspace (symlinked into every repo) — `git@github.com:TV7-Clip-Studio/tv7-core.git`.
 - `tv7-flutter-studio` — Flutter desktop/mobile app that orchestrates the local engine (HTTP on desktop, FFI on mobile) — `git@github.com:TV7-Clip-Studio/tv7-flutter-studio.git`.
 - `tv7-axum-engine` — Rust `engine-core` + Axum `engine-service` sidecar; future `engine-ffi` for mobile — `git@github.com:TV7-Clip-Studio/tv7-axum-engine.git`.
 - `tv7-fastapi-backend` — FastAPI control plane with Dramatiq worker for scheduling; no heavy media work — `git@github.com:TV7-Clip-Studio/tv7-fastapi-backend.git`.
 - `tv7-astro-site` — Astro marketing + downloads site that links to installers/docs — `git@github.com:TV7-Clip-Studio/tv7-astro-site.git`.
 
-Docs flow: edit shared docs in `tv7-core` (e.g., `architecture/`), then update each repo’s `00-tv7-core` submodule pointer (`git submodule update --remote 00-tv7-core` in each repo, commit the pointer). Clone with `git clone --recurse-submodules` or run `git submodule update --init --recursive` after cloning to pull docs.
+Docs flow: edit shared docs in `tv7-core` (e.g., `architecture/`) through the symlink in any repo; commit/push from `tv7-core`. Clone repos as siblings and rely on symlinks (no submodules).
 
 ---
 
@@ -138,12 +138,12 @@ Responsibilities:
 
 ---
 
-### 3.7 Shared Docs (`tv7-core` submodule target)
+### 3.7 Shared Docs (`tv7-core` symlink target)
 Responsibilities:
 
 - Canonical, versioned documentation for architecture, API contracts, and runbooks.
-- Lives in the `tv7-core` repo; mount it as `00-tv7-core/` inside each `tv7-*` codebase via Git submodule to keep all teams aligned.
-- Update docs once in `tv7-core`, then update each repo’s submodule ref so app/backend/engine/site all ship the same documentation snapshot.
+- Lives in the `tv7-core` repo; mount it into each `tv7-*` codebase via symlinks (see `docs/symlink-map.md`) to keep all teams aligned.
+- Update docs once in `tv7-core`; symlinks keep downstream views current without bumping submodule pointers.
 
 ## 4. App ↔ Backend Interactions
 

@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Clone all TV7 repos (if missing) and ensure the shared submodule is mounted as 00-tv7-core/.
-# Leaves existing non-git directories untouched (prints a warning).
-# Defaults to SSH URLs (override via TV7_*_URL envs or CORE_URL for tv7-core).
+# Clone all TV7 repos (if missing). Leaves existing non-git directories untouched (prints a warning).
+# Defaults to SSH URLs (override via TV7_*_URL envs).
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Default to parent folder of tv7-core (sibling repos live alongside it)
 REPO_ROOT="${REPO_ROOT:-$SCRIPT_DIR/../..}"
-CORE_URL="${CORE_URL:-git@github.com:TV7-Clip-Studio/tv7-core.git}"
-# Override REPO_URLS by exporting REPO_URLS_JSON='{"repo":"url",...}' or setting CORE_URL.
+# Override REPO_URLS by exporting REPO_URLS_JSON='{"repo":"url",...}'.
 
 quiet="${QUIET:-0}"
 log() { [ "$quiet" = "1" ] || echo "$@"; }
@@ -41,13 +39,8 @@ for repo in "${!REPO_URLS[@]}"; do
       warn "!! $repo origin mismatch: found '$origin_url', expected '$url' — fixing origin."
       git -C "$path" remote set-url origin "$url"
     fi
-    if [ ! -d "$path/00-tv7-core/.git" ] && [ ! -d "$path/00-tv7-core" ]; then
-      log "== Adding 00-tv7-core submodule to $repo =="
-      git -C "$path" submodule add "$CORE_URL" 00-tv7-core || true
-    fi
-    log "== Initializing/updating 00-tv7-core in $repo =="
-    git -C "$path" submodule update --init --recursive 00-tv7-core
+    log "== $repo ready at $path =="
   fi
 done
 
-[ "$quiet" = "1" ] || echo "Done. Commit submodule additions in each repo as needed."
+[ "$quiet" = "1" ] || echo "Done. Clone tv7-core as a sibling and add symlinks per docs/symlink-map.md."

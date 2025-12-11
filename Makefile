@@ -3,14 +3,12 @@
 REPO_ROOT ?= ..
 REPO_ROOT := $(abspath $(REPO_ROOT))
 REPOS ?= tv7-core tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site
-SUBMODULE_PATH ?= 00-tv7-core
-CORE_URL ?= git@github.com:TV7-Clip-Studio/tv7-core.git
 TOOLING_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/tooling
 SYNC_BASE ?= origin/main
 SKIP_DEPS ?= 0
 SKIP_IDE ?= 0
 
-.PHONY: status pull-all submodules-init submodules-update bootstrap sync update set-secret update-secrets sync-core bump-core-all update-core
+.PHONY: status pull-all bootstrap sync update set-secret update-secrets
 
 status:
 	@bash "$(TOOLING_DIR)/status.sh"
@@ -18,36 +16,15 @@ status:
 pull-all:
 	@bash "$(TOOLING_DIR)/pull-all.sh"
 
-submodules-init:
-	@for repo in $(REPOS); do \
-		if [ -d "$(REPO_ROOT)/$$repo/.git" ]; then \
-			echo "== init submodules $$repo =="; \
-			git -C "$(REPO_ROOT)/$$repo" submodule update --init --recursive; \
-		else \
-			echo "!! $$repo missing at $(REPO_ROOT)/$$repo"; \
-		fi; \
-	done
-
-submodules-update:
-	@for repo in $(REPOS); do \
-		if [ -d "$(REPO_ROOT)/$$repo/.git" ]; then \
-			echo "== updating $(SUBMODULE_PATH) in $$repo =="; \
-			git -C "$(REPO_ROOT)/$$repo" submodule update --remote $(SUBMODULE_PATH); \
-			git -C "$(REPO_ROOT)/$$repo" add $(SUBMODULE_PATH) || true; \
-		else \
-			echo "!! $$repo missing at $(REPO_ROOT)/$$repo"; \
-		fi; \
-	done
-
 bootstrap:
-	@REPO_ROOT="$(REPO_ROOT)" CORE_URL="$(CORE_URL)" bash "$(TOOLING_DIR)/bootstrap-repos.sh"
+	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/bootstrap-repos.sh"
 	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/setup-secrets.sh" --defaults
 	@REPO_ROOT="$(REPO_ROOT)" SKIP_DEPS="$(SKIP_DEPS)" bash "$(TOOLING_DIR)/install-deps.sh"
 	@if [ "$(SKIP_IDE)" != "1" ]; then REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/setup-ide.sh"; fi
 	@echo "Bootstrap complete. To skip deps, set SKIP_DEPS=1. To skip IDE setup, set SKIP_IDE=1."
 
 sync update:
-	@REPO_ROOT="$(REPO_ROOT)" CORE_URL="$(CORE_URL)" QUIET=1 bash "$(TOOLING_DIR)/bootstrap-repos.sh"
+	@REPO_ROOT="$(REPO_ROOT)" QUIET=1 bash "$(TOOLING_DIR)/bootstrap-repos.sh"
 	@for repo in $(REPOS); do \
 		path="$(REPO_ROOT)/$$repo"; \
 		status="[✓]"; note=""; \
@@ -104,13 +81,6 @@ sync update:
 				note="rebase failed onto $$upstream; $$conflicts"; \
 			fi; \
 		fi; \
-		if [ "$$status" = "[✓]" ]; then \
-			sub_output="$$(git -C "$$path" submodule update --init --recursive $(SUBMODULE_PATH) 2>&1)"; \
-			rc_sub=$$?; \
-			if [ $$rc_sub -ne 0 ]; then \
-				status="[X]"; note="submodule update failed: $$sub_output"; \
-			fi; \
-		fi; \
 		if [ -n "$$note" ]; then \
 			echo "$$status $$repo ($$branch) - $$note"; \
 		else \
@@ -120,12 +90,3 @@ sync update:
 
 set-secret:
 	@SECRET_NAME=$(SECRET_NAME) SECRET_VALUE=$(SECRET_VALUE) REPOS="$(REPOS)" ALL=$(ALL) ORG=$(ORG) bash "$(CURDIR)/tooling/set-secret.sh"
-
-sync-core:
-	@bash "$(TOOLING_DIR)/sync-core-submodules.sh"
-
-bump-core-all:
-	@MODE=bump bash "$(TOOLING_DIR)/sync-core-submodules.sh"
-
-update-core:
-	@MODE=bump AUTO_PR=1 bash "$(TOOLING_DIR)/sync-core-submodules.sh"

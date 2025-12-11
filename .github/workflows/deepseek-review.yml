@@ -134,6 +134,12 @@ jobs:
               "- Use version information to reason about availability; do not suggest downgrades to older APIs.\n"
               "- Prioritize logic errors, security issues, edge cases, and architectural risks.\n"
               "- Be concise and high-signal. Do not restate diffs."
+              "At the end of your review, add one final line in this format:\n"
+              "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)\n"
+              "Use APPROVED when remaining issues are minor or non-blocking. "
+              "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. "
+              "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score.\n"
+
           )
 
           payload = {
@@ -173,6 +179,28 @@ jobs:
             echo "CONTENT_EOF"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Parse DeepSeek verdict
+        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
+        id: verdict
+        shell: bash
+        env:
+          CONTENT: ${{ steps.deepseek.outputs.content }}
+        run: |
+          set -eo pipefail
+          line=$(printf "%s\n" "$CONTENT" | grep -E 'FINAL_VERDICT' | tail -1 || true)
+          verdict=""
+          if echo "$line" | grep -qi 'APPROVED'; then
+            verdict="APPROVE"
+          elif echo "$line" | grep -qi 'REJECTED'; then
+            verdict="REQUEST_CHANGES"
+          fi
+          echo "line=$line"
+          echo "verdict=$verdict"
+          {
+            echo "line=$line"
+            echo "verdict=$verdict"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Post DeepSeek feedback as PR comment
         if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
         uses: actions/github-script@v7
@@ -181,11 +209,100 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const fs = require('fs');
+            const content = (process.env.DEEPSEEK_CONTENT || '').trim();
+            if (!content) {
+              throw new Error('DeepSeek content is empty; aborting comment.');
+            }
+
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
             const body = `### DeepSeek review
-            ${process.env.DEEPSEEK_CONTENT}`;
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
+            ${content}`;
+
+            const res = await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prNumber,
               body,
             });
+
+            const url = res?.data?.html_url || '(unknown)';
+            console.log(`Posted DeepSeek comment to PR #${prNumber}: ${url}`);
+
+            const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+            if (summaryPath) {
+              fs.appendFileSync(
+                summaryPath,
+                `DeepSeek comment posted to PR #${prNumber}: ${url}\n`
+              );
+            }
+
+      - name: Submit DeepSeek review (approve or request changes)
+        if: steps.guard.outputs.should-run == 'true' && steps.verdict.outputs.verdict != ''
+        uses: actions/github-script@v7
+        env:
+          DEEPSEEK_CONTENT: ${{ steps.deepseek.outputs.content }}
+          VERDICT_EVENT: ${{ steps.verdict.outputs.verdict }}
+          VERDICT_LINE: ${{ steps.verdict.outputs.line }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const content = (process.env.DEEPSEEK_CONTENT || '').trim();
+            const event = (process.env.VERDICT_EVENT || '').trim(); // APPROVE or REQUEST_CHANGES
+            const verdictLine = (process.env.VERDICT_LINE || '').trim();
+            if (!content || !event) {
+              throw new Error('Missing DeepSeek content or verdict event; cannot submit review.');
+            }
+
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const body = `### DeepSeek review (${verdictLine || event})
+            ${content}`;
+
+            let finalEvent = event;
+            let url = '(unknown)';
+
+            try {
+              const res = await github.rest.pulls.createReview({
+                owner,
+                repo,
+                pull_number: prNumber,
+                body,
+                event: finalEvent,
+              });
+              url = res?.data?.html_url || url;
+              console.log(`Submitted DeepSeek review (${finalEvent}) to PR #${prNumber}: ${url}`);
+            } catch (err) {
+              const msg = `${err}`;
+              const forbiddenApprove =
+                event === 'APPROVE' &&
+                err.status === 422 &&
+                msg.includes('not permitted to approve');
+              if (forbiddenApprove) {
+                console.log('Cannot approve via GitHub Actions token; falling back to COMMENT event.');
+                finalEvent = 'COMMENT';
+                const res = await github.rest.pulls.createReview({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  body,
+                  event: finalEvent,
+                });
+                url = res?.data?.html_url || url;
+              } else {
+                throw err;
+              }
+            }
+
+            const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+            if (summaryPath) {
+              fs.appendFileSync(
+                summaryPath,
+                `DeepSeek review submitted (${finalEvent}) to PR #${prNumber}: ${url}\n`
+              );
+            }

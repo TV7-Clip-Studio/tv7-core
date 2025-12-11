@@ -19,7 +19,7 @@ jobs:
         id: context
         run: |
           {
-            echo "info=TV7 Core: shared standards, workflows, and tooling"
+            echo "info=TV7 Core – canonical shared standards, workflows, and tooling; symlinked into sibling repos (see docs/symlink-map.md). Key refs: docs/agent-best-practices.md (agent rules), docs/tv7_high_architecture.md (architecture), docs/backend_architecture.md / docs/engine_architecture.md (system details), tooling/Makefile.core (shared make targets)."
           } >> "$GITHUB_OUTPUT"
 
   deepseek-review:

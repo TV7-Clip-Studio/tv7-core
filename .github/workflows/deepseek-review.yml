@@ -134,8 +134,8 @@ jobs:
               "- Use version information to reason about availability; do not suggest downgrades to older APIs.\n"
               "- Prioritize logic errors, security issues, edge cases, and architectural risks.\n"
               "- Be concise and high-signal. Do not restate diffs."
-              "At the end of your review, add one final line (in title case) in this format:\n"
-              "✅ APPROVED (NN%) or ❌ REJECTED (NN%)\n"
+              "At the end of your review, add one final line in this format:\n"
+              "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)\n"
               "Use APPROVED when remaining issues are minor or non-blocking. "
               "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. "
               "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score.\n"
@@ -179,6 +179,28 @@ jobs:
             echo "CONTENT_EOF"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Parse DeepSeek verdict
+        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
+        id: verdict
+        shell: bash
+        env:
+          CONTENT: ${{ steps.deepseek.outputs.content }}
+        run: |
+          set -eo pipefail
+          line=$(printf "%s\n" "$CONTENT" | grep -E 'FINAL_VERDICT' | tail -1 || true)
+          verdict=""
+          if echo "$line" | grep -qi 'APPROVED'; then
+            verdict="APPROVE"
+          elif echo "$line" | grep -qi 'REJECTED'; then
+            verdict="REQUEST_CHANGES"
+          fi
+          echo "line=$line"
+          echo "verdict=$verdict"
+          {
+            echo "line=$line"
+            echo "verdict=$verdict"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Post DeepSeek feedback as PR comment
         if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
         uses: actions/github-script@v7
@@ -214,5 +236,49 @@ jobs:
               fs.appendFileSync(
                 summaryPath,
                 `DeepSeek comment posted to PR #${prNumber}: ${url}\n`
+              );
+            }
+
+      - name: Submit DeepSeek review (approve or request changes)
+        if: steps.guard.outputs.should-run == 'true' && steps.verdict.outputs.verdict != ''
+        uses: actions/github-script@v7
+        env:
+          DEEPSEEK_CONTENT: ${{ steps.deepseek.outputs.content }}
+          VERDICT_EVENT: ${{ steps.verdict.outputs.verdict }}
+          VERDICT_LINE: ${{ steps.verdict.outputs.line }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const content = (process.env.DEEPSEEK_CONTENT || '').trim();
+            const event = (process.env.VERDICT_EVENT || '').trim(); // APPROVE or REQUEST_CHANGES
+            const verdictLine = (process.env.VERDICT_LINE || '').trim();
+            if (!content || !event) {
+              throw new Error('Missing DeepSeek content or verdict event; cannot submit review.');
+            }
+
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const body = `### DeepSeek review (${verdictLine || event})
+            ${content}`;
+
+            const res = await github.rest.pulls.createReview({
+              owner,
+              repo,
+              pull_number: prNumber,
+              body,
+              event,
+            });
+
+            const url = res?.data?.html_url || '(unknown)';
+            console.log(`Submitted DeepSeek review (${event}) to PR #${prNumber}: ${url}`);
+
+            const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+            if (summaryPath) {
+              fs.appendFileSync(
+                summaryPath,
+                `DeepSeek review submitted (${event}) to PR #${prNumber}: ${url}\n`
               );
             }

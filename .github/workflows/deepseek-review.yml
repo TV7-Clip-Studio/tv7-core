@@ -187,11 +187,32 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const fs = require('fs');
+            const content = (process.env.DEEPSEEK_CONTENT || '').trim();
+            if (!content) {
+              throw new Error('DeepSeek content is empty; aborting comment.');
+            }
+
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
             const body = `### DeepSeek review
-            ${process.env.DEEPSEEK_CONTENT}`;
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
+            ${content}`;
+
+            const res = await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prNumber,
               body,
             });
+
+            const url = res?.data?.html_url || '(unknown)';
+            console.log(`Posted DeepSeek comment to PR #${prNumber}: ${url}`);
+
+            const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+            if (summaryPath) {
+              fs.appendFileSync(
+                summaryPath,
+                `DeepSeek comment posted to PR #${prNumber}: ${url}\n`
+              );
+            }

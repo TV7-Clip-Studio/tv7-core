@@ -142,7 +142,7 @@ Responsibilities:
 Responsibilities:
 
 - Canonical, versioned documentation for architecture, API contracts, and runbooks.
-- Lives in the `tv7-core` repo; mount it into each `tv7-*` codebase via symlinks (see `docs/symlink-map.md`) to keep all teams aligned.
+- Lives in the `tv7-core` repo; mount it into each `tv7-*` codebase via symlinks (`docs/core -> ../../tv7-core/docs`) to keep all teams aligned.
 - Update docs once in `tv7-core`; symlinks keep downstream views current without bumping submodule pointers.
 
 ## 4. App ↔ Backend Interactions

@@ -21,11 +21,10 @@
 
 ## Mounting in other repos (symlinked)
 - Ensure `tv7-core` is a sibling directory to each repo (see layout above).
-- Add symlinks so shared assets are visible in each repo (tracked as links, content lives in `tv7-core`):
-  - `docs/core -> ../tv7-core/docs`
-  - `docs/high-architecture -> ../tv7-core/docs/high-architecture`
-  - `docs/roadmaps -> ../tv7-core/docs/roadmaps`
+- Add symlinks so shared assets are visible in each repo (tracked as links, content lives in `tv7-core`). From repo root:
+  - `docs/core -> ../../tv7-core/docs` (note the extra `..` because the link lives inside `docs/`)
   - `Makefile.core -> ../tv7-core/tooling/Makefile.core`
+- Bootstrap (`make bootstrap` or `make sync`) will ensure these symlinks exist if the repo is present.
 - Example (from inside a repo, e.g., `tv7-fastapi-backend`):
   ```
   ln -s ../tv7-core/docs docs/core
@@ -33,7 +32,7 @@
   ln -s ../tv7-core/docs/roadmaps docs/roadmaps
   ln -s ../tv7-core/tooling/Makefile.core Makefile.core
   ```
-- Symlink map and repo handoff steps live in `docs/symlink-map.md`.
+  - Bootstrap ensures symlinks; see `tooling/bootstrap-repos.sh` for details.
 
 ## Editing workflow (day-to-day)
 - Open shared docs/tooling through the symlink in the repo you are working in.

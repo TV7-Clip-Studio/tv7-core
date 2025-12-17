@@ -9,10 +9,12 @@
 3.  **Secrets are Fatal**: If you see a secret or token, STOP. Never log it, never commit it.
 
 ## 3. The Standard Workflow
-1.  **Plan**: Analyze the request. Check `tv7-core/docs` for architecture. Output a clear Plan.
-2.  **Wait**: Do not touch a single code file until the user approves.
-3.  **Execute**: Implement the plan step-by-step.
-4.  **Verify**: Run the project-specific linter/test command.
+1.  **Claim**: Check `tv7-core/docs/roadmap.md`. Mark your task `IN_PROGRESS` (Rule: One owner only).
+2.  **Plan**: Analyze the request. Check `tv7-core/docs` for architecture. Output a clear Plan.
+3.  **Wait**: Do not touch a single code file until the user approves.
+4.  **Execute**: Implement the plan step-by-step.
+5.  **Verify**: Run the project-specific linter/test command.
+6.  **Complete**: Mark `roadmap.md` task `DONE` and add status subtitle (`**STATUS** | AGENT | DATE`).
 
 ## 4. Cross-Repo Protocol
 - **Need to change shared docs?** → Ask user to switch to `tv7-core` (or use the Architect Agent).

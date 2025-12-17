@@ -82,15 +82,10 @@ Determine your agent role based on the current working directory:
 
 Before anything else, read and internalize:
 
-tv7-core/docs/agents/agent-best-practices.md
+TV7/.agent/rules/project-context.md
+TV7/tv7-core/docs/
 
-You MUST follow all rules defined there:
-- Always start in Planning Mode.
-- Respect repo boundaries.
-- Produce cross-repo handoff plans unless explicitly authorized to modify multiple repos.
-- Provide suggested git metadata (branch name, commits, PR title/description).
-- Maintain coding standards per repo.
-- Avoid secrets and destructive actions.
+You MUST follow all rules defined there.
 
 Acknowledge with your detected agent type:
 

@@ -126,24 +126,21 @@ jobs:
             exit 0
           fi
 
-          # Load context files (fail gracefully if missing, though they should exist)
-          arch_doc=""
-          practices_doc=""
-          
-          if [ -f "$DOCS_PATH/tv7_high_architecture.md" ]; then
-            arch_doc=$(cat "$DOCS_PATH/tv7_high_architecture.md")
+          # Load all context files from docs/
+          docs_context=""
+          if [ -d "$DOCS_PATH" ]; then
+            for file in "$DOCS_PATH"/*.md; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                content=$(cat "$file")
+                docs_context="${docs_context}\n\n=== Documentation: ${filename} ===\n${content}"
+              fi
+            done
           else
-            echo "Warning: tv7_high_architecture.md not found in $DOCS_PATH"
+            echo "Warning: DOCS_PATH $DOCS_PATH not found."
           fi
 
-          if [ -f "$DOCS_PATH/agent-best-practices.md" ]; then
-            practices_doc=$(cat "$DOCS_PATH/agent-best-practices.md")
-          else
-             echo "Warning: agent-best-practices.md not found in $DOCS_PATH"
-          fi
-
-          export ARCH_DOC="$arch_doc"
-          export PRACTICES_DOC="$practices_doc"
+          export DOCS_CONTEXT="$docs_context"
 
           if [ -z "${PROJECT_CONTEXT:-}" ]; then
             echo "No project_context provided; using default context."
@@ -155,8 +152,7 @@ jobs:
 
           diff = Path(sys.argv[1]).read_text(encoding="utf-8")
           context = os.environ.get("PROJECT_CONTEXT") or "General Codebase (context not provided)"
-          arch_doc = os.environ.get("ARCH_DOC") or ""
-          practices_doc = os.environ.get("PRACTICES_DOC") or ""
+          docs_context = os.environ.get("DOCS_CONTEXT") or ""
 
           # Build the composite system prompt
           system_prompt_parts = [
@@ -165,14 +161,10 @@ jobs:
               "",
           ]
 
-          if arch_doc:
-              system_prompt_parts.append("## TV7 High-Level Architecture")
-              system_prompt_parts.append(arch_doc)
-              system_prompt_parts.append("")
-          
-          if practices_doc:
-              system_prompt_parts.append("## TV7 Agent Best Practices & Coding Standards")
-              system_prompt_parts.append(practices_doc)
+          if docs_context:
+              system_prompt_parts.append("## TV7 Project Documentation")
+              system_prompt_parts.append("The following documentation files provide architectural context and best practices:")
+              system_prompt_parts.append(docs_context)
               system_prompt_parts.append("")
 
           system_prompt_parts.extend([

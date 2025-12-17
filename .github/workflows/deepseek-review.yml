@@ -40,6 +40,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout tv7-core docs (context)
+        uses: actions/checkout@v4
+        with:
+          repository: TV7-Clip-Studio/tv7-core
+          path: temp-tv7-core-docs
+          sparse-checkout: |
+            docs
+          fetch-depth: 1
+
       - name: Guard - branch and change thresholds
         id: guard
         shell: bash
@@ -109,12 +118,29 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           DIFF_PATH: /tmp/pr_diff.txt
           PROJECT_CONTEXT: ${{ inputs.project_context }}
+          DOCS_PATH: temp-tv7-core-docs/docs
         run: |
           set -eo pipefail
           if [ ! -s "$DIFF_PATH" ]; then
             echo "No diff content found; skipping call."
             exit 0
           fi
+
+          # Load all context files from docs/
+          docs_context=""
+          if [ -d "$DOCS_PATH" ]; then
+            for file in "$DOCS_PATH"/*.md; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                content=$(cat "$file")
+                docs_context="${docs_context}\n\n=== Documentation: ${filename} ===\n${content}"
+              fi
+            done
+          else
+            echo "Warning: DOCS_PATH $DOCS_PATH not found."
+          fi
+
+          export DOCS_CONTEXT="$docs_context"
 
           if [ -z "${PROJECT_CONTEXT:-}" ]; then
             echo "No project_context provided; using default context."
@@ -126,21 +152,34 @@ jobs:
 
           diff = Path(sys.argv[1]).read_text(encoding="utf-8")
           context = os.environ.get("PROJECT_CONTEXT") or "General Codebase (context not provided)"
+          docs_context = os.environ.get("DOCS_CONTEXT") or ""
 
-          system_prompt = (
-              "You are a senior code reviewer. Use the provided project context to interpret APIs and patterns.\n"
-              f"Project context: {context}\n"
-              "- If an API or symbol is unfamiliar, assume it may be project-defined; avoid claiming it does not exist.\n"
-              "- Use version information to reason about availability; do not suggest downgrades to older APIs.\n"
-              "- Prioritize logic errors, security issues, edge cases, and architectural risks.\n"
-              "- Be concise and high-signal. Do not restate diffs."
-              "At the end of your review, add one final line in this format:\n"
-              "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)\n"
-              "Use APPROVED when remaining issues are minor or non-blocking. "
-              "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. "
-              "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score.\n"
+          # Build the composite system prompt
+          system_prompt_parts = [
+              "You are a senior code reviewer. Use the provided project context to interpret APIs and patterns.",
+              f"Project context: {context}",
+              "",
+          ]
 
-          )
+          if docs_context:
+              system_prompt_parts.append("## TV7 Project Documentation")
+              system_prompt_parts.append("The following documentation files provide architectural context and best practices:")
+              system_prompt_parts.append(docs_context)
+              system_prompt_parts.append("")
+
+          system_prompt_parts.extend([
+              "- If an API or symbol is unfamiliar, assume it may be project-defined; avoid claiming it does not exist.",
+              "- Use version information to reason about availability; do not suggest downgrades to older APIs.",
+              "- Prioritize logic errors, security issues, edge cases, and architectural risks.",
+              "- Be concise and high-signal. Do not restate diffs.",
+              "At the end of your review, add one final line in this format:",
+              "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)",
+              "Use APPROVED when remaining issues are minor or non-blocking. ",
+              "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. ",
+              "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score."
+          ])
+
+          system_prompt = "\n".join(system_prompt_parts)
 
           payload = {
               "model": "deepseek-coder",
@@ -201,44 +240,6 @@ jobs:
             echo "verdict=$verdict"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Post DeepSeek feedback as PR comment
-        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
-        uses: actions/github-script@v7
-        env:
-          DEEPSEEK_CONTENT: ${{ steps.deepseek.outputs.content }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const content = (process.env.DEEPSEEK_CONTENT || '').trim();
-            if (!content) {
-              throw new Error('DeepSeek content is empty; aborting comment.');
-            }
-
-            const prNumber = context.payload.pull_request.number;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const body = `### DeepSeek review
-            ${content}`;
-
-            const res = await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: prNumber,
-              body,
-            });
-
-            const url = res?.data?.html_url || '(unknown)';
-            console.log(`Posted DeepSeek comment to PR #${prNumber}: ${url}`);
-
-            const summaryPath = process.env.GITHUB_STEP_SUMMARY;
-            if (summaryPath) {
-              fs.appendFileSync(
-                summaryPath,
-                `DeepSeek comment posted to PR #${prNumber}: ${url}\n`
-              );
-            }
-
       - name: Submit DeepSeek review (approve or request changes)
         if: steps.guard.outputs.should-run == 'true' && steps.verdict.outputs.verdict != ''
         uses: actions/github-script@v7
@@ -261,7 +262,7 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            const body = `### DeepSeek review (${verdictLine || event})
+            const body = `### DeepSeek review
             ${content}`;
 
             let finalEvent = event;

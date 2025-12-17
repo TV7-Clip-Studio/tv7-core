@@ -40,6 +40,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout tv7-core docs (context)
+        uses: actions/checkout@v4
+        with:
+          repository: TV7-Clip-Studio/tv7-core
+          path: temp-tv7-core-docs
+          sparse-checkout: |
+            docs
+          fetch-depth: 1
+
       - name: Guard - branch and change thresholds
         id: guard
         shell: bash
@@ -109,12 +118,32 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           DIFF_PATH: /tmp/pr_diff.txt
           PROJECT_CONTEXT: ${{ inputs.project_context }}
+          DOCS_PATH: temp-tv7-core-docs/docs
         run: |
           set -eo pipefail
           if [ ! -s "$DIFF_PATH" ]; then
             echo "No diff content found; skipping call."
             exit 0
           fi
+
+          # Load context files (fail gracefully if missing, though they should exist)
+          arch_doc=""
+          practices_doc=""
+          
+          if [ -f "$DOCS_PATH/tv7_high_architecture.md" ]; then
+            arch_doc=$(cat "$DOCS_PATH/tv7_high_architecture.md")
+          else
+            echo "Warning: tv7_high_architecture.md not found in $DOCS_PATH"
+          fi
+
+          if [ -f "$DOCS_PATH/agent-best-practices.md" ]; then
+            practices_doc=$(cat "$DOCS_PATH/agent-best-practices.md")
+          else
+             echo "Warning: agent-best-practices.md not found in $DOCS_PATH"
+          fi
+
+          export ARCH_DOC="$arch_doc"
+          export PRACTICES_DOC="$practices_doc"
 
           if [ -z "${PROJECT_CONTEXT:-}" ]; then
             echo "No project_context provided; using default context."
@@ -126,21 +155,39 @@ jobs:
 
           diff = Path(sys.argv[1]).read_text(encoding="utf-8")
           context = os.environ.get("PROJECT_CONTEXT") or "General Codebase (context not provided)"
+          arch_doc = os.environ.get("ARCH_DOC") or ""
+          practices_doc = os.environ.get("PRACTICES_DOC") or ""
 
-          system_prompt = (
-              "You are a senior code reviewer. Use the provided project context to interpret APIs and patterns.\n"
-              f"Project context: {context}\n"
-              "- If an API or symbol is unfamiliar, assume it may be project-defined; avoid claiming it does not exist.\n"
-              "- Use version information to reason about availability; do not suggest downgrades to older APIs.\n"
-              "- Prioritize logic errors, security issues, edge cases, and architectural risks.\n"
-              "- Be concise and high-signal. Do not restate diffs."
-              "At the end of your review, add one final line in this format:\n"
-              "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)\n"
-              "Use APPROVED when remaining issues are minor or non-blocking. "
-              "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. "
-              "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score.\n"
+          # Build the composite system prompt
+          system_prompt_parts = [
+              "You are a senior code reviewer. Use the provided project context to interpret APIs and patterns.",
+              f"Project context: {context}",
+              "",
+          ]
 
-          )
+          if arch_doc:
+              system_prompt_parts.append("## TV7 High-Level Architecture")
+              system_prompt_parts.append(arch_doc)
+              system_prompt_parts.append("")
+          
+          if practices_doc:
+              system_prompt_parts.append("## TV7 Agent Best Practices & Coding Standards")
+              system_prompt_parts.append(practices_doc)
+              system_prompt_parts.append("")
+
+          system_prompt_parts.extend([
+              "- If an API or symbol is unfamiliar, assume it may be project-defined; avoid claiming it does not exist.",
+              "- Use version information to reason about availability; do not suggest downgrades to older APIs.",
+              "- Prioritize logic errors, security issues, edge cases, and architectural risks.",
+              "- Be concise and high-signal. Do not restate diffs.",
+              "At the end of your review, add one final line in this format:",
+              "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)",
+              "Use APPROVED when remaining issues are minor or non-blocking. ",
+              "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. ",
+              "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score."
+          ])
+
+          system_prompt = "\n".join(system_prompt_parts)
 
           payload = {
               "model": "deepseek-coder",

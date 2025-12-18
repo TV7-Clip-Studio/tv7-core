@@ -137,7 +137,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -eo pipefail
-          git diff --unified=3 --no-color "$BASE_SHA" "$HEAD_SHA" | head -c 120000 > /tmp/pr_diff.txt
+          git diff --unified=3 --no-color "$BASE_SHA" "$HEAD_SHA" | head -c 350000 > /tmp/pr_diff.txt
           bytes=$(wc -c < /tmp/pr_diff.txt | tr -d ' ')
           echo "diff-bytes=$bytes" >> "$GITHUB_OUTPUT"
 

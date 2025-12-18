@@ -24,6 +24,13 @@ on:
         required: false
         type: string
         default: "General Codebase (context not provided)"
+    secrets:
+      DEEPSEEK_API_KEY:
+        required: true
+      TV7_CORE_APP_ID:
+        required: false
+      TV7_CORE_APP_PRIVATE_KEY:
+        required: false
 
 jobs:
   deepseek-review:
@@ -49,6 +56,12 @@ jobs:
           owner: TV7-Clip-Studio
           repositories: tv7-core
         continue-on-error: true
+
+      - name: Debug app token minted
+        run: |
+          echo "Has app id? ${{ secrets.TV7_CORE_APP_ID != '' }}"
+          echo "Has private key? ${{ secrets.TV7_CORE_APP_PRIVATE_KEY != '' }}"
+          echo "Token present? ${{ steps.app-token.outputs.token != '' }}"
 
       - name: Checkout tv7-core docs (context)
         if: steps.app-token.outputs.token != ''

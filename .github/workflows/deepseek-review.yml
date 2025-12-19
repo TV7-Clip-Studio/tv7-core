@@ -169,7 +169,7 @@ jobs:
 
           base = os.environ["BASE_SHA"]
           head = os.environ["HEAD_SHA"]
-          cap = int(os.environ.get("SUMMARY_CAP_BYTES", "200000"))
+          cap_bytes = int(os.environ.get("SUMMARY_CAP_BYTES", "200000"))
           summary_path = Path("/tmp/pr_summary.txt")
 
           def run(cmd: list[str]) -> list[str]:
@@ -214,17 +214,18 @@ jobs:
               lines.append(f"[{mark}] {path}")
 
           text = "\n".join(lines)
-          data = text.encode("utf-8")
           truncated = False
-          if len(data) > cap:
+          # Truncate safely on character boundaries until encoded length <= cap_bytes
+          while len(text.encode("utf-8")) > cap_bytes:
             truncated = True
-            # simple truncation by bytes
-            data = data[:cap]
-            text = data.decode("utf-8", errors="ignore")
-            text += "\n\n[summary truncated at {cap} bytes]"
+            # remove a chunk to speed up trimming on very large summaries
+            text = text[:-1000] if len(text) > 1000 else text[:-1]
+          if truncated:
+            text += f"\n\n[summary truncated at {cap_bytes} bytes]"
 
+          encoded = text.encode("utf-8")
           summary_path.write_text(text, encoding="utf-8")
-          print(f"summary-bytes={len(data)}")
+          print(f"summary-bytes={len(encoded)}")
           if truncated:
             print("summary-truncated=true")
           PY
@@ -250,16 +251,28 @@ jobs:
 
           # Load allowed context files from docs/
           docs_context=""
+          safe_arch_doc=""
+          if [ -n "${ARCH_DOC:-}" ]; then
+            # validate: basename only, no slash/.., must end with .md
+            if [[ "$ARCH_DOC" != */* && "$ARCH_DOC" != *..* && "$ARCH_DOC" == *.md ]]; then
+              safe_arch_doc="$ARCH_DOC"
+            else
+              echo "Warning: ARCH_DOC '${ARCH_DOC}' is invalid (must be basename ending in .md); ignoring."
+            fi
+          fi
+
           if [ -d "$DOCS_PATH" ]; then
             files_to_include="tv7_high_architecture.md roadmap.md"
-            if [ -n "${ARCH_DOC:-}" ]; then
-              files_to_include="$files_to_include ${ARCH_DOC}"
+            if [ -n "$safe_arch_doc" ]; then
+              files_to_include="$files_to_include $safe_arch_doc"
             fi
             for filename in $files_to_include; do
               file="$DOCS_PATH/$filename"
               if [ -f "$file" ]; then
                 content=$(cat "$file")
                 docs_context="${docs_context}\n\n=== Documentation: ${filename} ===\n${content}"
+              else
+                echo "Warning: docs file not found: $file"
               fi
             done
           fi

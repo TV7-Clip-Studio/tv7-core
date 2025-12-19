@@ -34,6 +34,11 @@ on:
         required: false
         type: string
         default: "tv7_high_architecture.md roadmap.md"
+      update_pr_meta:
+        description: "If true, use PR_TITLE / PR_SUMMARY from DeepSeek output to update the PR title/body (with safeguards)."
+        required: false
+        type: boolean
+        default: true
     secrets:
       DEEPSEEK_API_KEY:
         required: true
@@ -350,7 +355,7 @@ jobs:
               "- At the top of your response, provide a copy-pasteable PR title, a 2-4 sentence summary of the changes and the veredict in this format:",
               "PR_TITLE: <concise title>",
               "PR_SUMMARY: <short summary>",
-              "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)",
+              "FINAL_VERDICT: ✅ APPROVED (NN%) or FINAL_VERDICT: ❌ REJECTED (NN%)",
               "Use APPROVED when remaining issues are minor or non-blocking. ",
               "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. ",
               "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score."
@@ -416,6 +421,23 @@ jobs:
           {
             echo "line=$line"
             echo "verdict=$verdict"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Parse PR title/summary from DeepSeek content
+        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
+        id: prmeta
+        shell: bash
+        env:
+          CONTENT: ${{ steps.deepseek.outputs.content }}
+        run: |
+          set -eo pipefail
+          pr_title=$(printf "%s\n" "$CONTENT" | grep -E '^PR_TITLE:' | head -1 | sed 's/^PR_TITLE:[[:space:]]*//')
+          pr_summary=$(printf "%s\n" "$CONTENT" | grep -E '^PR_SUMMARY:' | head -1 | sed 's/^PR_SUMMARY:[[:space:]]*//')
+          echo "title=$pr_title"
+          echo "summary=$pr_summary"
+          {
+            echo "title=$pr_title"
+            echo "summary=$pr_summary"
           } >> "$GITHUB_OUTPUT"
 
       - name: Submit DeepSeek review (approve or request changes)
@@ -484,4 +506,77 @@ jobs:
                 summaryPath,
                 `DeepSeek review submitted (${finalEvent}) to PR #${prNumber}: ${url}\n`
               );
+            }
+
+      - name: Update PR title/body from DeepSeek metadata
+        if: steps.guard.outputs.should-run == 'true' && inputs.update_pr_meta && steps.prmeta.outputs.title != '' && steps.prmeta.outputs.summary != ''
+        uses: actions/github-script@v7
+        env:
+          DS_TITLE: ${{ steps.prmeta.outputs.title }}
+          DS_SUMMARY: ${{ steps.prmeta.outputs.summary }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const dsTitle = (process.env.DS_TITLE || '').trim();
+            const dsSummary = (process.env.DS_SUMMARY || '').trim();
+            if (!dsTitle || !dsSummary) {
+              console.log('No DeepSeek title/summary to apply.');
+              return;
+            }
+
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            const currentTitle = pr.title || '';
+            const currentBody = pr.body || '';
+
+            // Safeguard: if author explicitly marked title with "author:" prefix, do not override.
+            const blocked = currentTitle.toLowerCase().startsWith('author:');
+
+            let newTitle = currentTitle;
+            if (!blocked) {
+              newTitle = dsTitle;
+            } else {
+              console.log('Current title marked as author-owned; not overriding.');
+            }
+
+            // Upsert AI Summary section in body
+            const aiHeader = '## AI Summary';
+            let newBody;
+            if (!currentBody || /^\s*$/m.test(currentBody)) {
+              newBody = `${aiHeader}\n${dsSummary}\n`;
+            } else if (currentBody.includes(aiHeader)) {
+              // replace existing AI Summary section (simple replace)
+              const pattern = new RegExp(`${aiHeader}[\\s\\S]*?(\\n## |$)`, 'm');
+              if (pattern.test(currentBody)) {
+                newBody = currentBody.replace(pattern, `${aiHeader}\n${dsSummary}\n$1`).trimEnd();
+              } else {
+                newBody = `${currentBody.trimEnd()}\n\n${aiHeader}\n${dsSummary}\n`;
+              }
+            } else {
+              newBody = `${currentBody.trimEnd()}\n\n${aiHeader}\n${dsSummary}\n`;
+            }
+
+            const patch = {};
+            if (newTitle !== currentTitle) patch.title = newTitle;
+            if (newBody !== currentBody) patch.body = newBody;
+
+            if (Object.keys(patch).length === 0) {
+              console.log('No PR metadata changes to apply.');
+              return;
+            }
+
+            await github.rest.pulls.update({
+              owner,
+              repo,
+              pull_number: prNumber,
+              ...patch,
+            });
+
+            const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+            if (summaryPath) {
+              const lines = [`PR metadata updated:`, `- title: ${newTitle !== currentTitle ? 'updated' : 'unchanged'}`, `- body: ${newBody !== currentBody ? 'updated (AI Summary section)' : 'unchanged'}`];
+              require('fs').appendFileSync(summaryPath, lines.join('\n') + '\n');
             }

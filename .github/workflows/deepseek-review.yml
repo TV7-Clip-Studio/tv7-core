@@ -29,6 +29,11 @@ on:
         required: false
         type: string
         default: ""
+      core_doc_list:
+        description: "Space-separated list of core docs (filenames in docs/) to include (default: tv7_high_architecture.md roadmap.md)."
+        required: false
+        type: string
+        default: "tv7_high_architecture.md roadmap.md"
     secrets:
       DEEPSEEK_API_KEY:
         required: true
@@ -231,6 +236,15 @@ jobs:
           PY
           echo "summary-path=/tmp/pr_summary.txt" >> "$GITHUB_OUTPUT"
 
+      - name: Log context inputs
+        if: steps.guard.outputs.should-run == 'true'
+        run: |
+          summary_bytes=$(wc -c < /tmp/pr_summary.txt 2>/dev/null || echo 0)
+          diff_bytes=$(wc -c < /tmp/pr_diff.txt 2>/dev/null || echo 0)
+          echo "Context: summary bytes=${summary_bytes}, diff bytes=${diff_bytes}"
+          echo "Requested architecture_doc='${{ inputs.architecture_doc }}'"
+          echo "Core doc list='${{ inputs.core_doc_list }}'"
+
       - name: Call DeepSeek
         if: steps.guard.outputs.should-run == 'true'
         id: deepseek
@@ -242,6 +256,7 @@ jobs:
           PROJECT_CONTEXT: ${{ inputs.project_context }}
           DOCS_PATH: temp-tv7-core-docs/docs
           ARCH_DOC: ${{ inputs.architecture_doc }}
+          CORE_DOC_LIST: ${{ inputs.core_doc_list }}
         run: |
           set -eo pipefail
           if [ ! -s "$DIFF_PATH" ]; then
@@ -252,6 +267,19 @@ jobs:
           # Load allowed context files from docs/
           docs_context=""
           safe_arch_doc=""
+          safe_core_docs=()
+
+          # validate and collect core doc list
+          if [ -n "${CORE_DOC_LIST:-}" ]; then
+            for candidate in ${CORE_DOC_LIST}; do
+              if [[ "$candidate" != */* && "$candidate" != *..* && "$candidate" == *.md ]]; then
+                safe_core_docs+=("$candidate")
+              else
+                echo "Warning: core doc '${candidate}' is invalid (must be basename ending in .md); ignoring."
+              fi
+            done
+          fi
+
           if [ -n "${ARCH_DOC:-}" ]; then
             # validate: basename only, no slash/.., must end with .md
             if [[ "$ARCH_DOC" != */* && "$ARCH_DOC" != *..* && "$ARCH_DOC" == *.md ]]; then
@@ -262,7 +290,7 @@ jobs:
           fi
 
           if [ -d "$DOCS_PATH" ]; then
-            files_to_include="tv7_high_architecture.md roadmap.md"
+            files_to_include="${safe_core_docs[*]}"
             if [ -n "$safe_arch_doc" ]; then
               files_to_include="$files_to_include $safe_arch_doc"
             fi

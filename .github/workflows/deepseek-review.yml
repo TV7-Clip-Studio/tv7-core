@@ -24,6 +24,11 @@ on:
         required: false
         type: string
         default: "General Codebase (context not provided)"
+      architecture_doc:
+        description: "Single architecture doc filename from tv7-core/docs to include (e.g., backend_architecture.md)."
+        required: false
+        type: string
+        default: ""
     secrets:
       DEEPSEEK_API_KEY:
         required: true
@@ -49,6 +54,7 @@ jobs:
 
       - name: Create GitHub App token (tv7-core docs)
         id: app-token
+        if: github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/create-github-app-token@v1
         with:
           app-id: ${{ secrets.TV7_CORE_APP_ID }}
@@ -89,6 +95,8 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
         run: |
           set -eo pipefail
           should_run=true
@@ -98,6 +106,9 @@ jobs:
           if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
             should_run=false
             reason="Not a pull_request event; skipping"
+          elif [ "$HEAD_REPO" != "$BASE_REPO" ]; then
+            should_run=false
+            reason="Fork PR detected; DeepSeek review disabled for forks"
           else
             changed_lines=$(git diff --numstat "$BASE_SHA" "$HEAD_SHA" | awk '{add+=$1; del+=$2} END {print add+del+0}')
             match=false
@@ -128,7 +139,7 @@ jobs:
         run: |
           echo "Skipping DeepSeek review: ${{ steps.guard.outputs.reason }}"
 
-      - name: Collect PR diff (truncated for cost control)
+      - name: Collect PR diff (full, unified=0)
         if: steps.guard.outputs.should-run == 'true'
         id: diff
         shell: bash
@@ -137,9 +148,87 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -eo pipefail
-          git diff --unified=3 --no-color "$BASE_SHA" "$HEAD_SHA" | head -c 500000 > /tmp/pr_diff.txt
+          git diff --unified=0 --no-color "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_diff.txt
           bytes=$(wc -c < /tmp/pr_diff.txt | tr -d ' ')
           echo "diff-bytes=$bytes" >> "$GITHUB_OUTPUT"
+
+      - name: Build PR summary (changed files + repo file map)
+        if: steps.guard.outputs.should-run == 'true'
+        id: summary
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SUMMARY_CAP_BYTES: 200000
+        run: |
+          set -eo pipefail
+          python - <<'PY'
+          import os
+          import subprocess
+          from pathlib import Path
+
+          base = os.environ["BASE_SHA"]
+          head = os.environ["HEAD_SHA"]
+          cap = int(os.environ.get("SUMMARY_CAP_BYTES", "200000"))
+          summary_path = Path("/tmp/pr_summary.txt")
+
+          def run(cmd: list[str]) -> list[str]:
+            out = subprocess.check_output(cmd, text=True)
+            return [line for line in out.splitlines() if line.strip()]
+
+          name_status = run(["git", "diff", "--name-status", base, head])
+          numstat = run(["git", "diff", "--numstat", base, head])
+          file_list = run(["git", "ls-tree", "-r", "--name-only", head])
+
+          status_map: dict[str, str] = {}
+          for line in name_status:
+            parts = line.split("\t", 1)
+            if len(parts) != 2:
+              continue
+            status, path = parts
+            status_map[path] = status
+
+          adds_dels: dict[str, tuple[str, str]] = {}
+          for line in numstat:
+            parts = line.split("\t")
+            if len(parts) >= 3:
+              add, delete, path = parts[0], parts[1], parts[2]
+              adds_dels[path] = (add, delete)
+
+          lines: list[str] = []
+          lines.append("=== Changed files (status add/del) ===")
+          if not status_map:
+            lines.append("(none)")
+          else:
+            for path, status in status_map.items():
+              add, delete = adds_dels.get(path, ("-", "-"))
+              lines.append(f"[{status}] +{add}/-{delete} {path}")
+
+          lines.append("")
+          lines.append("=== Repo files (marked if changed) ===")
+          if not file_list:
+            lines.append("(none)")
+          else:
+            for path in file_list:
+              mark = status_map.get(path, " ")
+              lines.append(f"[{mark}] {path}")
+
+          text = "\n".join(lines)
+          data = text.encode("utf-8")
+          truncated = False
+          if len(data) > cap:
+            truncated = True
+            # simple truncation by bytes
+            data = data[:cap]
+            text = data.decode("utf-8", errors="ignore")
+            text += "\n\n[summary truncated at {cap} bytes]"
+
+          summary_path.write_text(text, encoding="utf-8")
+          print(f"summary-bytes={len(data)}")
+          if truncated:
+            print("summary-truncated=true")
+          PY
+          echo "summary-path=/tmp/pr_summary.txt" >> "$GITHUB_OUTPUT"
 
       - name: Call DeepSeek
         if: steps.guard.outputs.should-run == 'true'
@@ -148,8 +237,10 @@ jobs:
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           DIFF_PATH: /tmp/pr_diff.txt
+          SUMMARY_PATH: /tmp/pr_summary.txt
           PROJECT_CONTEXT: ${{ inputs.project_context }}
           DOCS_PATH: temp-tv7-core-docs/docs
+          ARCH_DOC: ${{ inputs.architecture_doc }}
         run: |
           set -eo pipefail
           if [ ! -s "$DIFF_PATH" ]; then
@@ -157,18 +248,23 @@ jobs:
             exit 0
           fi
 
-          # Load all context files from docs/
+          # Load allowed context files from docs/
           docs_context=""
           if [ -d "$DOCS_PATH" ]; then
-            for file in "$DOCS_PATH"/*.md; do
+            files_to_include="tv7_high_architecture.md roadmap.md"
+            if [ -n "${ARCH_DOC:-}" ]; then
+              files_to_include="$files_to_include ${ARCH_DOC}"
+            fi
+            for filename in $files_to_include; do
+              file="$DOCS_PATH/$filename"
               if [ -f "$file" ]; then
-                filename=$(basename "$file")
                 content=$(cat "$file")
                 docs_context="${docs_context}\n\n=== Documentation: ${filename} ===\n${content}"
               fi
             done
-          else
-            echo "Warning: DOCS_PATH $DOCS_PATH not found."
+          fi
+          if [ -z "$docs_context" ]; then
+            echo "Warning: No docs context loaded (missing files or docs checkout unavailable)."
           fi
 
           export DOCS_CONTEXT="$docs_context"
@@ -176,6 +272,12 @@ jobs:
           if [ -z "${PROJECT_CONTEXT:-}" ]; then
             echo "No project_context provided; using default context."
           fi
+          if [ -s "${SUMMARY_PATH:-}" ]; then
+            SUMMARY_BLOCK=$(cat "$SUMMARY_PATH")
+          else
+            SUMMARY_BLOCK=""
+          fi
+          export SUMMARY_BLOCK
 
           payload=$(python - "$DIFF_PATH" << 'PY'
           import json, os, sys
@@ -184,6 +286,7 @@ jobs:
           diff = Path(sys.argv[1]).read_text(encoding="utf-8")
           context = os.environ.get("PROJECT_CONTEXT") or "General Codebase (context not provided)"
           docs_context = os.environ.get("DOCS_CONTEXT") or ""
+          summary_block = os.environ.get("SUMMARY_BLOCK") or ""
 
           # Build the composite system prompt
           system_prompt_parts = [
@@ -216,7 +319,7 @@ jobs:
               "model": "deepseek-coder",
               "messages": [
                   {"role": "system", "content": system_prompt},
-                  {"role": "user", "content": f"Review this PR diff:\\n\\n{diff}"},
+                  {"role": "user", "content": f"Repository summary:\\n{summary_block}\\n\\nReview this PR diff (unified=0):\\n\\n{diff}"},
               ],
               "temperature": 0.2,
           }

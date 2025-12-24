@@ -352,14 +352,16 @@ jobs:
               "- Use version information to reason about availability; do not suggest downgrades to older APIs.",
               "- Prioritize logic errors, security issues, edge cases, and architectural risks.",
               "- Be concise and high-signal. Do not restate diffs.",
-              "- At the top of your response, provide a copy-pasteable PR title, a 2-4 sentence summary of the changes and the veredict in this format:",
+              "- At the top of your response, provide a copy-pasteable PR title and a 2-4 sentence summary of the changes in this format:",
               "PR_TITLE: <concise title>",
               "PR_SUMMARY: <short summary>",
-              "FINAL_VERDICT: ✅ APPROVED (NN%) or FINAL_VERDICT: ❌ REJECTED (NN%)",
+              "Then continue with your review (key changes, risks, etc.) as usual.",
+              "- Present your key changes/summary as a numbered list.",
+              "At the end of your review, add one final line in this format:",
+              "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)",
               "Use APPROVED when remaining issues are minor or non-blocking. ",
               "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. ",
-              "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score."
-              "Then continue with your review (key changes, risks, etc.) as usual.",
+              "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score.",
           ])
 
           system_prompt = "\n".join(system_prompt_parts)
@@ -440,11 +442,34 @@ jobs:
             echo "summary=$pr_summary"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Prepare review body (strip PR_TITLE/PR_SUMMARY)
+        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
+        id: review_body
+        shell: bash
+        env:
+          CONTENT: ${{ steps.deepseek.outputs.content }}
+        run: |
+          set -eo pipefail
+          cleaned=$(python - <<'PY' "$CONTENT"
+import sys, re
+raw = sys.argv[1]
+lines = raw.splitlines()
+kept = [ln for ln in lines if not re.match(r'^PR_(TITLE|SUMMARY):', ln.strip())]
+text = "\n".join(kept).strip()
+if not text:
+    text = raw
+print(text)
+PY
+)
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$cleaned" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Submit DeepSeek review (approve or request changes)
         if: steps.guard.outputs.should-run == 'true' && steps.verdict.outputs.verdict != ''
         uses: actions/github-script@v7
         env:
-          DEEPSEEK_CONTENT: ${{ steps.deepseek.outputs.content }}
+          DEEPSEEK_CONTENT: ${{ steps.review_body.outputs.body }}
           VERDICT_EVENT: ${{ steps.verdict.outputs.verdict }}
           VERDICT_LINE: ${{ steps.verdict.outputs.line }}
         with:
@@ -514,11 +539,13 @@ jobs:
         env:
           DS_TITLE: ${{ steps.prmeta.outputs.title }}
           DS_SUMMARY: ${{ steps.prmeta.outputs.summary }}
+          DS_VERDICT_LINE: ${{ steps.verdict.outputs.line }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const dsTitle = (process.env.DS_TITLE || '').trim();
             const dsSummary = (process.env.DS_SUMMARY || '').trim();
+            const dsVerdictLine = (process.env.DS_VERDICT_LINE || '').trim();
             if (!dsTitle || !dsSummary) {
               console.log('No DeepSeek title/summary to apply.');
               return;
@@ -545,18 +572,16 @@ jobs:
             // Upsert AI Summary section in body
             const aiHeader = '## AI Summary';
             let newBody;
+            const aiBlock = `${aiHeader}\n${dsSummary}${dsVerdictLine ? `\n\n${dsVerdictLine}` : ''}\n`;
             if (!currentBody || /^\s*$/m.test(currentBody)) {
-              newBody = `${aiHeader}\n${dsSummary}\n`;
-            } else if (currentBody.includes(aiHeader)) {
-              // replace existing AI Summary section (simple replace)
+              newBody = aiBlock;
+            } else {
               const pattern = new RegExp(`${aiHeader}[\\s\\S]*?(\\n## |$)`, 'm');
               if (pattern.test(currentBody)) {
-                newBody = currentBody.replace(pattern, `${aiHeader}\n${dsSummary}\n$1`).trimEnd();
+                newBody = currentBody.replace(pattern, `${aiBlock}$1`).trimEnd();
               } else {
-                newBody = `${currentBody.trimEnd()}\n\n${aiHeader}\n${dsSummary}\n`;
+                newBody = `${currentBody.trimEnd()}\n\n${aiBlock}`;
               }
-            } else {
-              newBody = `${currentBody.trimEnd()}\n\n${aiHeader}\n${dsSummary}\n`;
             }
 
             const patch = {};

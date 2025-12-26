@@ -27,4 +27,5 @@ jobs:
     uses: ./.github/workflows/deepseek-review.yml
     with:
       project_context: ${{ needs.determine-context.outputs.info }}
+      architecture_doc: core_architecture.md
     secrets: inherit

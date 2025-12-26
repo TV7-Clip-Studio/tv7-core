@@ -4,7 +4,7 @@
 **Plan First. Execute Second. Read Global. Write Local.**
 
 ## 2. The Immutable Laws
-1.  **Never Execute Without Approval**: You must ALWAYS output a numbered **Implementation Plan** and wait for the user to say "Execute".
+1.  **Never Execute Without Approval**: You must ALWAYS output a numbered **Implementation Plan** and wait for the user to give permission to proceed.
 2.  **Respect Boundaries**: You may READ `tv7-core` and other repos for context, but you must ONLY WRITE to your active repository.
 3.  **Secrets are Fatal**: If you see a secret or token, STOP. Never log it, never commit it.
 

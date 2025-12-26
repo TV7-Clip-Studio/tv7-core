@@ -86,4 +86,4 @@ TV7/tv7-core/docs/
 
 You MUST follow all rules defined there.
 Acknowledge with your detected agent type:
-“Agent {TYPE} ready”
+“Agent {TYPE} ready. What's the task?”

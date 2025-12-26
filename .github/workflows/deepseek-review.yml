@@ -29,6 +29,16 @@ on:
         required: false
         type: string
         default: ""
+      core_doc_list:
+        description: "Space-separated list of core docs (filenames in docs/) to include (default: tv7_high_architecture.md roadmap.md)."
+        required: false
+        type: string
+        default: "tv7_high_architecture.md roadmap.md"
+      update_pr_meta:
+        description: "If true, use PR_TITLE / PR_SUMMARY from DeepSeek output to update the PR title/body (with safeguards)."
+        required: false
+        type: boolean
+        default: true
     secrets:
       DEEPSEEK_API_KEY:
         required: true
@@ -231,6 +241,15 @@ jobs:
           PY
           echo "summary-path=/tmp/pr_summary.txt" >> "$GITHUB_OUTPUT"
 
+      - name: Log context inputs
+        if: steps.guard.outputs.should-run == 'true'
+        run: |
+          summary_bytes=$(wc -c < /tmp/pr_summary.txt 2>/dev/null || echo 0)
+          diff_bytes=$(wc -c < /tmp/pr_diff.txt 2>/dev/null || echo 0)
+          echo "Context: summary bytes=${summary_bytes}, diff bytes=${diff_bytes}"
+          echo "Requested architecture_doc='${{ inputs.architecture_doc }}'"
+          echo "Core doc list='${{ inputs.core_doc_list }}'"
+
       - name: Call DeepSeek
         if: steps.guard.outputs.should-run == 'true'
         id: deepseek
@@ -242,6 +261,7 @@ jobs:
           PROJECT_CONTEXT: ${{ inputs.project_context }}
           DOCS_PATH: temp-tv7-core-docs/docs
           ARCH_DOC: ${{ inputs.architecture_doc }}
+          CORE_DOC_LIST: ${{ inputs.core_doc_list }}
         run: |
           set -eo pipefail
           if [ ! -s "$DIFF_PATH" ]; then
@@ -252,6 +272,19 @@ jobs:
           # Load allowed context files from docs/
           docs_context=""
           safe_arch_doc=""
+          safe_core_docs=()
+
+          # validate and collect core doc list
+          if [ -n "${CORE_DOC_LIST:-}" ]; then
+            for candidate in ${CORE_DOC_LIST}; do
+              if [[ "$candidate" != */* && "$candidate" != *..* && "$candidate" == *.md ]]; then
+                safe_core_docs+=("$candidate")
+              else
+                echo "Warning: core doc '${candidate}' is invalid (must be basename ending in .md); ignoring."
+              fi
+            done
+          fi
+
           if [ -n "${ARCH_DOC:-}" ]; then
             # validate: basename only, no slash/.., must end with .md
             if [[ "$ARCH_DOC" != */* && "$ARCH_DOC" != *..* && "$ARCH_DOC" == *.md ]]; then
@@ -262,7 +295,7 @@ jobs:
           fi
 
           if [ -d "$DOCS_PATH" ]; then
-            files_to_include="tv7_high_architecture.md roadmap.md"
+            files_to_include="${safe_core_docs[*]}"
             if [ -n "$safe_arch_doc" ]; then
               files_to_include="$files_to_include $safe_arch_doc"
             fi
@@ -319,11 +352,16 @@ jobs:
               "- Use version information to reason about availability; do not suggest downgrades to older APIs.",
               "- Prioritize logic errors, security issues, edge cases, and architectural risks.",
               "- Be concise and high-signal. Do not restate diffs.",
+              "- At the top of your response, provide a copy-pasteable PR title and a 2-4 sentence summary of the changes in this format:",
+              "PR_TITLE: <concise title>",
+              "PR_SUMMARY: <short summary>",
+              "Then continue with your review (key changes, risks, etc.) as usual.",
+              "- Present your key changes/summary as a numbered list.",
               "At the end of your review, add one final line in this format:",
               "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)",
               "Use APPROVED when remaining issues are minor or non-blocking. ",
               "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. ",
-              "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score."
+              "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score.",
           ])
 
           system_prompt = "\n".join(system_prompt_parts)
@@ -387,11 +425,51 @@ jobs:
             echo "verdict=$verdict"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Parse PR title/summary from DeepSeek content
+        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
+        id: prmeta
+        shell: bash
+        env:
+          CONTENT: ${{ steps.deepseek.outputs.content }}
+        run: |
+          set -eo pipefail
+          pr_title=$(printf "%s\n" "$CONTENT" | grep -E '^PR_TITLE:' | head -1 | sed 's/^PR_TITLE:[[:space:]]*//')
+          pr_summary=$(printf "%s\n" "$CONTENT" | grep -E '^PR_SUMMARY:' | head -1 | sed 's/^PR_SUMMARY:[[:space:]]*//')
+          echo "title=$pr_title"
+          echo "summary=$pr_summary"
+          {
+            echo "title=$pr_title"
+            echo "summary=$pr_summary"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Prepare review body (strip PR_TITLE/PR_SUMMARY)
+        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
+        id: review_body
+        shell: bash
+        env:
+          CONTENT: ${{ steps.deepseek.outputs.content }}
+        run: |
+          set -eo pipefail
+          cleaned=$(python - "$CONTENT" <<'PY'
+          import sys, re
+          raw = sys.argv[1]
+          lines = raw.splitlines()
+          kept = [ln for ln in lines if not re.match(r'^PR_(TITLE|SUMMARY):', ln.strip())]
+          text = "\n".join(kept).strip()
+          if not text:
+              text = raw
+          print(text)
+          PY
+          )
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$cleaned" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Submit DeepSeek review (approve or request changes)
         if: steps.guard.outputs.should-run == 'true' && steps.verdict.outputs.verdict != ''
         uses: actions/github-script@v7
         env:
-          DEEPSEEK_CONTENT: ${{ steps.deepseek.outputs.content }}
+          DEEPSEEK_CONTENT: ${{ steps.review_body.outputs.body }}
           VERDICT_EVENT: ${{ steps.verdict.outputs.verdict }}
           VERDICT_LINE: ${{ steps.verdict.outputs.line }}
         with:
@@ -453,4 +531,77 @@ jobs:
                 summaryPath,
                 `DeepSeek review submitted (${finalEvent}) to PR #${prNumber}: ${url}\n`
               );
+            }
+
+      - name: Update PR title/body from DeepSeek metadata
+        if: steps.guard.outputs.should-run == 'true' && inputs.update_pr_meta && steps.prmeta.outputs.title != '' && steps.prmeta.outputs.summary != ''
+        uses: actions/github-script@v7
+        env:
+          DS_TITLE: ${{ steps.prmeta.outputs.title }}
+          DS_SUMMARY: ${{ steps.prmeta.outputs.summary }}
+          DS_VERDICT_LINE: ${{ steps.verdict.outputs.line }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const dsTitle = (process.env.DS_TITLE || '').trim();
+            const dsSummary = (process.env.DS_SUMMARY || '').trim();
+            const dsVerdictLine = (process.env.DS_VERDICT_LINE || '').trim();
+            if (!dsTitle || !dsSummary) {
+              console.log('No DeepSeek title/summary to apply.');
+              return;
+            }
+
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            const currentTitle = pr.title || '';
+            const currentBody = pr.body || '';
+
+            // Safeguard: if author explicitly marked title with "author:" prefix, do not override.
+            const blocked = currentTitle.toLowerCase().startsWith('author:');
+
+            let newTitle = currentTitle;
+            if (!blocked) {
+              newTitle = dsTitle;
+            } else {
+              console.log('Current title marked as author-owned; not overriding.');
+            }
+
+            // Upsert AI Summary section in body
+            const aiHeader = '## AI Summary';
+            let newBody;
+            const aiBlock = `${aiHeader}\n${dsSummary}${dsVerdictLine ? `\n\n${dsVerdictLine}` : ''}\n`;
+            if (!currentBody || /^\s*$/m.test(currentBody)) {
+              newBody = aiBlock;
+            } else {
+              const pattern = new RegExp(`${aiHeader}[\\s\\S]*?(\\n## |$)`, 'm');
+              if (pattern.test(currentBody)) {
+                newBody = currentBody.replace(pattern, `${aiBlock}$1`).trimEnd();
+              } else {
+                newBody = `${currentBody.trimEnd()}\n\n${aiBlock}`;
+              }
+            }
+
+            const patch = {};
+            if (newTitle !== currentTitle) patch.title = newTitle;
+            if (newBody !== currentBody) patch.body = newBody;
+
+            if (Object.keys(patch).length === 0) {
+              console.log('No PR metadata changes to apply.');
+              return;
+            }
+
+            await github.rest.pulls.update({
+              owner,
+              repo,
+              pull_number: prNumber,
+              ...patch,
+            });
+
+            const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+            if (summaryPath) {
+              const lines = [`PR metadata updated:`, `- title: ${newTitle !== currentTitle ? 'updated' : 'unchanged'}`, `- body: ${newBody !== currentBody ? 'updated (AI Summary section)' : 'unchanged'}`];
+              require('fs').appendFileSync(summaryPath, lines.join('\n') + '\n');
             }

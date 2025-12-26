@@ -451,14 +451,14 @@ jobs:
         run: |
           set -eo pipefail
           cleaned=$(python - "$CONTENT" <<'PY'
-import sys, re
-raw = sys.argv[1]
-lines = raw.splitlines()
-kept = [ln for ln in lines if not re.match(r'^PR_(TITLE|SUMMARY):', ln.strip())]
-text = "\n".join(kept).strip()
-if not text:
-    text = raw
-print(text)
+          import sys, re
+          raw = sys.argv[1]
+          lines = raw.splitlines()
+          kept = [ln for ln in lines if not re.match(r'^PR_(TITLE|SUMMARY):', ln.strip())]
+          text = "\n".join(kept).strip()
+          if not text:
+              text = raw
+          print(text)
 PY
 )
           echo "body<<EOF" >> "$GITHUB_OUTPUT"

@@ -450,7 +450,7 @@ jobs:
           CONTENT: ${{ steps.deepseek.outputs.content }}
         run: |
           set -eo pipefail
-          cleaned=$(python - <<'PY' "$CONTENT"
+          cleaned=$(python - "$CONTENT" <<'PY'
 import sys, re
 raw = sys.argv[1]
 lines = raw.splitlines()

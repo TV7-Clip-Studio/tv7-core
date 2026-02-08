@@ -59,4 +59,7 @@ All tasks in this roadmap must follow this strict format to ensure visibility ac
     **BACKLOG** | Backend Agent | 2025-12-17 15:20
 
 ## Phase 3: Feature Development
-*To be populated after cleanup.*
+- [x] Optimize reusable DeepSeek review payload to avoid oversized API requests and skipped PR comments.
+    **COMPLETED** | Architect Agent | 2026-02-08 12:15
+    - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
+    - **NOTE**: Removed repo-wide file map context, excluded deleted-file hunks from diff payload (`--diff-filter=ACMRTUXB`), capped docs/diff context size, and switched DeepSeek request body to `--data-binary @payload_file` to avoid `curl` argv overflow.

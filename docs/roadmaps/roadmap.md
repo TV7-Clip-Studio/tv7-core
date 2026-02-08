@@ -1,5 +1,13 @@
 # TV7 Product Roadmap
 
+## Per-Repo Roadmaps (Source of Truth)
+- `tv7-core`: `docs/roadmaps/tv7-core-roadmap.md`
+- `tv7-fastapi-backend`: `docs/roadmaps/tv7-fastapi-backend-roadmap.md`
+- `tv7-fastapi-backend` off-roadmap: `docs/roadmaps/tv7-fastapi-backend-off-roadmap.md`
+- `tv7-flutter-studio`: `docs/roadmaps/tv7-flutter-studio-roadmap.md`
+- `tv7-astro-site`: `docs/roadmaps/tv7-astro-site-roadmap.md`
+- `tv7-axum-engine`: `docs/roadmaps/tv7-axum-engine-roadmap.md`
+
 ### Task Model & Coordination Rules
 All tasks in this roadmap must follow this strict format to ensure visibility across agents.
 
@@ -15,7 +23,7 @@ All tasks in this roadmap must follow this strict format to ensure visibility ac
 ```
 
 #### Workflow Rules
-1.  **Start**: Change checkbox to `[/]`. Set `STATUS: IN-PROGRESS`. Assign `AGENT` and `DATE`.
+1.  **Start**: Keep checkbox as `[ ]`. Set `STATUS: IN-PROGRESS`. Assign `AGENT` and `DATE`.
     *   *Rule*: Only one agent allowed per task.
 2.  **Block**: Set `STATUS: BLOCKED`. Use `NOTE` to specify the blocker.
 3.  **Finish**: Change checkbox to `[x]`. Set `STATUS: COMPLETED`. Update `DATE`. Add `NOTE` with completion summary.
@@ -51,4 +59,7 @@ All tasks in this roadmap must follow this strict format to ensure visibility ac
     **BACKLOG** | Backend Agent | 2025-12-17 15:20
 
 ## Phase 3: Feature Development
-*To be populated after cleanup.*
+- [x] Optimize reusable DeepSeek review payload to avoid oversized API requests and skipped PR comments.
+    **COMPLETED** | Architect Agent | 2026-02-08 12:15
+    - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
+    - **NOTE**: Removed repo-wide file map context, excluded deleted-file hunks from diff payload (`--diff-filter=ACMRTUXB`), capped docs/diff context size, and switched DeepSeek request body to `--data-binary @payload_file` to avoid `curl` argv overflow.

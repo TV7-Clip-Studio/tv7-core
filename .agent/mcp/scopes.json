@@ -1,0 +1,27 @@
+{
+  "defaults": ["context7"],
+  "roles": {
+    "architect": ["tv7_media"],
+    "engine": ["tv7_media"],
+    "backend": [],
+    "studio": [],
+    "site": [],
+    "core": []
+  },
+  "repos": {
+    "tv7-axum-engine": ["tv7_media"],
+    "tv7-fastapi-backend": [],
+    "tv7-flutter-studio": [],
+    "tv7-astro-site": [],
+    "tv7-core": []
+  },
+  "notes": {
+    "defaults": "Always-on MCPs for all roles and repos.",
+    "tv7_media": "Enable when doing media inspection or transforms; keep off for pure backend/site work.",
+    "context7": "Docs MCP for framework/library lookups."
+  },
+  "recommended": {
+    "all": ["github", "git", "filesystem", "fetch"],
+    "optional": ["memory"]
+  }
+}

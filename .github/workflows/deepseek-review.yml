@@ -149,7 +149,7 @@ jobs:
         run: |
           echo "Skipping DeepSeek review: ${{ steps.guard.outputs.reason }}"
 
-      - name: Collect PR diff (full, unified=0)
+      - name: Collect PR diff (unified=0, non-deleted files only)
         if: steps.guard.outputs.should-run == 'true'
         id: diff
         shell: bash
@@ -158,28 +158,32 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -eo pipefail
-          git diff --unified=0 --no-color "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_diff.txt
+          # Exclude deleted-file hunks from model input to reduce payload size.
+          git diff --unified=0 --no-color --diff-filter=ACMRTUXB "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_diff.txt
           bytes=$(wc -c < /tmp/pr_diff.txt | tr -d ' ')
           echo "diff-bytes=$bytes" >> "$GITHUB_OUTPUT"
 
-      - name: Build PR summary (changed files + repo file map)
+      - name: Build PR summary (changed files only)
         if: steps.guard.outputs.should-run == 'true'
         id: summary
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          SUMMARY_CAP_BYTES: 200000
+          SUMMARY_CAP_BYTES: 80000
+          MAX_CHANGED_FILES: 350
         run: |
           set -eo pipefail
           python - <<'PY'
           import os
           import subprocess
+          from collections import Counter
           from pathlib import Path
 
           base = os.environ["BASE_SHA"]
           head = os.environ["HEAD_SHA"]
-          cap_bytes = int(os.environ.get("SUMMARY_CAP_BYTES", "200000"))
+          cap_bytes = int(os.environ.get("SUMMARY_CAP_BYTES", "80000"))
+          max_changed_files = int(os.environ.get("MAX_CHANGED_FILES", "350"))
           summary_path = Path("/tmp/pr_summary.txt")
 
           def run(cmd: list[str]) -> list[str]:
@@ -188,15 +192,19 @@ jobs:
 
           name_status = run(["git", "diff", "--name-status", base, head])
           numstat = run(["git", "diff", "--numstat", base, head])
-          file_list = run(["git", "ls-tree", "-r", "--name-only", head])
-
-          status_map: dict[str, str] = {}
+          status_rows: list[tuple[str, str]] = []
           for line in name_status:
-            parts = line.split("\t", 1)
-            if len(parts) != 2:
+            parts = line.split("\t")
+            if not parts:
               continue
-            status, path = parts
-            status_map[path] = status
+            status = parts[0]
+            path = ""
+            if (status.startswith("R") or status.startswith("C")) and len(parts) >= 3:
+              path = f"{parts[1]} -> {parts[2]}"
+            elif len(parts) >= 2:
+              path = parts[1]
+            if path:
+              status_rows.append((status, path))
 
           adds_dels: dict[str, tuple[str, str]] = {}
           for line in numstat:
@@ -207,21 +215,24 @@ jobs:
 
           lines: list[str] = []
           lines.append("=== Changed files (status add/del) ===")
-          if not status_map:
+          if not status_rows:
             lines.append("(none)")
           else:
-            for path, status in status_map.items():
+            status_counts = Counter(status[0] for status, _ in status_rows)
+            lines.append(
+              "Totals: "
+              + ", ".join(
+                  f"{code}={status_counts.get(code, 0)}"
+                  for code in ["A", "M", "R", "C", "D", "T", "U"]
+                  if status_counts.get(code, 0) > 0
+              )
+            )
+            lines.append("")
+            for status, path in status_rows[:max_changed_files]:
               add, delete = adds_dels.get(path, ("-", "-"))
               lines.append(f"[{status}] +{add}/-{delete} {path}")
-
-          lines.append("")
-          lines.append("=== Repo files (marked if changed) ===")
-          if not file_list:
-            lines.append("(none)")
-          else:
-            for path in file_list:
-              mark = status_map.get(path, " ")
-              lines.append(f"[{mark}] {path}")
+            if len(status_rows) > max_changed_files:
+              lines.append(f"... ({len(status_rows) - max_changed_files} additional changed files omitted)")
 
           text = "\n".join(lines)
           truncated = False
@@ -257,11 +268,14 @@ jobs:
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           DIFF_PATH: /tmp/pr_diff.txt
+          DIFF_CAP_BYTES: 300000
           SUMMARY_PATH: /tmp/pr_summary.txt
           PROJECT_CONTEXT: ${{ inputs.project_context }}
           DOCS_PATH: temp-tv7-core-docs/docs
           ARCH_DOC: ${{ inputs.architecture_doc }}
           CORE_DOC_LIST: ${{ inputs.core_doc_list }}
+          DOC_FILE_CAP_BYTES: 18000
+          DOCS_TOTAL_CAP_BYTES: 60000
         run: |
           set -eo pipefail
           if [ ! -s "$DIFF_PATH" ]; then
@@ -271,6 +285,9 @@ jobs:
 
           # Load allowed context files from docs/
           docs_context=""
+          docs_context_bytes=0
+          max_doc_file_bytes="${DOC_FILE_CAP_BYTES:-18000}"
+          max_docs_bytes="${DOCS_TOTAL_CAP_BYTES:-60000}"
           safe_arch_doc=""
           safe_core_docs=()
 
@@ -300,10 +317,28 @@ jobs:
               files_to_include="$files_to_include $safe_arch_doc"
             fi
             for filename in $files_to_include; do
+              if [ "$docs_context_bytes" -ge "$max_docs_bytes" ]; then
+                echo "Docs context reached cap (${max_docs_bytes} bytes)."
+                break
+              fi
               file="$DOCS_PATH/$filename"
               if [ -f "$file" ]; then
-                content=$(cat "$file")
-                docs_context="${docs_context}\n\n=== Documentation: ${filename} ===\n${content}"
+                file_bytes=$(wc -c < "$file" | tr -d ' ')
+                content=$(head -c "$max_doc_file_bytes" "$file")
+                block=$(printf "\n\n=== Documentation: %s ===\n%s" "$filename" "$content")
+                if [ "$file_bytes" -gt "$max_doc_file_bytes" ]; then
+                  block="${block}"$'\n\n'"[${filename} truncated at ${max_doc_file_bytes} bytes]"
+                fi
+                remaining=$((max_docs_bytes - docs_context_bytes))
+                block_bytes=$(printf "%s" "$block" | wc -c | tr -d ' ')
+                if [ "$block_bytes" -gt "$remaining" ]; then
+                  trimmed=$(printf "%s" "$block" | head -c "$remaining")
+                  docs_context="${docs_context}${trimmed}"$'\n\n'"[docs context truncated at ${max_docs_bytes} bytes]"
+                  docs_context_bytes=$max_docs_bytes
+                  break
+                fi
+                docs_context="${docs_context}${block}"
+                docs_context_bytes=$((docs_context_bytes + block_bytes))
               else
                 echo "Warning: docs file not found: $file"
               fi
@@ -325,11 +360,19 @@ jobs:
           fi
           export SUMMARY_BLOCK
 
-          payload=$(python - "$DIFF_PATH" << 'PY'
+          payload_file=/tmp/deepseek_payload.json
+          python - "$DIFF_PATH" > "$payload_file" << 'PY'
           import json, os, sys
           from pathlib import Path
 
-          diff = Path(sys.argv[1]).read_text(encoding="utf-8")
+          diff_cap_bytes = int(os.environ.get("DIFF_CAP_BYTES", "300000"))
+          diff_raw = Path(sys.argv[1]).read_bytes()
+          diff_truncated = len(diff_raw) > diff_cap_bytes
+          if diff_truncated:
+            diff_raw = diff_raw[:diff_cap_bytes]
+          diff = diff_raw.decode("utf-8", errors="ignore")
+          if diff_truncated:
+            diff += f"\n\n[diff truncated at {diff_cap_bytes} bytes; deleted-file hunks are excluded]"
           context = os.environ.get("PROJECT_CONTEXT") or "General Codebase (context not provided)"
           docs_context = os.environ.get("DOCS_CONTEXT") or ""
           summary_block = os.environ.get("SUMMARY_BLOCK") or ""
@@ -375,15 +418,16 @@ jobs:
               "temperature": 0.2,
           }
 
-          print(json.dumps(payload))
+          print(json.dumps(payload, ensure_ascii=False))
           PY
-          )
+          payload_bytes=$(wc -c < "$payload_file" | tr -d ' ')
+          echo "DeepSeek payload bytes=${payload_bytes}"
 
           response=$(curl -sS --max-time 60 --retry 2 --retry-delay 2 \
             -X POST https://api.deepseek.com/v1/chat/completions \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
-            -d "$payload" || true)
+            --data-binary "@$payload_file" || true)
 
           echo "$response" > /tmp/deepseek_response.json
           content=$(jq -r '.choices[0].message.content // ""' /tmp/deepseek_response.json)

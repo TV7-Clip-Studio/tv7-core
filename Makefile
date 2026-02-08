@@ -8,7 +8,7 @@ SYNC_BASE ?= origin/main
 SKIP_DEPS ?= 0
 SKIP_IDE ?= 0
 
-.PHONY: status pull-all bootstrap sync update set-secret update-secrets
+.PHONY: status pull-all bootstrap sync update set-secret update-secrets batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status
 
 status:
 	@bash "$(TOOLING_DIR)/status.sh"
@@ -90,3 +90,15 @@ sync update:
 
 set-secret:
 	@SECRET_NAME=$(SECRET_NAME) SECRET_VALUE=$(SECRET_VALUE) REPOS="$(REPOS)" ALL=$(ALL) ORG=$(ORG) bash "$(CURDIR)/tooling/set-secret.sh"
+
+batch-pr:
+	@REPO_ROOT="$(REPO_ROOT)" OPEN_PR=1 PUSH_BRANCH=1 RUN_CHECKS_IN_ALL_REPOS=1 bash "$(TOOLING_DIR)/batch-pr.sh"
+
+batch-pr-dry-run:
+	@REPO_ROOT="$(REPO_ROOT)" DRY_RUN=1 OPEN_PR=1 PUSH_BRANCH=1 RUN_CHECKS_IN_ALL_REPOS=1 bash "$(TOOLING_DIR)/batch-pr.sh"
+
+batch-pr-open:
+	@REPO_ROOT="$(REPO_ROOT)" OPEN_PR=1 PUSH_BRANCH=1 RUN_CHECKS_IN_ALL_REPOS=1 bash "$(TOOLING_DIR)/batch-pr.sh"
+
+batch-pr-report repo-status:
+	@REPO_ROOT="$(REPO_ROOT)" bash "$(TOOLING_DIR)/repo-status.sh"

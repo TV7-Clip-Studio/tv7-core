@@ -1,6 +1,6 @@
 # TV7 Core (Shared Foundation)
 
-`tv7-core` is the shared operating system for all `TV7-Clip-Studio` repos. It holds only cross-repo, foundational assets: system architecture, standards, shared tooling, templates, and governance. Anything that is repo-specific stays in that repo.
+`tv7-core` is the shared operating system for all `TV7-Clip-Studio` repos. It holds the canonical docs, cross-repo contracts, standards, shared tooling, templates, and governance.
 
 ## Workspace layout (required)
 - Clone all repos as siblings:  
@@ -48,15 +48,16 @@
 
 ## Layout (intended)
 - `architecture/` — system-level docs only (e.g., `tv7_high_architecture.md`, engine/backend control-plane overviews).
+- `repos/` — repo-scoped docs promoted to core (e.g., Flutter/FastAPI architecture, integration notes, runbooks).
+- `contracts/` — cross-repo interface artifacts (e.g., OpenAPI exports).
 - `tooling/` — cross-repo Make targets and scripts (lint-all, format-all, bootstrap).
 - `templates/` — shared scaffolds (Rust/FastAPI/Flutter/Astro starters, CI snippets).
 - `standards/` — naming, repo structure, versioning rules, changelog policy, security guidelines.
 - `meta/` — ADRs, decision log, and the Arch Agent directive.
 
 ## Keep out
-- Repo-specific docs (feature plans, implementation notes, TODOs) → live in that repo under `docs-local/`.
-- Tech-specific scripts that don’t apply across repos (only Flutter/Python/Rust/Astro).
-- Drafts/experiments meant for a single module.
+- Local machine notes, personal scratch files, and transient drafts.
+- Generated binaries or heavyweight artifacts not needed for collaboration.
 
 ## Reusable CI/automation
 - AI code review (DeepSeek): see `docs/ai-code-review.md` for how to wire it into any TV7 repo.

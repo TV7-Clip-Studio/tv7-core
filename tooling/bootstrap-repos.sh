@@ -70,4 +70,6 @@ for repo in "${!REPO_URLS[@]}"; do
   fi
 done
 
+ensure_link "$REPO_ROOT/.agent" "tv7-core/.agent" "workspace .agent"
+
 [ "$quiet" = "1" ] || echo "Done. Clone tv7-core as a sibling; docs/core and Makefile.core symlinks ensured."

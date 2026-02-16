@@ -2,6 +2,7 @@
 
 ## Per-Repo Roadmaps (Source of Truth)
 - `tv7-core`: `docs/roadmaps/tv7-core-roadmap.md`
+- `tv7-core` orchestration initiative: `docs/roadmaps/core/agent-orchestration-roadmap.md`
 - `tv7-fastapi-backend`: `docs/roadmaps/tv7-fastapi-backend-roadmap.md`
 - `tv7-fastapi-backend` off-roadmap: `docs/roadmaps/tv7-fastapi-backend-off-roadmap.md`
 - `tv7-flutter-studio`: `docs/roadmaps/tv7-flutter-studio-roadmap.md`

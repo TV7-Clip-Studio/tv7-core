@@ -32,5 +32,5 @@
 ## Flow to bootstrap a feature
 1) Ensure env + deps: `make analyze` to pull packages; verify `ffmpeg`/`yt-dlp` availability.
 2) If API changes are needed, update/obtain the OpenAPI spec and regen the client.
-3) Build UI/state in `lib/features/...`, wire services in `lib/data` and `lib/domain`.
+3) Build UI/state in `forgotten_client/lib/features/...`, wire services in `forgotten_client/lib/data/...` (add domain modules only when needed).
 4) Add tests under `forgotten_client/test`, keep `flutter analyze` and `flutter test` green.

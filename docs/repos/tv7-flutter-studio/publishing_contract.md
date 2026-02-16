@@ -1,30 +1,35 @@
-# Publishing Contract (TV7 Pro Scheduler)
+# Publishing Contract (Studio + Backend Worker)
 
-Source: `tv7_high_architecture.md`. Publishing is Pro-only and executed by the backend worker; the Flutter app triggers and monitors.
+Last updated: 2026-02-12
+
+Publishing is backend-owned execution. Studio triggers, monitors, and reports status to the user.
 
 ## Ownership
-- **Backend + worker**: holds platform OAuth/tokens, asset intake, schedule creation, posting execution, retries/backoff, logging/auditing. Exposes minimal web dashboard for OAuth/connect.
-- **Client**: renders locally, uploads assets (or uses signed URL), submits schedules with metadata, polls status, shows logs/errors. Never stores platform tokens.
+- **Backend and worker**: platform OAuth/tokens, publish execution, retries, auditing, and final status updates.
+- **Studio client**: local render/export, upload initiation, publish trigger/schedule request, and status/error presentation.
 
-## Required Backend Capabilities
-- Config endpoint: `publishing_enabled`, allowed platforms, asset size/format limits, OpenAI/local policy.
-- Asset intake: multipart upload or signed URL issuance → returns `asset_url`, checksum/size fields.
-- Schedule API: create/read/list with `status` (`draft|scheduled|posted|failed`), `publish_at`, per-platform results, error message/log, retries.
-- Web dashboard endpoints for OAuth/social connections; app opens in WebView.
+## Current Spec-Aligned Surface
+In the checked-in OpenAPI, publishing is currently represented by:
+- `POST /api/v1/clips/{clip_id}/publish`
+- `PublishJobRead` and `PublishJobStatus` schemas
 
-## Client Responsibilities
-- Enforce plan/licensing: publishing only when `plan=pro` and license valid.
-- Upload rendered clip + thumbnail (if required); include checksum/size; store returned `asset_url`.
-- Create schedule with `publish_at`, platforms, title/description/captions; poll status and surface errors/retries.
-- Respect config flags: hide/disable publishing when off or limits exceeded.
+This supports job-oriented publish triggering and status reporting, even while broader scheduling APIs evolve.
 
-## Flow
-1) Fetch config; confirm publishing enabled and Pro license valid.
-2) Upload asset (direct or signed URL) → obtain `asset_url`.
-3) POST schedule with metadata + `publish_at`; receive initial status.
-4) Worker posts at `publish_at`, retries on failure, updates status/logs.
-5) App polls (`GET schedule`) to show `scheduled/posted/failed`, errors, and retry info; dashboard handles OAuth.
+## Contract Rules
+- Studio must never store platform OAuth tokens.
+- Studio must gate publish UX behind backend config and plan checks.
+- Studio must send stable clip identifiers and required metadata for backend job execution.
+- Backend must return enough status detail for user-visible progress and failures.
 
-## OpenAPI Notes
-- Include scheduler endpoints, publish status enum, asset fields, and config fields in the spec.
-- Mark publishing endpoints as Pro-only/gated by license; align naming with client (`/api/v1/clips/{id}/publish` or schedule resource).
+## Target Evolution (Pro Scheduler)
+As Pro scheduling matures, preserve backward-safe behavior while adding:
+- Dedicated schedule resources (create/read/list by time/platform).
+- Explicit publish timestamps and retry metadata.
+- Dashboard/WebView connection flow for social account linking.
+
+## Cross-Repo Coordination
+For any publish contract changes:
+1. Update backend producer and OpenAPI artifact.
+2. Regenerate Studio SDK.
+3. Update Studio publish UI/data flow.
+4. Validate with `make check` in Studio and backend checks in backend repo.

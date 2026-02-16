@@ -1,63 +1,42 @@
-# Scaffolding Plan (Flutter project)
+# Studio Scaffolding and Conventions
 
-## Tooling assumptions
-- Flutter stable channel; Dart >= current stable.
-- `openapi-generator-cli` pinned (e.g., via `./tools/openapi-generator-cli.sh` wrapper) for reproducible client builds.
-- Package manager: `flutter pub`; format/analyze/test in CI.
+Last updated: 2026-02-12
 
-## Project creation
-- Command: `flutter create forgotten_client`
-  - Platforms enabled: macOS/Windows/Linux/iOS/Android.
-  - Org: `com.forgotten.client` (adjust as needed).
-  - L10n, web disabled initially (optional to enable later).
+This document describes the current repository structure and the expected development conventions.
 
-## Flavors/env
-- Flavors: `dev`, `stage`, `prod`.
-- dart-defines (per flavor): `API_BASE_URL`, `OPENAI_MODE`, `FEATURE_FLAGS_JSON`, `SENTRY_DSN` (optional), `APP_LOG_LEVEL`.
-- Use `.env.<flavor>` for local development; load via build scripts into dart-defines.
-- Build/run examples:
-  - `flutter run --flavor dev --dart-define-from-file=.env.dev` (JSON map file)
-  - `flutter build macos --flavor stage --dart-define-from-file=.env.stage` (JSON map file)
+## Repo Layout
+- Flutter app root: `forgotten_client/`
+- Makefile entrypoint (repo root): `Makefile`
+- Canonical backend contract artifact: `docs/contracts/openapi/tv7-fastapi-backend/openapi.json`
 
-## Package layout (suggested)
-- `lib/`
-  - `main_dev.dart`, `main_stage.dart`, `main_prod.dart` (entrypoints wiring env).
-  - `config/` (env, flavor, feature flags).
-  - `core/` (logging, theme, routing, error handling).
-  - `data/` (api client wrapper, models, repositories, cache).
-  - `domain/` (use cases/services: auth, pipeline orchestrator, sync).
-  - `features/` (ui modules: auth, dashboard, workspace, settings).
-  - `platform/` (binary path discovery, process helpers).
-  - `widgets/` (shared UI components).
-- `assets/` for icons/fonts; `packages/` optional for modularization later.
+## Current App Structure
+- Entrypoints: `forgotten_client/lib/main_dev.dart`, `forgotten_client/lib/main_stage.dart`, `forgotten_client/lib/main_prod.dart`
+- App bootstrap: `forgotten_client/lib/bootstrap.dart`, `forgotten_client/lib/app.dart`
+- Feature modules: `forgotten_client/lib/features/{auth,dashboard,ingest,player,user}`
+- Data modules: `forgotten_client/lib/data/{api,auth,config,local}`
+- Generated API SDK: `forgotten_client/lib/api/generated/`
+- Tests: `forgotten_client/test/`
 
-## Dependencies (initial set)
-- State mgmt: `riverpod` or `flutter_riverpod`.
-- HTTP: `dio` (used by generated client) + interceptors for auth/logging.
-- JSON: `json_serializable`.
-- Local storage: `hive` or `sqlite` (`drift`/`floor`) for cache/queue.
-- Env: `flutter_dotenv` or custom dart-define loader.
-- Logging: `logger` or custom wrapper.
-- Background/process: platform channels/FFI wrappers for running binaries; use `process_run` where appropriate on desktop.
-- UI: `go_router` or `beamer` for navigation; `hooks_riverpod` optional for ergonomics.
+## Environment and Run Commands
+- Env templates: `forgotten_client/.env.dev.example`, `forgotten_client/.env.stage.example`, `forgotten_client/.env.prod.example`
+- Desktop run (recommended): `make run-desktop DEVICE=macos ENV_FILE=.env.dev`
+- Flavor run: `make run FLAVOR=dev ENV_FILE=.env.dev`
 
-## OpenAPI client integration
-- Canonical spec lives at `docs/contracts/openapi/tv7-fastapi-backend/openapi.json`; copy/sync to `openapi/forgotten-app.json` when generating client SDK.
-- Generator config `openapi/config.yaml` (pinned options).
-- Generated client lives in `lib/api/generated/`; add thin wrapper in `lib/data/api_client.dart`.
-- Provide script `tool/generate_api.sh` to fetch spec and regenerate client; commit generated code.
+## Quality Commands
+- Format: `make format`
+- Analyze: `make analyze`
+- Test: `make test`
+- Full check gate: `make check`
 
-## Settings & storage
-- Secure storage per platform for tokens/OpenAI key (`flutter_secure_storage` with platform key stores).
-- Settings persisted in local store with defaults; validate binary paths on change.
+## OpenAPI Client Workflow
+- Sync canonical spec into app input:
+  - `./.codex/skills/studio-openapi-sync/scripts/sync_spec.sh`
+- Regenerate client:
+  - `make gen-api` (calls `forgotten_client/tool/generate_api.sh`)
+- Treat `forgotten_client/lib/api/generated/` as generated-only code.
+- Apply handwritten adapters in `forgotten_client/lib/data/api/` and feature/repository consumers.
 
-## CI hooks
-- `flutter format`, `flutter analyze`, `flutter test`.
-- `dart run build_runner build --delete-conflicting-outputs` for generated code.
-- OpenAPI generation check to ensure spec and generated code stay in sync.
-
-## Immediate next actions
-- Verify Flutter SDK availability (`flutter --version`); install if missing.
-- Run `flutter create forgotten_client` in repo root.
-- Add flavor-specific main files and env loader.
-- Add OpenAPI generator config + script placeholders.
+## Conventions
+- Keep desktop-first workflows stable; mobile parity can follow.
+- Keep external-process and local media interactions in `lib/data/local/`.
+- Keep test doubles/fakes in `forgotten_client/test/` to avoid real external dependencies in CI.

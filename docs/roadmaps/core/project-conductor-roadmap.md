@@ -243,6 +243,13 @@ Project Conductor migrates TV7 from the current custom local orchestrator to a s
     - **NOTE**: DeepSeek review body now includes explicit `Confidence: NN%` plus verdict line, while preserving author-written PR metadata.
     - **NOTE**: Updated workflow: `.github/workflows/deepseek-review.yml`.
     - **NOTE**: Validation command run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (53 tests passed).
+- [X] [CO-C01-07-05] Enforce strict, evidence-scoped DeepSeek review comment schema.
+    **COMPLETED** | Architect Agent | 2026-03-04 19:36
+    - **NOTE**: Added deterministic review comment normalizer `tooling/deepseek_review_comment.py` and wired reusable workflow to use it before posting GitHub review.
+    - **NOTE**: DeepSeek prompt now explicitly forbids speculative non-diff claims and requires changed-file evidence with max 5 findings.
+    - **NOTE**: Posted review format is now strict/comment-only: `DeepSeek review`, confidence, final verdict, top findings (changed-file evidence only); parser fallback posts COMMENT with `unknown` confidence when verdict is missing.
+    - **NOTE**: Added unit tests in `tooling/tests/orchestrator/test_deepseek_review_comment.py`.
+    - **NOTE**: Validation commands run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (56 tests passed); `python3 tooling/deepseek_review_comment.py --content-file ... --changed-files-file ...` (manual smoke).
 
 ## Phase 8: Integrator And Validation
 - [ ] [CO-C01-08-01] Implement final integrator node for post-review merge validation.

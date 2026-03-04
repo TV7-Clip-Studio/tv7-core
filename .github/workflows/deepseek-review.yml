@@ -155,8 +155,10 @@ jobs:
           set -eo pipefail
           # Exclude deleted-file hunks from model input to reduce payload size.
           git diff --unified=0 --no-color --diff-filter=ACMRTUXB "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_diff.txt
+          git diff --name-only --diff-filter=ACMRTUXB "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_changed_files.txt
           bytes=$(wc -c < /tmp/pr_diff.txt | tr -d ' ')
           echo "diff-bytes=$bytes" >> "$GITHUB_OUTPUT"
+          echo "changed-files-path=/tmp/pr_changed_files.txt" >> "$GITHUB_OUTPUT"
 
       - name: Build PR summary (changed files only)
         if: steps.guard.outputs.should-run == 'true'
@@ -390,7 +392,11 @@ jobs:
               "- Use version information to reason about availability; do not suggest downgrades to older APIs.",
               "- Prioritize logic errors, security issues, edge cases, and architectural risks.",
               "- Be concise and high-signal. Do not restate diffs.",
-              "- Present your key changes/summary as a numbered list.",
+              "- Do not speculate about files or system areas not present in the provided diff.",
+              "- Only report findings that cite changed-file evidence with a concrete file path (and line if available).",
+              "- If a claim lacks direct evidence in changed files, omit it.",
+              "- Keep findings to at most 5 items.",
+              "- Output sections in this order: 'DeepSeek review', 'Confidence', 'Final verdict', 'Top findings'.",
               "At the end of your review, add one final line in this format:",
               "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)",
               "Use APPROVED when remaining issues are minor or non-blocking. ",
@@ -438,75 +444,60 @@ jobs:
             echo "CONTENT_EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Parse DeepSeek verdict
+      - name: Normalize DeepSeek review comment
         if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
-        id: verdict
+        id: normalize
         shell: bash
         env:
           CONTENT: ${{ steps.deepseek.outputs.content }}
+          CHANGED_FILES_PATH: ${{ steps.diff.outputs.changed-files-path }}
         run: |
           set -eo pipefail
-          line=$(printf "%s\n" "$CONTENT" | grep -E 'FINAL_VERDICT' | tail -1 || true)
-          verdict=""
-          if echo "$line" | grep -qi 'APPROVED'; then
-            verdict="APPROVE"
-          elif echo "$line" | grep -qi 'REJECTED'; then
-            verdict="REQUEST_CHANGES"
-          fi
-          echo "line=$line"
-          echo "verdict=$verdict"
-          {
-            echo "line=$line"
-            echo "verdict=$verdict"
-          } >> "$GITHUB_OUTPUT"
+          content_file=/tmp/deepseek_content.txt
+          output_json=/tmp/deepseek_normalized_review.json
+          printf "%s" "$CONTENT" > "$content_file"
+          python tooling/deepseek_review_comment.py \
+            --content-file "$content_file" \
+            --changed-files-file "$CHANGED_FILES_PATH" \
+            --max-findings 5 \
+            --max-body-chars 4500 \
+            --output-json "$output_json"
 
-      - name: Prepare review body
-        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
-        id: review_body
-        shell: bash
-        env:
-          CONTENT: ${{ steps.deepseek.outputs.content }}
-        run: |
-          set -eo pipefail
-          cleaned="$CONTENT"
+          event=$(jq -r '.event // "COMMENT"' "$output_json")
+          confidence=$(jq -r '.confidence // "unknown"' "$output_json")
+          verdict=$(jq -r '.verdict // "COMMENT"' "$output_json")
+          body=$(jq -r '.body // ""' "$output_json")
+
+          echo "event=$event" >> "$GITHUB_OUTPUT"
+          echo "confidence=$confidence" >> "$GITHUB_OUTPUT"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
           echo "body<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$cleaned" >> "$GITHUB_OUTPUT"
+          echo "$body" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Submit DeepSeek review (approve or request changes)
-        if: steps.guard.outputs.should-run == 'true' && steps.verdict.outputs.verdict != ''
+        if: steps.guard.outputs.should-run == 'true' && steps.normalize.outputs.body != ''
         uses: actions/github-script@v7
         env:
-          DEEPSEEK_CONTENT: ${{ steps.review_body.outputs.body }}
-          VERDICT_EVENT: ${{ steps.verdict.outputs.verdict }}
-          VERDICT_LINE: ${{ steps.verdict.outputs.line }}
+          NORMALIZED_BODY: ${{ steps.normalize.outputs.body }}
+          NORMALIZED_EVENT: ${{ steps.normalize.outputs.event }}
+          NORMALIZED_CONFIDENCE: ${{ steps.normalize.outputs.confidence }}
+          NORMALIZED_VERDICT: ${{ steps.normalize.outputs.verdict }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const content = (process.env.DEEPSEEK_CONTENT || '').trim();
-            const event = (process.env.VERDICT_EVENT || '').trim(); // APPROVE or REQUEST_CHANGES
-            const verdictLine = (process.env.VERDICT_LINE || '').trim();
-            if (!content || !event) {
-              throw new Error('Missing DeepSeek content or verdict event; cannot submit review.');
+            const body = (process.env.NORMALIZED_BODY || '').trim();
+            const event = (process.env.NORMALIZED_EVENT || 'COMMENT').trim();
+            const confidence = (process.env.NORMALIZED_CONFIDENCE || 'unknown').trim();
+            const verdict = (process.env.NORMALIZED_VERDICT || 'COMMENT').trim();
+            if (!body) {
+              throw new Error('Missing normalized DeepSeek review body.');
             }
 
             const prNumber = context.payload.pull_request.number;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-
-            const confidenceMatch = verdictLine.match(/\((\d{1,3})%\)/);
-            const confidence = confidenceMatch ? `${confidenceMatch[1]}%` : 'unknown';
-            const cleaned = content
-              .split('\n')
-              .filter((line) => !/^##\s*FINAL_VERDICT:/i.test(line.trim()))
-              .join('\n')
-              .trim();
-            const body = `### DeepSeek review
-            - Confidence: ${confidence}
-            ${verdictLine ? `- ${verdictLine.replace(/^##\s*/, '')}` : ''}
-
-            ${cleaned || content}`;
 
             let finalEvent = event;
             let url = '(unknown)';
@@ -547,6 +538,6 @@ jobs:
             if (summaryPath) {
               fs.appendFileSync(
                 summaryPath,
-                `DeepSeek review submitted (${finalEvent}) to PR #${prNumber}: ${url}\n`
+                `DeepSeek review submitted (${finalEvent}) to PR #${prNumber}: ${url} (verdict=${verdict}, confidence=${confidence})\n`
               );
             }

@@ -1,6 +1,12 @@
 
 .DS_Store
 **/.DS_Store
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+
 docs/.tmp/
 docs/.orchestrator/
 docs/.conductor/

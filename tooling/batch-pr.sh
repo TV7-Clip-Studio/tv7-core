@@ -271,10 +271,26 @@ push_and_open_pr() {
     return 1
   fi
 
-  if gh pr view --repo "TV7-Clip-Studio/${repo}" "$branch" >/tmp/tv7-batch-${repo}-pr.log 2>&1; then
-    PR_STATE["$repo"]="EXISTS"
-    return 0
-  fi
+  local existing_pr_state existing_pr_url
+  existing_pr_state="$(
+    gh pr view --repo "TV7-Clip-Studio/${repo}" "$branch" --json state,url --jq '.state' 2>/tmp/tv7-batch-${repo}-pr.log || true
+  )"
+  existing_pr_url="$(
+    gh pr view --repo "TV7-Clip-Studio/${repo}" "$branch" --json state,url --jq '.url' 2>/dev/null || true
+  )"
+  case "$existing_pr_state" in
+    OPEN)
+      PR_STATE["$repo"]="EXISTS"
+      NOTE["$repo"]="open PR already exists: ${existing_pr_url}"
+      return 0
+      ;;
+    MERGED|CLOSED)
+      NOTE["$repo"]="previous ${existing_pr_state,,} PR found for branch; creating a new PR for latest commits"
+      ;;
+    *)
+      : # no existing PR for this branch
+      ;;
+  esac
 
   local pr_title pr_body_file
   pr_title="$(resolve_pr_title)"

@@ -264,6 +264,13 @@ Project Conductor migrates TV7 from the current custom local orchestrator to a s
     - **NOTE**: Updated tests in `tooling/tests/orchestrator/test_deepseek_review_comment.py` for minimal-wrapper behavior and verdict parser fallback.
     - **NOTE**: Updated docs in `docs/ai-code-review.md` to describe the minimal wrapper contract.
     - **NOTE**: Validation command run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (56 tests passed).
+- [X] [CO-C01-07-08] Enforce fixed DeepSeek mini-structure while keeping minimal wrapper; deprecate legacy orchestrator make targets.
+    **COMPLETED** | Architect Agent | 2026-03-05 10:05
+    - **NOTE**: Updated DeepSeek prompt in `.github/workflows/deepseek-review.yml` to require fixed mini-structure sections in order: `Summary`, `Findings`, `Risks`, `Recommendations`, then `FINAL_VERDICT`.
+    - **NOTE**: Added Python 3.11 guard to `tooling/deepseek_review_comment.py` for runtime consistency with `tooling/deepseek_followup.py` and `tooling/deepseek_fix.py`.
+    - **NOTE**: Routed all `orchestrator-*` Make targets to `conductor-*` equivalents with explicit deprecation warnings; legacy path remains as compatibility shim only.
+    - **NOTE**: Updated docs in `docs/ai-code-review.md` to reflect fixed mini-structure expectations inside model narrative.
+    - **NOTE**: Validation commands run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (56 tests passed); `make -n orchestrator-status`; `python3 tooling/deepseek_review_comment.py --content-file <sample>`.
 
 ## Phase 8: Integrator And Validation
 - [ ] [CO-C01-08-01] Implement final integrator node for post-review merge validation.

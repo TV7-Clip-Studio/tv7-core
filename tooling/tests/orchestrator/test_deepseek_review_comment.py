@@ -8,8 +8,17 @@ from deepseek_review_comment import normalize_review_comment
 class DeepseekReviewCommentTests(unittest.TestCase):
     def test_wraps_narrative_with_minimal_metadata(self) -> None:
         content = """
-Overall summary: solid change with one medium risk.
-- Possible stage transition mismatch in tooling/orchestrator/lifecycle.py:83.
+Summary
+Solid change with one medium risk.
+
+Findings
+- Stage transition mismatch in tooling/orchestrator/lifecycle.py:83 can deadlock item progression.
+
+Risks
+- Items may stall in executing.
+
+Recommendations
+- Add transition guard tests and retry path.
 ## FINAL_VERDICT: ❌ REJECTED (81%)
 """.strip()
         normalized = normalize_review_comment(
@@ -20,7 +29,10 @@ Overall summary: solid change with one medium risk.
         self.assertEqual(normalized["confidence"], "81%")
         self.assertEqual(normalized["verdict"], "REJECTED")
         self.assertIn("### Model narrative", normalized["body"])
-        self.assertIn("Overall summary: solid change with one medium risk.", normalized["body"])
+        self.assertIn("Summary", normalized["body"])
+        self.assertIn("Findings", normalized["body"])
+        self.assertIn("Risks", normalized["body"])
+        self.assertIn("Recommendations", normalized["body"])
         self.assertIn("tooling/orchestrator/lifecycle.py:83", normalized["body"])
 
     def test_comment_fallback_when_verdict_missing(self) -> None:

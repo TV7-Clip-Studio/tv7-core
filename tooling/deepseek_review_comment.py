@@ -4,11 +4,20 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Iterable
 
 RE_VERDICT = re.compile(r"FINAL_VERDICT:\s*(?:[✅❌]\s*)?(APPROVED|REJECTED)", re.IGNORECASE)
 RE_CONFIDENCE = re.compile(r"\((\d{1,3})%\)")
+MIN_PYTHON = (3, 11)
+
+
+def _require_python() -> None:
+    if sys.version_info < MIN_PYTHON:
+        need = ".".join(str(p) for p in MIN_PYTHON)
+        cur = ".".join(str(p) for p in sys.version_info[:3])
+        raise SystemExit(f"Python {need}+ is required (found {cur}).")
 
 
 def _extract_verdict(raw: str) -> tuple[str, str, str]:
@@ -102,6 +111,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _require_python()
     args = parse_args(argv)
     content_path = Path(args.content_file)
     content = content_path.read_text(encoding="utf-8", errors="ignore") if content_path.is_file() else ""

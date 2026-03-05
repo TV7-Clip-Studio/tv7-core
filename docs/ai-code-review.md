@@ -28,7 +28,8 @@ The posted DeepSeek review uses a minimal wrapper:
 
 Rules:
 - PR title/body are **not** modified by DeepSeek workflow.
-- The workflow preserves DeepSeek narrative so it can include summary + explained findings naturally.
+- DeepSeek narrative must follow this mini-structure in order: `Summary`, `Findings`, `Risks`, `Recommendations`.
+- Findings must describe problem + impact + evidence (`path[:line]`) when available.
 - If verdict parsing fails, the workflow posts `COMMENT` with `Confidence: unknown`.
 
 ### ✅ APPROVED (NN%)

@@ -346,66 +346,69 @@ conductor-run:
 	"$$@"
 
 orchestrator-init:
-	@"$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" init
+	@echo "[deprecated] orchestrator-init -> conductor-init (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-init
 
 orchestrator-plan:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" plan; \
-	if [ -n "$(ORCH_PLAN_ROADMAP)" ]; then \
-		set -- "$$@" --single-roadmap --roadmap "$(ORCH_PLAN_ROADMAP)"; \
-	fi; \
-	"$$@"
+	@echo "[deprecated] orchestrator-plan -> conductor-plan (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-plan CONDUCTOR_PLAN_ROADMAP="$(ORCH_PLAN_ROADMAP)"
 
 orchestrator-profiles:
-	@"$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" tickets --list-agent-profiles
+	@echo "[deprecated] orchestrator-profiles -> conductor-profiles (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-profiles
 
 orchestrator-tickets:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" tickets --agent-profile "$(AGENT_PROFILE)" --batch-id "$(BATCH_ID)"; \
-	if [ -n "$(ORCH_TICKET_REPO)" ]; then set -- "$$@" --repo "$(ORCH_TICKET_REPO)"; fi; \
-	if [ -n "$(ORCH_TICKET_ROADMAP)" ]; then set -- "$$@" --roadmap "$(ORCH_TICKET_ROADMAP)"; fi; \
-	if [ -n "$(ORCH_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(ORCH_TICKET_ITEM_PREFIX)"; fi; \
-	"$$@"
+	@echo "[deprecated] orchestrator-tickets -> conductor-tickets (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-tickets CONDUCTOR_AGENT_PROFILE="$(AGENT_PROFILE)" CONDUCTOR_BATCH_ID="$(BATCH_ID)" CONDUCTOR_TICKET_REPO="$(ORCH_TICKET_REPO)" CONDUCTOR_TICKET_ROADMAP="$(ORCH_TICKET_ROADMAP)" CONDUCTOR_TICKET_ITEM_PREFIX="$(ORCH_TICKET_ITEM_PREFIX)"
 
 orchestrator-tickets-apply:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" tickets --apply --agent-profile "$(AGENT_PROFILE)" --batch-id "$(BATCH_ID)"; \
-	if [ -n "$(ORCH_TICKET_REPO)" ]; then set -- "$$@" --repo "$(ORCH_TICKET_REPO)"; fi; \
-	if [ -n "$(ORCH_TICKET_ROADMAP)" ]; then set -- "$$@" --roadmap "$(ORCH_TICKET_ROADMAP)"; fi; \
-	if [ -n "$(ORCH_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(ORCH_TICKET_ITEM_PREFIX)"; fi; \
-	"$$@"
+	@echo "[deprecated] orchestrator-tickets-apply -> conductor-tickets-apply (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-tickets-apply CONDUCTOR_AGENT_PROFILE="$(AGENT_PROFILE)" CONDUCTOR_BATCH_ID="$(BATCH_ID)" CONDUCTOR_TICKET_REPO="$(ORCH_TICKET_REPO)" CONDUCTOR_TICKET_ROADMAP="$(ORCH_TICKET_ROADMAP)" CONDUCTOR_TICKET_ITEM_PREFIX="$(ORCH_TICKET_ITEM_PREFIX)"
 
 orchestrator-tickets-gemini:
-	@$(MAKE) orchestrator-tickets AGENT_PROFILE=gemini_pro_medium ORCH_TICKET_REPO="$(ORCH_TICKET_REPO)" ORCH_TICKET_ROADMAP="$(ORCH_TICKET_ROADMAP)" ORCH_TICKET_ITEM_PREFIX="$(ORCH_TICKET_ITEM_PREFIX)" BATCH_ID="$(BATCH_ID)"
+	@echo "[deprecated] orchestrator-tickets-gemini -> conductor-tickets-gemini (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-tickets-gemini CONDUCTOR_BATCH_ID="$(BATCH_ID)" CONDUCTOR_TICKET_REPO="$(ORCH_TICKET_REPO)" CONDUCTOR_TICKET_ROADMAP="$(ORCH_TICKET_ROADMAP)" CONDUCTOR_TICKET_ITEM_PREFIX="$(ORCH_TICKET_ITEM_PREFIX)"
 
 orchestrator-tickets-gemini-apply:
-	@$(MAKE) orchestrator-tickets-apply AGENT_PROFILE=gemini_pro_medium ORCH_TICKET_REPO="$(ORCH_TICKET_REPO)" ORCH_TICKET_ROADMAP="$(ORCH_TICKET_ROADMAP)" ORCH_TICKET_ITEM_PREFIX="$(ORCH_TICKET_ITEM_PREFIX)" BATCH_ID="$(BATCH_ID)"
+	@echo "[deprecated] orchestrator-tickets-gemini-apply -> conductor-tickets-gemini-apply (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-tickets-gemini-apply CONDUCTOR_BATCH_ID="$(BATCH_ID)" CONDUCTOR_TICKET_REPO="$(ORCH_TICKET_REPO)" CONDUCTOR_TICKET_ROADMAP="$(ORCH_TICKET_ROADMAP)" CONDUCTOR_TICKET_ITEM_PREFIX="$(ORCH_TICKET_ITEM_PREFIX)"
 
 orchestrator-tickets-codex:
-	@$(MAKE) orchestrator-tickets AGENT_PROFILE=codex_fast_low ORCH_TICKET_REPO="$(ORCH_TICKET_REPO)" ORCH_TICKET_ROADMAP="$(ORCH_TICKET_ROADMAP)" ORCH_TICKET_ITEM_PREFIX="$(ORCH_TICKET_ITEM_PREFIX)" BATCH_ID="$(BATCH_ID)"
+	@echo "[deprecated] orchestrator-tickets-codex -> conductor-tickets-codex (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-tickets-codex CONDUCTOR_BATCH_ID="$(BATCH_ID)" CONDUCTOR_TICKET_REPO="$(ORCH_TICKET_REPO)" CONDUCTOR_TICKET_ROADMAP="$(ORCH_TICKET_ROADMAP)" CONDUCTOR_TICKET_ITEM_PREFIX="$(ORCH_TICKET_ITEM_PREFIX)"
 
 orchestrator-tickets-codex-apply:
-	@$(MAKE) orchestrator-tickets-apply AGENT_PROFILE=codex_fast_low ORCH_TICKET_REPO="$(ORCH_TICKET_REPO)" ORCH_TICKET_ROADMAP="$(ORCH_TICKET_ROADMAP)" ORCH_TICKET_ITEM_PREFIX="$(ORCH_TICKET_ITEM_PREFIX)" BATCH_ID="$(BATCH_ID)"
+	@echo "[deprecated] orchestrator-tickets-codex-apply -> conductor-tickets-codex-apply (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-tickets-codex-apply CONDUCTOR_BATCH_ID="$(BATCH_ID)" CONDUCTOR_TICKET_REPO="$(ORCH_TICKET_REPO)" CONDUCTOR_TICKET_ROADMAP="$(ORCH_TICKET_ROADMAP)" CONDUCTOR_TICKET_ITEM_PREFIX="$(ORCH_TICKET_ITEM_PREFIX)"
 
 orchestrator-tickets-reset:
-	@"$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" tickets-reset --batch-id "$(BATCH_ID)"
+	@echo "[deprecated] orchestrator-tickets-reset -> conductor-tickets-reset (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-tickets-reset CONDUCTOR_BATCH_ID="$(BATCH_ID)"
 
 orchestrator-tickets-reset-apply:
-	@"$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" tickets-reset --apply --batch-id "$(BATCH_ID)"
+	@echo "[deprecated] orchestrator-tickets-reset-apply -> conductor-tickets-reset-apply (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-tickets-reset-apply CONDUCTOR_BATCH_ID="$(BATCH_ID)"
 
 orchestrator-tickets-reset-scan:
-	@"$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" tickets-reset --scan-open --scope all-linked
+	@echo "[deprecated] orchestrator-tickets-reset-scan -> conductor-tickets-reset-scan (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-tickets-reset-scan CONDUCTOR_BATCH_ID="$(BATCH_ID)"
 
 orchestrator-tickets-reset-scan-apply:
-	@"$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" tickets-reset --apply --scan-open --scope all-linked
+	@echo "[deprecated] orchestrator-tickets-reset-scan-apply -> conductor-tickets-reset-scan-apply (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-tickets-reset-scan-apply CONDUCTOR_BATCH_ID="$(BATCH_ID)"
 
 orchestrator-run-once:
-	@"$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" run-once
+	@echo "[deprecated] orchestrator-run-once -> conductor-run-once (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-run-once
 
 orchestrator-status:
-	@"$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" status
+	@echo "[deprecated] orchestrator-status -> conductor-status (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-status
 
 orchestrator-ops-status:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" ops-status --ao-command "$(CONDUCTOR_AO_COMMAND)"; \
-	if [ -n "$(ORCH_TICKET_REPO)" ]; then set -- "$$@" --repo "$(ORCH_TICKET_REPO)"; fi; \
-	"$$@"
+	@echo "[deprecated] orchestrator-ops-status -> conductor-ops-status (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-ops-status CONDUCTOR_AO_COMMAND="$(CONDUCTOR_AO_COMMAND)" CONDUCTOR_TICKET_REPO="$(ORCH_TICKET_REPO)"
 
 orchestrator-events:
-	@"$(PYTHON)" "$(TOOLING_DIR)/orchestrator.py" events
+	@echo "[deprecated] orchestrator-events -> conductor-events (cleanup pending; use conductor-* targets)." >&2
+	@$(MAKE) conductor-events

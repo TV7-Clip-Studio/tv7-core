@@ -24,11 +24,12 @@ The posted DeepSeek review must follow this compact schema:
 - `DeepSeek review`
 - `Confidence: NN%` (or `unknown`)
 - `Final verdict: APPROVED | REJECTED | COMMENT`
-- `Top findings (changed-file evidence only)` with at most 5 findings
+- `Top findings (changed-file evidence only)` with explicit `Code refs: path[:line]` per finding
 
 Rules:
 - PR title/body are **not** modified by DeepSeek workflow.
 - Findings without changed-file evidence are filtered out before posting.
+- The workflow no longer enforces a fixed top-5 findings cap by default.
 - If verdict parsing fails, the workflow posts `COMMENT` with `Confidence: unknown`.
 
 ### ✅ APPROVED (NN%)

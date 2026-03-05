@@ -54,6 +54,26 @@ def _line_has_changed_file_ref(line: str, changed_files: set[str]) -> bool:
     return False
 
 
+def _extract_changed_code_refs(line: str, changed_files: set[str]) -> list[str]:
+    refs: list[str] = []
+    seen: set[str] = set()
+    for match in RE_FILE_REF.finditer(str(line or "")):
+        raw = str(match.group(1) or "").strip().strip("`")
+        canonical = _canonical_file_ref(raw)
+        if not canonical or canonical not in changed_files:
+            continue
+        normalized = canonical
+        if ":" in raw:
+            suffix = raw.rsplit(":", 1)[-1]
+            if suffix.isdigit():
+                normalized = f"{canonical}:{suffix}"
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        refs.append(normalized)
+    return refs
+
+
 def _extract_verdict(raw: str) -> tuple[str, str, str]:
     event = "COMMENT"
     verdict_label = "COMMENT"
@@ -74,9 +94,10 @@ def _extract_verdict(raw: str) -> tuple[str, str, str]:
     return event, verdict_label, confidence
 
 
-def _extract_findings(raw: str, changed_files: set[str], max_findings: int) -> list[str]:
-    findings: list[str] = []
+def _extract_findings(raw: str, changed_files: set[str], max_findings: int) -> list[dict[str, object]]:
+    findings: list[dict[str, object]] = []
     seen: set[str] = set()
+    max_items = max(0, int(max_findings))
     for line in str(raw or "").splitlines():
         cleaned = _clean_line(line)
         if not cleaned:
@@ -89,11 +110,14 @@ def _extract_findings(raw: str, changed_files: set[str], max_findings: int) -> l
             continue
         if not _line_has_changed_file_ref(cleaned, changed_files):
             continue
+        refs = _extract_changed_code_refs(cleaned, changed_files)
+        if not refs:
+            continue
         if cleaned.lower() in seen:
             continue
         seen.add(cleaned.lower())
-        findings.append(cleaned[:240])
-        if len(findings) >= max(1, max_findings):
+        findings.append({"summary": cleaned, "code_refs": refs})
+        if max_items > 0 and len(findings) >= max_items:
             break
     return findings
 
@@ -102,8 +126,8 @@ def normalize_review_comment(
     *,
     content: str,
     changed_files: Iterable[str],
-    max_findings: int = 5,
-    max_body_chars: int = 4500,
+    max_findings: int = 0,
+    max_body_chars: int = 0,
 ) -> dict[str, object]:
     changed = {_normalize_path(x) for x in changed_files if _normalize_path(x)}
     event, verdict_label, confidence = _extract_verdict(content)
@@ -118,9 +142,12 @@ def normalize_review_comment(
     ]
     if findings:
         for idx, item in enumerate(findings, start=1):
-            lines.append(f"{idx}. {item}")
+            summary = str(item.get("summary", "")).strip()
+            code_refs = [str(x).strip() for x in item.get("code_refs", []) if str(x).strip()]
+            lines.append(f"{idx}. {summary}")
+            lines.append(f"   Code refs: {', '.join(f'`{ref}`' for ref in code_refs)}")
     else:
-        lines.append("1. No file-scoped findings extracted from model output.")
+        lines.append("1. No file-scoped findings with explicit code refs extracted from model output.")
     if event == "COMMENT":
         lines.extend(
             [
@@ -130,15 +157,16 @@ def normalize_review_comment(
         )
 
     body = "\n".join(lines).strip()
-    body_limit = max(200, int(max_body_chars))
-    if len(body) > body_limit:
+    body_limit = int(max_body_chars)
+    if body_limit > 0 and len(body) > max(200, body_limit):
         body = body[: body_limit - 40].rstrip() + "\n\n_[truncated by workflow]_"
 
     return {
         "event": event,
         "verdict": verdict_label,
         "confidence": confidence,
-        "findings": findings,
+        "findings": [str(item.get("summary", "")).strip() for item in findings],
+        "finding_code_refs": [item.get("code_refs", []) for item in findings],
         "body": body,
     }
 
@@ -151,8 +179,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="",
         help="Optional path to newline-delimited changed file list for evidence filtering.",
     )
-    parser.add_argument("--max-findings", type=int, default=5, help="Maximum findings to include.")
-    parser.add_argument("--max-body-chars", type=int, default=4500, help="Maximum output body length.")
+    parser.add_argument("--max-findings", type=int, default=0, help="Maximum findings to include (0 means no limit).")
+    parser.add_argument("--max-body-chars", type=int, default=0, help="Maximum output body length (0 means no truncation).")
     parser.add_argument("--output-json", default="", help="Optional output JSON path.")
     return parser.parse_args(argv)
 

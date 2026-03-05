@@ -250,6 +250,13 @@ Project Conductor migrates TV7 from the current custom local orchestrator to a s
     - **NOTE**: Posted review format is now strict/comment-only: `DeepSeek review`, confidence, final verdict, top findings (changed-file evidence only); parser fallback posts COMMENT with `unknown` confidence when verdict is missing.
     - **NOTE**: Added unit tests in `tooling/tests/orchestrator/test_deepseek_review_comment.py`.
     - **NOTE**: Validation commands run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (56 tests passed); `python3 tooling/deepseek_review_comment.py --content-file ... --changed-files-file ...` (manual smoke).
+- [X] [CO-C01-07-06] Remove hard cap/truncation in DeepSeek comment normalizer and enforce explicit code references per finding.
+    **COMPLETED** | Architect Agent | 2026-03-04 22:17
+    - **NOTE**: Updated `tooling/deepseek_review_comment.py` defaults to no fixed max findings and no body truncation (`0` means unlimited); retained optional CLI overrides for repos that need limits.
+    - **NOTE**: Normalized review body now emits explicit `Code refs: path[:line]` for each finding and filters out lines without changed-file code references.
+    - **NOTE**: Updated DeepSeek prompt/workflow to remove the top-5 cap instruction and stop passing `--max-findings 5 --max-body-chars 4500`.
+    - **NOTE**: Updated docs in `docs/ai-code-review.md` and added regression tests in `tooling/tests/orchestrator/test_deepseek_review_comment.py`.
+    - **NOTE**: Validation command run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (58 tests passed).
 
 ## Phase 8: Integrator And Validation
 - [ ] [CO-C01-08-01] Implement final integrator node for post-review merge validation.

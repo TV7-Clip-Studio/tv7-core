@@ -19,6 +19,19 @@ The AI is instructed to behave like a strict Senior Engineer. It prioritizes:
 ## The Verdict
 The AI will post a **single comment** on your PR with one of two verdicts:
 
+### Comment Schema (Enforced)
+The posted DeepSeek review uses a minimal wrapper:
+- `DeepSeek review`
+- `Confidence: NN%` (or `unknown`)
+- `Final verdict: APPROVED | REJECTED | COMMENT`
+- `Model narrative` (DeepSeek output preserved as-is)
+
+Rules:
+- PR title/body are **not** modified by DeepSeek workflow.
+- DeepSeek narrative must follow this mini-structure in order: `Summary`, `Findings`, `Risks`, `Recommendations`.
+- Findings must describe problem + impact + evidence (`path[:line]`) when available.
+- If verdict parsing fails, the workflow posts `COMMENT` with `Confidence: unknown`.
+
 ### ✅ APPROVED (NN%)
 *   **Meaning**: The code looks safe and correct.
 *   **Action**: You may proceed to merge (pending human approval if required).
@@ -30,4 +43,3 @@ The AI will post a **single comment** on your PR with one of two verdicts:
     1.  Read the specific feedback.
     2.  Fix the issue or explain why it is a false positive in a reply.
     3.  Push a new commit to trigger a re-review.
-

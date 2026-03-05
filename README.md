@@ -24,6 +24,7 @@
 - Add symlinks so shared assets are visible in each repo (tracked as links, content lives in `tv7-core`). From repo root:
   - `docs/core -> ../../tv7-core/docs` (note the extra `..` because the link lives inside `docs/`)
   - `Makefile.core -> ../tv7-core/tooling/Makefile.core`
+  - `.agent -> ../tv7-core/.agent`
 - Bootstrap (`make bootstrap` or `make sync`) will ensure these symlinks exist if the repo is present.
 - Example (from inside a repo, e.g., `tv7-fastapi-backend`):
   ```
@@ -71,6 +72,19 @@ See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 - `make bootstrap` — clone/fix remotes and ensure sibling repos exist.
 - `make sync` (`make update`) — bootstrap, pull with rebase; outputs per-repo status.
 - `make set-secret` — set a GitHub Actions secret across repos via `tooling/set-secret.sh` (pass `SECRET_NAME`, `SECRET_VALUE`, and `REPOS` or `ALL`; optional `ORG`).
+
+## Agent context loading contract
+- **Architect Agent** (workspace root with all repos):
+  - Reads workspace-level `.agent` (`TV7/.agent/rules/project-context.md`) and `tv7-core/docs/*`.
+  - May coordinate cross-repo tasks and shared policy updates.
+- **Per-repo Agent** (single repo root):
+  - Reads local `.agent` symlink (`<repo>/.agent -> ../tv7-core/.agent`) and repo-local context.
+  - Uses shared guardrails from core while remaining scoped to its active repository.
+- **Bootstrap guarantee**:
+  - `make bootstrap` and `make sync` must ensure:
+    - `TV7/.agent -> tv7-core/.agent` (workspace-level)
+    - `<repo>/.agent -> ../tv7-core/.agent` (repo-level for each sibling repo)
+  - If `<repo>/.agent` already exists as a normal file/directory, bootstrap moves it to `<repo>/.agent.backup-<timestamp>` and then creates the symlink.
 
 
 # Agent Bootstrap (human prompt)

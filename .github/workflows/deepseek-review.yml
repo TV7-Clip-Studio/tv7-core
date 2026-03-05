@@ -34,11 +34,6 @@ on:
         required: false
         type: string
         default: "tv7_high_architecture.md roadmap.md"
-      update_pr_meta:
-        description: "If true, use PR_TITLE / PR_SUMMARY from DeepSeek output to update the PR title/body (with safeguards)."
-        required: false
-        type: boolean
-        default: true
     secrets:
       DEEPSEEK_API_KEY:
         required: true
@@ -160,8 +155,10 @@ jobs:
           set -eo pipefail
           # Exclude deleted-file hunks from model input to reduce payload size.
           git diff --unified=0 --no-color --diff-filter=ACMRTUXB "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_diff.txt
+          git diff --name-only --diff-filter=ACMRTUXB "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_changed_files.txt
           bytes=$(wc -c < /tmp/pr_diff.txt | tr -d ' ')
           echo "diff-bytes=$bytes" >> "$GITHUB_OUTPUT"
+          echo "changed-files-path=/tmp/pr_changed_files.txt" >> "$GITHUB_OUTPUT"
 
       - name: Build PR summary (changed files only)
         if: steps.guard.outputs.should-run == 'true'
@@ -395,11 +392,14 @@ jobs:
               "- Use version information to reason about availability; do not suggest downgrades to older APIs.",
               "- Prioritize logic errors, security issues, edge cases, and architectural risks.",
               "- Be concise and high-signal. Do not restate diffs.",
-              "- At the top of your response, provide a copy-pasteable PR title and a 2-4 sentence summary of the changes in this format:",
-              "PR_TITLE: <concise title>",
-              "PR_SUMMARY: <short summary>",
-              "Then continue with your review (key changes, risks, etc.) as usual.",
-              "- Present your key changes/summary as a numbered list.",
+              "- Do not speculate about files or system areas not present in the provided diff.",
+              "- Use this exact mini-structure with these section headers in order:",
+              "  Summary",
+              "  Findings",
+              "  Risks",
+              "  Recommendations",
+              "- Under Findings, explain each issue with: problem, impact, and evidence (`path[:line]`).",
+              "- If no meaningful findings exist, say so explicitly under Findings.",
               "At the end of your review, add one final line in this format:",
               "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)",
               "Use APPROVED when remaining issues are minor or non-blocking. ",
@@ -447,92 +447,58 @@ jobs:
             echo "CONTENT_EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Parse DeepSeek verdict
+      - name: Normalize DeepSeek review comment
         if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
-        id: verdict
+        id: normalize
         shell: bash
         env:
           CONTENT: ${{ steps.deepseek.outputs.content }}
+          CHANGED_FILES_PATH: ${{ steps.diff.outputs.changed-files-path }}
         run: |
           set -eo pipefail
-          line=$(printf "%s\n" "$CONTENT" | grep -E 'FINAL_VERDICT' | tail -1 || true)
-          verdict=""
-          if echo "$line" | grep -qi 'APPROVED'; then
-            verdict="APPROVE"
-          elif echo "$line" | grep -qi 'REJECTED'; then
-            verdict="REQUEST_CHANGES"
-          fi
-          echo "line=$line"
-          echo "verdict=$verdict"
-          {
-            echo "line=$line"
-            echo "verdict=$verdict"
-          } >> "$GITHUB_OUTPUT"
+          content_file=/tmp/deepseek_content.txt
+          output_json=/tmp/deepseek_normalized_review.json
+          printf "%s" "$CONTENT" > "$content_file"
+          python tooling/deepseek_review_comment.py \
+            --content-file "$content_file" \
+            --changed-files-file "$CHANGED_FILES_PATH" \
+            --output-json "$output_json"
 
-      - name: Parse PR title/summary from DeepSeek content
-        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
-        id: prmeta
-        shell: bash
-        env:
-          CONTENT: ${{ steps.deepseek.outputs.content }}
-        run: |
-          set -eo pipefail
-          pr_title=$(printf "%s\n" "$CONTENT" | grep -E '^PR_TITLE:' | head -1 | sed 's/^PR_TITLE:[[:space:]]*//')
-          pr_summary=$(printf "%s\n" "$CONTENT" | grep -E '^PR_SUMMARY:' | head -1 | sed 's/^PR_SUMMARY:[[:space:]]*//')
-          echo "title=$pr_title"
-          echo "summary=$pr_summary"
-          {
-            echo "title=$pr_title"
-            echo "summary=$pr_summary"
-          } >> "$GITHUB_OUTPUT"
+          event=$(jq -r '.event // "COMMENT"' "$output_json")
+          confidence=$(jq -r '.confidence // "unknown"' "$output_json")
+          verdict=$(jq -r '.verdict // "COMMENT"' "$output_json")
+          body=$(jq -r '.body // ""' "$output_json")
 
-      - name: Prepare review body (strip PR_TITLE/PR_SUMMARY)
-        if: steps.guard.outputs.should-run == 'true' && steps.deepseek.outputs.content != ''
-        id: review_body
-        shell: bash
-        env:
-          CONTENT: ${{ steps.deepseek.outputs.content }}
-        run: |
-          set -eo pipefail
-          cleaned=$(python - "$CONTENT" <<'PY'
-          import sys, re
-          raw = sys.argv[1]
-          lines = raw.splitlines()
-          kept = [ln for ln in lines if not re.match(r'^PR_(TITLE|SUMMARY):', ln.strip())]
-          text = "\n".join(kept).strip()
-          if not text:
-              text = raw
-          print(text)
-          PY
-          )
+          echo "event=$event" >> "$GITHUB_OUTPUT"
+          echo "confidence=$confidence" >> "$GITHUB_OUTPUT"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
           echo "body<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$cleaned" >> "$GITHUB_OUTPUT"
+          echo "$body" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Submit DeepSeek review (approve or request changes)
-        if: steps.guard.outputs.should-run == 'true' && steps.verdict.outputs.verdict != ''
+        if: steps.guard.outputs.should-run == 'true' && steps.normalize.outputs.body != ''
         uses: actions/github-script@v7
         env:
-          DEEPSEEK_CONTENT: ${{ steps.review_body.outputs.body }}
-          VERDICT_EVENT: ${{ steps.verdict.outputs.verdict }}
-          VERDICT_LINE: ${{ steps.verdict.outputs.line }}
+          NORMALIZED_BODY: ${{ steps.normalize.outputs.body }}
+          NORMALIZED_EVENT: ${{ steps.normalize.outputs.event }}
+          NORMALIZED_CONFIDENCE: ${{ steps.normalize.outputs.confidence }}
+          NORMALIZED_VERDICT: ${{ steps.normalize.outputs.verdict }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const content = (process.env.DEEPSEEK_CONTENT || '').trim();
-            const event = (process.env.VERDICT_EVENT || '').trim(); // APPROVE or REQUEST_CHANGES
-            const verdictLine = (process.env.VERDICT_LINE || '').trim();
-            if (!content || !event) {
-              throw new Error('Missing DeepSeek content or verdict event; cannot submit review.');
+            const body = (process.env.NORMALIZED_BODY || '').trim();
+            const event = (process.env.NORMALIZED_EVENT || 'COMMENT').trim();
+            const confidence = (process.env.NORMALIZED_CONFIDENCE || 'unknown').trim();
+            const verdict = (process.env.NORMALIZED_VERDICT || 'COMMENT').trim();
+            if (!body) {
+              throw new Error('Missing normalized DeepSeek review body.');
             }
 
             const prNumber = context.payload.pull_request.number;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-
-            const body = `### DeepSeek review
-            ${content}`;
 
             let finalEvent = event;
             let url = '(unknown)';
@@ -573,79 +539,6 @@ jobs:
             if (summaryPath) {
               fs.appendFileSync(
                 summaryPath,
-                `DeepSeek review submitted (${finalEvent}) to PR #${prNumber}: ${url}\n`
+                `DeepSeek review submitted (${finalEvent}) to PR #${prNumber}: ${url} (verdict=${verdict}, confidence=${confidence})\n`
               );
-            }
-
-      - name: Update PR title/body from DeepSeek metadata
-        if: steps.guard.outputs.should-run == 'true' && inputs.update_pr_meta && steps.prmeta.outputs.title != '' && steps.prmeta.outputs.summary != ''
-        uses: actions/github-script@v7
-        env:
-          DS_TITLE: ${{ steps.prmeta.outputs.title }}
-          DS_SUMMARY: ${{ steps.prmeta.outputs.summary }}
-          DS_VERDICT_LINE: ${{ steps.verdict.outputs.line }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const dsTitle = (process.env.DS_TITLE || '').trim();
-            const dsSummary = (process.env.DS_SUMMARY || '').trim();
-            const dsVerdictLine = (process.env.DS_VERDICT_LINE || '').trim();
-            if (!dsTitle || !dsSummary) {
-              console.log('No DeepSeek title/summary to apply.');
-              return;
-            }
-
-            const prNumber = context.payload.pull_request.number;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-            const currentTitle = pr.title || '';
-            const currentBody = pr.body || '';
-
-            // Safeguard: if author explicitly marked title with "author:" prefix, do not override.
-            const blocked = currentTitle.toLowerCase().startsWith('author:');
-
-            let newTitle = currentTitle;
-            if (!blocked) {
-              newTitle = dsTitle;
-            } else {
-              console.log('Current title marked as author-owned; not overriding.');
-            }
-
-            // Upsert AI Summary section in body
-            const aiHeader = '## AI Summary';
-            let newBody;
-            const aiBlock = `${aiHeader}\n${dsSummary}${dsVerdictLine ? `\n\n${dsVerdictLine}` : ''}\n`;
-            if (!currentBody || /^\s*$/m.test(currentBody)) {
-              newBody = aiBlock;
-            } else {
-              const pattern = new RegExp(`${aiHeader}[\\s\\S]*?(\\n## |$)`, 'm');
-              if (pattern.test(currentBody)) {
-                newBody = currentBody.replace(pattern, `${aiBlock}$1`).trimEnd();
-              } else {
-                newBody = `${currentBody.trimEnd()}\n\n${aiBlock}`;
-              }
-            }
-
-            const patch = {};
-            if (newTitle !== currentTitle) patch.title = newTitle;
-            if (newBody !== currentBody) patch.body = newBody;
-
-            if (Object.keys(patch).length === 0) {
-              console.log('No PR metadata changes to apply.');
-              return;
-            }
-
-            await github.rest.pulls.update({
-              owner,
-              repo,
-              pull_number: prNumber,
-              ...patch,
-            });
-
-            const summaryPath = process.env.GITHUB_STEP_SUMMARY;
-            if (summaryPath) {
-              const lines = [`PR metadata updated:`, `- title: ${newTitle !== currentTitle ? 'updated' : 'unchanged'}`, `- body: ${newBody !== currentBody ? 'updated (AI Summary section)' : 'unchanged'}`];
-              require('fs').appendFileSync(summaryPath, lines.join('\n') + '\n');
             }

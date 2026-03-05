@@ -24,6 +24,7 @@ ensure_link() {
   local link_path="$1"
   local target="$2"
   local label="$3"
+  local mode="${4:-warn}"
 
   local link_dir
   link_dir="$(dirname "$link_path")"
@@ -38,7 +39,21 @@ ensure_link() {
       log "fixed $label symlink -> $target"
     fi
   elif [ -e "$link_path" ]; then
-    warn "!! $label exists and is not a symlink at $link_path — please resolve manually"
+    if [ "$mode" = "backup-and-link" ]; then
+      local ts backup_path idx
+      ts="$(date +%Y%m%d-%H%M%S)"
+      backup_path="${link_path}.backup-${ts}"
+      idx=1
+      while [ -e "$backup_path" ]; do
+        backup_path="${link_path}.backup-${ts}-${idx}"
+        idx=$((idx + 1))
+      done
+      mv "$link_path" "$backup_path"
+      ln -s "$target" "$link_path"
+      warn "!! $label existed and was not a symlink at $link_path — moved to $backup_path and replaced with symlink -> $target"
+    else
+      warn "!! $label exists and is not a symlink at $link_path — please resolve manually"
+    fi
   else
     ln -s "$target" "$link_path"
     log "added $label symlink -> $target"
@@ -67,6 +82,7 @@ for repo in "${!REPO_URLS[@]}"; do
     log "== $repo ready at $path =="
     ensure_link "$path/docs/core" "../../tv7-core/docs" "$repo docs/core"
     ensure_link "$path/Makefile.core" "../tv7-core/tooling/Makefile.core" "$repo Makefile.core"
+    ensure_link "$path/.agent" "../tv7-core/.agent" "$repo .agent" "backup-and-link"
   fi
 done
 

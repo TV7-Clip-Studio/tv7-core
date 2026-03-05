@@ -40,9 +40,14 @@ ensure_link() {
     fi
   elif [ -e "$link_path" ]; then
     if [ "$mode" = "backup-and-link" ]; then
-      local ts backup_path
+      local ts backup_path idx
       ts="$(date +%Y%m%d-%H%M%S)"
       backup_path="${link_path}.backup-${ts}"
+      idx=1
+      while [ -e "$backup_path" ]; do
+        backup_path="${link_path}.backup-${ts}-${idx}"
+        idx=$((idx + 1))
+      done
       mv "$link_path" "$backup_path"
       ln -s "$target" "$link_path"
       warn "!! $label existed and was not a symlink at $link_path — moved to $backup_path and replaced with symlink -> $target"

@@ -59,6 +59,7 @@ def _discover_roadmaps(core_dir: Path) -> list[Path]:
 
 
 def _default_batch_id(core_dir: Path) -> str:
+    generated = f"manual-{now_iso().replace('+00:00', 'z').replace(':', '').replace('-', '')}"
     result = subprocess.run(
         ["git", "-C", str(core_dir), "rev-parse", "--abbrev-ref", "HEAD"],
         text=True,
@@ -66,12 +67,12 @@ def _default_batch_id(core_dir: Path) -> str:
         check=False,
     )
     if result.returncode != 0:
-        return ""
+        return generated
     branch = result.stdout.strip()
     prefix = "codex/batch-tv7-core-"
     if branch.startswith(prefix):
         return branch[len(prefix):]
-    return ""
+    return generated
 
 
 def _default_graph_batch_code() -> str:

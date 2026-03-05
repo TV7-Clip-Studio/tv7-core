@@ -271,6 +271,13 @@ Project Conductor migrates TV7 from the current custom local orchestrator to a s
     - **NOTE**: Routed all `orchestrator-*` Make targets to `conductor-*` equivalents with explicit deprecation warnings; legacy path remains as compatibility shim only.
     - **NOTE**: Updated docs in `docs/ai-code-review.md` to reflect fixed mini-structure expectations inside model narrative.
     - **NOTE**: Validation commands run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (56 tests passed); `make -n orchestrator-status`; `python3 tooling/deepseek_review_comment.py --content-file <sample>`.
+- [X] [CO-C01-07-09] Harden follow-up/bootstrap defaults and batch-id fallback after DeepSeek review.
+    **COMPLETED** | Architect Agent | 2026-03-05 11:13
+    - **NOTE**: `tooling/orchestrator/cli.py` now generates fallback batch IDs (`manual-<timestamp>`) when branch inference fails or branch does not match `codex/batch-tv7-core-*`.
+    - **NOTE**: `tooling/deepseek_followup.py` now validates `LIMIT` via parser helper and warns+defaults to `20` for invalid/non-positive inputs.
+    - **NOTE**: `tooling/bootstrap-repos.sh` now avoids backup collisions by appending numeric suffixes (`-1`, `-2`, ...) when `.agent.backup-<timestamp>` already exists.
+    - **NOTE**: Added tests in `tooling/tests/orchestrator/test_followup_and_batch_defaults.py`.
+    - **NOTE**: Validation command run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (62 tests passed).
 
 ## Phase 8: Integrator And Validation
 - [ ] [CO-C01-08-01] Implement final integrator node for post-review merge validation.

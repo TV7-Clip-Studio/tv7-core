@@ -43,6 +43,17 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _parse_limit(raw: str | None, default: int = 20) -> int:
+    try:
+        value = int(str(raw or "").strip())
+        if value <= 0:
+            raise ValueError
+        return value
+    except Exception:
+        print(f"[deepseek-followup] invalid LIMIT `{raw}`; defaulting to {default}.", file=sys.stderr)
+        return default
+
+
 def _gh_json(args: list[str]) -> Any:
     result = subprocess.run(
         ["gh", *args],
@@ -225,7 +236,7 @@ def main() -> int:
     config_file = Path(os.environ.get("CONFIG_FILE", str(script_dir / "repos-checks.conf"))).resolve()
     owner = os.environ.get("OWNER", "TV7-Clip-Studio")
     pr_state = os.environ.get("PR_STATE", "open")
-    limit = int(os.environ.get("LIMIT", "20"))
+    limit = _parse_limit(os.environ.get("LIMIT"), default=20)
     branch_prefix = os.environ.get("BRANCH_PREFIX", "codex/batch")
     batch_id = os.environ.get("BATCH_ID", "")
     only_actionable = _env_bool("ONLY_ACTIONABLE", default=False)

@@ -257,6 +257,13 @@ Project Conductor migrates TV7 from the current custom local orchestrator to a s
     - **NOTE**: Updated DeepSeek prompt/workflow to remove the top-5 cap instruction and stop passing `--max-findings 5 --max-body-chars 4500`.
     - **NOTE**: Updated docs in `docs/ai-code-review.md` and added regression tests in `tooling/tests/orchestrator/test_deepseek_review_comment.py`.
     - **NOTE**: Validation command run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (58 tests passed).
+- [X] [CO-C01-07-07] Revert DeepSeek review normalizer to minimal structure and preserve model narrative.
+    **COMPLETED** | Architect Agent | 2026-03-05 00:16
+    - **NOTE**: `tooling/deepseek_review_comment.py` now only wraps DeepSeek output with minimal metadata (`confidence`, `final verdict`) and preserves free-form narrative under `Model narrative`.
+    - **NOTE**: Workflow prompt in `.github/workflows/deepseek-review.yml` now asks for short overall summary + explained findings, instead of rigid findings schema output.
+    - **NOTE**: Updated tests in `tooling/tests/orchestrator/test_deepseek_review_comment.py` for minimal-wrapper behavior and verdict parser fallback.
+    - **NOTE**: Updated docs in `docs/ai-code-review.md` to describe the minimal wrapper contract.
+    - **NOTE**: Validation command run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (56 tests passed).
 
 ## Phase 8: Integrator And Validation
 - [ ] [CO-C01-08-01] Implement final integrator node for post-review merge validation.

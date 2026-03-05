@@ -20,16 +20,15 @@ The AI is instructed to behave like a strict Senior Engineer. It prioritizes:
 The AI will post a **single comment** on your PR with one of two verdicts:
 
 ### Comment Schema (Enforced)
-The posted DeepSeek review must follow this compact schema:
+The posted DeepSeek review uses a minimal wrapper:
 - `DeepSeek review`
 - `Confidence: NN%` (or `unknown`)
 - `Final verdict: APPROVED | REJECTED | COMMENT`
-- `Top findings (changed-file evidence only)` with explicit `Code refs: path[:line]` per finding
+- `Model narrative` (DeepSeek output preserved as-is)
 
 Rules:
 - PR title/body are **not** modified by DeepSeek workflow.
-- Findings without changed-file evidence are filtered out before posting.
-- The workflow no longer enforces a fixed top-5 findings cap by default.
+- The workflow preserves DeepSeek narrative so it can include summary + explained findings naturally.
 - If verdict parsing fails, the workflow posts `COMMENT` with `Confidence: unknown`.
 
 ### ✅ APPROVED (NN%)

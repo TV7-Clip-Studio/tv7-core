@@ -8,6 +8,7 @@ Batch Code: M01
 - `tv7-core`: `docs/roadmaps/tv7-core-roadmap.md`
 - `tv7-core` orchestration initiative: `docs/roadmaps/core/agent-orchestration-roadmap.md`
 - `tv7-core` Project Conductor migration: `docs/roadmaps/core/project-conductor-roadmap.md`
+- `tv7-conductor`: `../tv7-conductor/docs/roadmaps/tv7-conductor-roadmap.md`
 - `tv7-fastapi-backend`: `docs/roadmaps/tv7-fastapi-backend-roadmap.md`
 - `tv7-fastapi-backend` off-roadmap: `docs/roadmaps/tv7-fastapi-backend-off-roadmap.md`
 - `tv7-flutter-studio`: `docs/roadmaps/tv7-flutter-studio-roadmap.md`
@@ -17,7 +18,7 @@ Batch Code: M01
 ### Task Model & Coordination Rules
 All tasks in this roadmap must follow this strict format to ensure visibility across agents.
 ID shape: `REPO-BATCH-EPIC-TICKET` (example: `CO-M01-04-01`).
-Repo and batch mappings are defined in `tooling/orchestrator/roadmap_ids.toml`.
+Repo and batch mappings are defined in `../tv7-conductor/tooling/orchestrator/roadmap_ids.toml`.
 
 #### Task Format
 ```markdown

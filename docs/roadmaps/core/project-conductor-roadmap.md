@@ -330,3 +330,34 @@ Project Conductor migrates TV7 from the current custom local orchestrator to a s
     - **NOTE**: Added Make targets `conductor-ops-status` and `orchestrator-ops-status`.
     - **NOTE**: Documented operator command in runbook and tooling README.
     - **NOTE**: Validation commands run: `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` (53 tests passed); `python3 tooling/conductor.py ops-status --json`.
+- [X] [CO-C01-10-05] Extract Project Conductor into standalone `tv7-conductor` repository and keep `tv7-core` as governance + shim surface.
+    **COMPLETED** | Architect Agent | 2026-04-05 14:05
+    - **NOTE**: Scope: move runtime/tooling/tests/config from `tv7-core` to new sibling repo, preserve operator command compatibility in `tv7-core`.
+    - **NOTE**: Acceptance: Conductor can run from `tv7-conductor`, and `tv7-core` `make conductor-*` wrappers call into standalone repo.
+    - **NOTE**: Validation: execute `make -n conductor-status` and `make -n conductor-profiles` from `tv7-core` to verify shim routing into `tv7-conductor`.
+    - **NOTE**: Completed extraction: created sibling repo `tv7-conductor` with runtime, tests, policies, and runbooks; rewired `tv7-core` Makefile and docs to use that repo.
+    - **NOTE**: `tv7-core` keeps shim scripts (`tooling/conductor.py`, `tooling/conductor_run.py`, `tooling/orchestrator.py`) plus governance docs.
+
+## Phase 11: Standalone Repo Boundary Hardening
+- [ ] [CO-C01-11-01] Adopt the revised repo separation plan for `tv7-core` and `tv7-conductor`.
+    **BACKLOG** | Architect Agent | 2026-04-25 10:55
+    - **NOTE**: Plan: `docs/repos/core/project-conductor-repo-separation-plan.md`.
+    - **NOTE**: Scope: keep `tv7-conductor` as the runtime repo, keep `tv7-core` as roadmap/governance/shim owner, and remove the overloaded path assumptions left by extraction.
+- [X] [CO-C01-11-02] Update `tv7-core` shims to pass explicit path roles to `tv7-conductor`.
+    **COMPLETED** | Architect Agent | 2026-04-27 12:50
+    - **NOTE**: Acceptance: shimmed runs read `tv7-core/docs/roadmaps` and write active runtime state under `tv7-conductor/docs/.conductor`.
+    - **NOTE**: `tv7-core/tooling/conductor.py`, `conductor_run.py`, and `orchestrator.py` now inject explicit path roles; Make targets route through these shims.
+- [ ] [CO-C01-11-03] Resolve duplicated Project Conductor docs and historical state after the path contract lands.
+    **BACKLOG** | Architect Agent | 2026-04-25 10:55
+    - **NOTE**: Preserve historical `tv7-core/docs/.conductor` until a migration/check command reports the diff and an explicit apply is requested.
+- [X] [CO-C01-11-04] Restore clean test ownership after extraction.
+    **COMPLETED** | Architect Agent | 2026-04-27 12:50
+    - **NOTE**: `tv7-conductor` tests must not import `tv7-core`-owned DeepSeek shared tooling; keep `deepseek_review_comment.py`, `deepseek_followup.py`, and `deepseek_fix.py` coverage in `tv7-core`.
+    - **NOTE**: Removed conductor-side tests for core-owned DeepSeek helpers; conductor tests now pass with only `PYTHONPATH=tooling`.
+- [ ] [CO-C01-11-05] Reframe `tv7-core` as a Conductor consumer, not the Conductor owner.
+    **BACKLOG** | Architect Agent | 2026-04-25 11:10
+    - **NOTE**: `tv7-core` should keep canonical TV7 roadmaps/governance and optional compatibility shims only; reusable Conductor product behavior belongs in `tv7-conductor`.
+- [X] [CO-C01-11-06] Add TV7 consumer profile for generic Conductor configuration.
+    **COMPLETED** | Architect Agent | 2026-04-27 12:50
+    - **NOTE**: Profile should declare TV7 repos, roadmap sources, issue labels, validation commands, preview commands/ports, and permitted automation levels.
+    - **NOTE**: Added `tooling/orchestrator/workspace.tv7.toml` in `tv7-conductor` with TV7 repo paths, roadmap sources, labels, validation commands, automation levels, and preview metadata.

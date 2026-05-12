@@ -14,7 +14,7 @@ Define timeout, retry, escalation, and human-override policy per orchestration s
 | `integrate` | Validation command timeouts bounded per repo | Retry once after deterministic fix | Block completion on repeated failures | Manual validation + explicit completion decision |
 
 ## Policy Configuration Source
-Policy is encoded in `tooling/orchestrator/conductor_policy.toml`.
+Policy is encoded in `../tv7-conductor/tooling/orchestrator/conductor_policy.toml`.
 
 Current CLI/runtime controls that reflect policy:
 - `tickets --assess-timeout-sec`

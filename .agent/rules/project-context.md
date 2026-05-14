@@ -13,9 +13,10 @@ trigger: always_on
 ## 2. Repository Map (Architecture)
 This workspace contains multiple integrated services. Use the correct folder names:
 
-* **`tv7-core`**: Shared standards, docs, and reusable workflows.
+* **`tv7-core`**: Shared standards, docs, and roadmap governance.
     * **Roadmap**: [`tv7-core/docs/roadmaps/roadmap.md`](file:///Users/joaquinastelarra/Documents/TV7/tv7-core/docs/roadmaps/roadmap.md)
     * **Architecture**: [`tv7-core/docs/tv7_high_architecture.md`](file:///Users/joaquinastelarra/Documents/TV7/tv7-core/docs/tv7_high_architecture.md)
+* **`tv7-conductor`**: Standalone Project Conductor runtime (plan/seed/expand/execute/review).
 * **`tv7-flutter-studio`** (The Client): Flutter Desktop application. Primary UI, manages local Engine processes.
 * **`tv7-fastapi-backend`** (The Control Plane): Python/FastAPI backend service. **Auth, Billing, Scheduling ONLY.** No media processing.
 * **`tv7-astro-site`**: Documentation or marketing site (Astro).
@@ -47,6 +48,10 @@ Execute commands inside the specific service directories:
 * **Start:** `make run-desktop` (macOS) or `make run FLAVOR=dev`
 * **Test:** `flutter test`
 * **Lint:** `flutter analyze`
+
+### Conductor (`tv7-conductor`)
+* **Start/Status:** `make conductor-init`, `make conductor-status` (from `tv7-core` shim) or `python3 tooling/conductor.py` (inside `tv7-conductor`)
+* **Tests:** `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'`
 
 ## 5. Planning Requirement
 As per "Agent Best Practices," you must output a numbered **Implementation Plan**.

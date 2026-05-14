@@ -2,8 +2,11 @@
 
 REPO_ROOT ?= ..
 REPO_ROOT := $(abspath $(REPO_ROOT))
-REPOS ?= tv7-core tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site
+REPOS ?= tv7-core tv7-conductor tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site
 TOOLING_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/tooling
+CONDUCTOR_REPO ?= $(REPO_ROOT)/tv7-conductor
+CONDUCTOR_TOOLING_DIR ?= $(CONDUCTOR_REPO)/tooling
+CONDUCTOR_PYTHON ?= $(if $(wildcard $(CONDUCTOR_REPO)/.venv/bin/python),$(CONDUCTOR_REPO)/.venv/bin/python,$(if $(wildcard /opt/homebrew/bin/python3),/opt/homebrew/bin/python3,python3))
 SYNC_BASE ?= origin/main
 SKIP_DEPS ?= 0
 SKIP_IDE ?= 0
@@ -39,11 +42,11 @@ CONDUCTOR_EXECUTE_LIMIT ?= 0
 CONDUCTOR_EXECUTE_RESUME_FROM ?=
 CONDUCTOR_EXECUTE_FORCE ?= 0
 CONDUCTOR_AO_COMMAND ?= ao
-CONDUCTOR_EXECUTE_POLICY ?=
+CONDUCTOR_EXECUTE_POLICY ?= $(CONDUCTOR_TOOLING_DIR)/orchestrator/execution_policy.toml
 CONDUCTOR_REVIEW_LIMIT ?= 0
 CONDUCTOR_REVIEW_RESUME_FROM ?=
 CONDUCTOR_REVIEW_MAX_LOOPS ?= 0
-CONDUCTOR_REVIEW_POLICY ?=
+CONDUCTOR_REVIEW_POLICY ?= $(CONDUCTOR_TOOLING_DIR)/orchestrator/review_policy.toml
 CONDUCTOR_REVIEW_HARD_ONLY ?= 0
 CONDUCTOR_REVIEW_INCLUDE_RECOMMENDATIONS ?= 0
 CONDUCTOR_IDEA_FILE ?= $(CURDIR)/IDEA.md
@@ -53,7 +56,7 @@ CONDUCTOR_GRAPH_BATCH_CODE ?= C01
 CONDUCTOR_GRAPH_DEFAULT_EPIC ?= 01
 CONDUCTOR_GRAPH_HANDOFF ?= 1
 
-.PHONY: status pull-all bootstrap sync update set-secret update-secrets batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status deepseek-followup deepseek-fix conductor-init conductor-plan conductor-graph-plan conductor-graph-plan-apply conductor-profiles conductor-tickets conductor-tickets-apply conductor-tickets-gemini conductor-tickets-gemini-apply conductor-tickets-codex conductor-tickets-codex-apply conductor-expand conductor-expand-apply conductor-expand-label-check conductor-expand-label-check-apply conductor-execute conductor-execute-apply conductor-review conductor-review-apply conductor-tickets-reset conductor-tickets-reset-apply conductor-tickets-reset-scan conductor-tickets-reset-scan-apply conductor-run conductor-run-once conductor-status conductor-ops-status conductor-events orchestrator-init orchestrator-plan orchestrator-profiles orchestrator-tickets orchestrator-tickets-apply orchestrator-tickets-gemini orchestrator-tickets-gemini-apply orchestrator-tickets-codex orchestrator-tickets-codex-apply orchestrator-tickets-reset orchestrator-tickets-reset-apply orchestrator-tickets-reset-scan orchestrator-tickets-reset-scan-apply orchestrator-run-once orchestrator-status orchestrator-ops-status orchestrator-events
+.PHONY: status pull-all bootstrap sync update set-secret update-secrets batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status deepseek-followup deepseek-fix conductor-init conductor-plan conductor-graph-plan conductor-graph-plan-apply conductor-profiles conductor-tickets conductor-tickets-apply conductor-tickets-gemini conductor-tickets-gemini-apply conductor-tickets-codex conductor-tickets-codex-apply conductor-expand conductor-expand-apply conductor-expand-label-check conductor-expand-label-check-apply conductor-execute conductor-execute-apply conductor-review conductor-review-apply conductor-tickets-reset conductor-tickets-reset-apply conductor-tickets-reset-scan conductor-tickets-reset-scan-apply conductor-run conductor-run-once conductor-status conductor-ops-status conductor-events conductor-shim-check orchestrator-init orchestrator-plan orchestrator-profiles orchestrator-tickets orchestrator-tickets-apply orchestrator-tickets-gemini orchestrator-tickets-gemini-apply orchestrator-tickets-codex orchestrator-tickets-codex-apply orchestrator-tickets-reset orchestrator-tickets-reset-apply orchestrator-tickets-reset-scan orchestrator-tickets-reset-scan-apply orchestrator-run-once orchestrator-status orchestrator-ops-status orchestrator-events
 
 status:
 	@bash "$(TOOLING_DIR)/status.sh"
@@ -169,17 +172,17 @@ deepseek-fix:
 	"$(PYTHON)" "$(TOOLING_DIR)/deepseek_fix.py"
 
 conductor-init:
-	@"$(PYTHON)" "$(TOOLING_DIR)/conductor.py" init
+	@"$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" init
 
 conductor-plan:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" plan; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" plan; \
 	if [ -n "$(CONDUCTOR_PLAN_ROADMAP)" ]; then \
 		set -- "$$@" --single-roadmap --roadmap "$(CONDUCTOR_PLAN_ROADMAP)"; \
 	fi; \
 	"$$@"
 
 conductor-graph-plan:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" graph-plan --idea-file "$(CONDUCTOR_IDEA_FILE)" --default-repo "$(CONDUCTOR_GRAPH_DEFAULT_REPO)" --batch-code "$(CONDUCTOR_GRAPH_BATCH_CODE)" --default-epic "$(CONDUCTOR_GRAPH_DEFAULT_EPIC)" --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXPAND_LIMIT)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" graph-plan --idea-file "$(CONDUCTOR_IDEA_FILE)" --default-repo "$(CONDUCTOR_GRAPH_DEFAULT_REPO)" --batch-code "$(CONDUCTOR_GRAPH_BATCH_CODE)" --default-epic "$(CONDUCTOR_GRAPH_DEFAULT_EPIC)" --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXPAND_LIMIT)"; \
 	if [ -n "$(CONDUCTOR_GRAPH_ROADMAP_CODE)" ]; then set -- "$$@" --roadmap-code "$(CONDUCTOR_GRAPH_ROADMAP_CODE)"; fi; \
 	if [ "$(CONDUCTOR_GRAPH_HANDOFF)" = "0" ]; then set -- "$$@" --no-handoff-expand; fi; \
 	if [ -n "$(CONDUCTOR_EXPAND_RESUME_FROM)" ]; then set -- "$$@" --resume-from "$(CONDUCTOR_EXPAND_RESUME_FROM)"; fi; \
@@ -188,7 +191,7 @@ conductor-graph-plan:
 	"$$@"
 
 conductor-graph-plan-apply:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" graph-plan --apply --idea-file "$(CONDUCTOR_IDEA_FILE)" --default-repo "$(CONDUCTOR_GRAPH_DEFAULT_REPO)" --batch-code "$(CONDUCTOR_GRAPH_BATCH_CODE)" --default-epic "$(CONDUCTOR_GRAPH_DEFAULT_EPIC)" --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXPAND_LIMIT)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" graph-plan --apply --idea-file "$(CONDUCTOR_IDEA_FILE)" --default-repo "$(CONDUCTOR_GRAPH_DEFAULT_REPO)" --batch-code "$(CONDUCTOR_GRAPH_BATCH_CODE)" --default-epic "$(CONDUCTOR_GRAPH_DEFAULT_EPIC)" --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXPAND_LIMIT)"; \
 	if [ -n "$(CONDUCTOR_GRAPH_ROADMAP_CODE)" ]; then set -- "$$@" --roadmap-code "$(CONDUCTOR_GRAPH_ROADMAP_CODE)"; fi; \
 	if [ "$(CONDUCTOR_GRAPH_HANDOFF)" = "0" ]; then set -- "$$@" --no-handoff-expand; fi; \
 	if [ -n "$(CONDUCTOR_EXPAND_RESUME_FROM)" ]; then set -- "$$@" --resume-from "$(CONDUCTOR_EXPAND_RESUME_FROM)"; fi; \
@@ -196,17 +199,17 @@ conductor-graph-plan-apply:
 	"$$@"
 
 conductor-profiles:
-	@"$(PYTHON)" "$(TOOLING_DIR)/conductor.py" tickets --list-agent-profiles
+	@"$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" tickets --list-agent-profiles
 
 conductor-tickets:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" tickets --agent-profile "$(CONDUCTOR_AGENT_PROFILE)" --batch-id "$(CONDUCTOR_BATCH_ID)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" tickets --agent-profile "$(CONDUCTOR_AGENT_PROFILE)" --batch-id "$(CONDUCTOR_BATCH_ID)"; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ROADMAP)" ]; then set -- "$$@" --roadmap "$(CONDUCTOR_TICKET_ROADMAP)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(CONDUCTOR_TICKET_ITEM_PREFIX)"; fi; \
 	"$$@"
 
 conductor-tickets-apply:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" tickets --apply --agent-profile "$(CONDUCTOR_AGENT_PROFILE)" --batch-id "$(CONDUCTOR_BATCH_ID)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" tickets --apply --agent-profile "$(CONDUCTOR_AGENT_PROFILE)" --batch-id "$(CONDUCTOR_BATCH_ID)"; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ROADMAP)" ]; then set -- "$$@" --roadmap "$(CONDUCTOR_TICKET_ROADMAP)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(CONDUCTOR_TICKET_ITEM_PREFIX)"; fi; \
@@ -225,7 +228,7 @@ conductor-tickets-codex-apply:
 	@$(MAKE) conductor-tickets-apply CONDUCTOR_AGENT_PROFILE=codex_fast_low CONDUCTOR_TICKET_REPO="$(CONDUCTOR_TICKET_REPO)" CONDUCTOR_TICKET_ROADMAP="$(CONDUCTOR_TICKET_ROADMAP)" CONDUCTOR_TICKET_ITEM_PREFIX="$(CONDUCTOR_TICKET_ITEM_PREFIX)" CONDUCTOR_BATCH_ID="$(CONDUCTOR_BATCH_ID)"
 
 conductor-expand:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" expand --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXPAND_LIMIT)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" expand --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXPAND_LIMIT)"; \
 	set -- "$$@" --expand-agent "$(CONDUCTOR_EXPAND_AGENT)"; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ROADMAP)" ]; then set -- "$$@" --roadmap "$(CONDUCTOR_TICKET_ROADMAP)"; fi; \
@@ -239,7 +242,7 @@ conductor-expand:
 	"$$@"
 
 conductor-expand-apply:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" expand --apply --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXPAND_LIMIT)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" expand --apply --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXPAND_LIMIT)"; \
 	set -- "$$@" --expand-agent "$(CONDUCTOR_EXPAND_AGENT)"; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ROADMAP)" ]; then set -- "$$@" --roadmap "$(CONDUCTOR_TICKET_ROADMAP)"; fi; \
@@ -252,19 +255,19 @@ conductor-expand-apply:
 	"$$@"
 
 conductor-expand-label-check:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" expand-label-check; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" expand-label-check; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(CONDUCTOR_TICKET_ITEM_PREFIX)"; fi; \
 	"$$@"
 
 conductor-expand-label-check-apply:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" expand-label-check --apply; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" expand-label-check --apply; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(CONDUCTOR_TICKET_ITEM_PREFIX)"; fi; \
 	"$$@"
 
 conductor-execute:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" execute --ao-command "$(CONDUCTOR_AO_COMMAND)" --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXECUTE_LIMIT)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" execute --ao-command "$(CONDUCTOR_AO_COMMAND)" --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXECUTE_LIMIT)"; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ROADMAP)" ]; then set -- "$$@" --roadmap "$(CONDUCTOR_TICKET_ROADMAP)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(CONDUCTOR_TICKET_ITEM_PREFIX)"; fi; \
@@ -274,7 +277,7 @@ conductor-execute:
 	"$$@"
 
 conductor-execute-apply:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" execute --apply --ao-command "$(CONDUCTOR_AO_COMMAND)" --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXECUTE_LIMIT)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" execute --apply --ao-command "$(CONDUCTOR_AO_COMMAND)" --batch-id "$(CONDUCTOR_BATCH_ID)" --limit "$(CONDUCTOR_EXECUTE_LIMIT)"; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ROADMAP)" ]; then set -- "$$@" --roadmap "$(CONDUCTOR_TICKET_ROADMAP)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(CONDUCTOR_TICKET_ITEM_PREFIX)"; fi; \
@@ -284,7 +287,7 @@ conductor-execute-apply:
 	"$$@"
 
 conductor-review:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" review --limit "$(CONDUCTOR_REVIEW_LIMIT)" --max-loops "$(CONDUCTOR_REVIEW_MAX_LOOPS)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" review --limit "$(CONDUCTOR_REVIEW_LIMIT)" --max-loops "$(CONDUCTOR_REVIEW_MAX_LOOPS)"; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ROADMAP)" ]; then set -- "$$@" --roadmap "$(CONDUCTOR_TICKET_ROADMAP)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(CONDUCTOR_TICKET_ITEM_PREFIX)"; fi; \
@@ -296,7 +299,7 @@ conductor-review:
 	"$$@"
 
 conductor-review-apply:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" review --apply --limit "$(CONDUCTOR_REVIEW_LIMIT)" --max-loops "$(CONDUCTOR_REVIEW_MAX_LOOPS)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" review --apply --limit "$(CONDUCTOR_REVIEW_LIMIT)" --max-loops "$(CONDUCTOR_REVIEW_MAX_LOOPS)"; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ROADMAP)" ]; then set -- "$$@" --roadmap "$(CONDUCTOR_TICKET_ROADMAP)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(CONDUCTOR_TICKET_ITEM_PREFIX)"; fi; \
@@ -308,33 +311,36 @@ conductor-review-apply:
 	"$$@"
 
 conductor-tickets-reset:
-	@"$(PYTHON)" "$(TOOLING_DIR)/conductor.py" tickets-reset --batch-id "$(CONDUCTOR_BATCH_ID)"
+	@"$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" tickets-reset --batch-id "$(CONDUCTOR_BATCH_ID)"
 
 conductor-tickets-reset-apply:
-	@"$(PYTHON)" "$(TOOLING_DIR)/conductor.py" tickets-reset --apply --batch-id "$(CONDUCTOR_BATCH_ID)"
+	@"$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" tickets-reset --apply --batch-id "$(CONDUCTOR_BATCH_ID)"
 
 conductor-tickets-reset-scan:
-	@"$(PYTHON)" "$(TOOLING_DIR)/conductor.py" tickets-reset --scan-open --scope all-linked
+	@"$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" tickets-reset --scan-open --scope all-linked
 
 conductor-tickets-reset-scan-apply:
-	@"$(PYTHON)" "$(TOOLING_DIR)/conductor.py" tickets-reset --apply --scan-open --scope all-linked
+	@"$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" tickets-reset --apply --scan-open --scope all-linked
 
 conductor-run-once:
-	@"$(PYTHON)" "$(TOOLING_DIR)/conductor.py" run-once
+	@"$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" run-once
 
 conductor-status:
-	@"$(PYTHON)" "$(TOOLING_DIR)/conductor.py" status
+	@"$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" status
 
 conductor-ops-status:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor.py" ops-status --ao-command "$(CONDUCTOR_AO_COMMAND)"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" ops-status --ao-command "$(CONDUCTOR_AO_COMMAND)"; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	"$$@"
 
 conductor-events:
-	@"$(PYTHON)" "$(TOOLING_DIR)/conductor.py" events
+	@"$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor.py" events
+
+conductor-shim-check:
+	@"$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/check-conductor-shims.py"
 
 conductor-run:
-	@set -- "$(PYTHON)" "$(TOOLING_DIR)/conductor_run.py"; \
+	@set -- "$(CONDUCTOR_PYTHON)" "$(CURDIR)/tooling/conductor_run.py"; \
 	if [ -n "$(CONDUCTOR_ROADMAP_FILE)" ]; then set -- "$$@" --roadmap-file "$(CONDUCTOR_ROADMAP_FILE)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_REPO)" ]; then set -- "$$@" --repo "$(CONDUCTOR_TICKET_REPO)"; fi; \
 	if [ -n "$(CONDUCTOR_TICKET_ITEM_PREFIX)" ]; then set -- "$$@" --item-prefix "$(CONDUCTOR_TICKET_ITEM_PREFIX)"; fi; \

@@ -7,6 +7,7 @@
   ```
   ./TV7/
     tv7-core/
+    tv7-conductor/
     tv7-fastapi-backend/
     tv7-astro-site/
     tv7-flutter-studio/
@@ -90,7 +91,7 @@ See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 # Agent Bootstrap (human prompt)
 You are now the TV7 Agent.
 Determine your agent role based on the current working directory:
-- If the root contains ALL TV7 repos (core, backend, astro, flutter, axum, etc.), you are the **Architect** Agent.
+- If the root contains ALL TV7 repos (core, conductor, backend, astro, flutter, axum, etc.), you are the **Architect** Agent.
 - If the root contains ONLY one repo (e.g., fastapi-backend, astro-site, flutter-studio, axum-engine), you are the (Backend, Site, Studio, or Engine) Agent.
 - You can also be a **Code Reviewer** Agent.
 - If uncertain, ask the human to clarify your role.

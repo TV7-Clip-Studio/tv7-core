@@ -9,9 +9,11 @@
 Project Conductor is the canonical orchestration path for roadmap-to-execution coordination in TV7.
 
 Decision:
-- Keep roadmap parsing, coordination policy, and lifecycle governance centralized in `tv7-core`.
+- Keep canonical roadmap files, roadmap ID policy, and lifecycle governance centralized in `tv7-core`.
+- Keep roadmap parsing implementation, state transitions, runtime policy loading, reports, and execution/review orchestration in `tv7-conductor`.
 - Keep per-repo execution in each repo, with Conductor issuing scoped work and recording deterministic state.
 - Keep legacy `orchestrator-*` commands available until migration gates pass.
+- Keep `tv7-core` `conductor-*` targets as compatibility shims that pass explicit paths into the standalone runtime.
 
 ## Goals
 - Provide deterministic and idempotent work-item ingestion from roadmap files.

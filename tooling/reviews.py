@@ -15,7 +15,7 @@ PR_STATE = os.environ.get("STATE", "open")
 LIMIT = int(os.environ.get("LIMIT", "100"))
 REPO_FILTER = os.environ.get("REPO", "").strip()
 REPOS_ENV = os.environ.get("REPOS", "").strip()
-OUT_DIR = Path(os.environ.get("OUT_DIR", "code-reviews")).resolve()
+OUT_DIR = Path(os.environ.get("OUT_DIR", "docs/code-reviews")).resolve()
 CONFIG_FILE = Path(
     os.environ.get("CONFIG_FILE", Path(__file__).resolve().parent / "repos-checks.conf")
 ).resolve()

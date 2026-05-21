@@ -22,8 +22,8 @@ Rollback to legacy-oriented operation if any trigger is true:
 | Phase | Entry Criteria | Exit Criteria | Owner | Evidence |
 | --- | --- | --- | --- | --- |
 | 1 Program Charter And Controls | Roadmap scope agreed | Charter, gates, failure policy published in `docs/repos/core/` | Architect | `project-conductor-charter.md`, `project-conductor-failure-policy.md`, this file |
-| 2 Data Model, IDs, State Machine | Phase 1 gate GO | Schema/versioning + transition policy validated | Architect | `docs/.conductor/state.json`, tests/reports |
-| 3 Seed Workflow | Phase 2 gate GO | Deterministic minimal issues + scoped filters validated | Architect | `docs/.conductor/reports/ticket-sync-*.md` |
+| 2 Data Model, IDs, State Machine | Phase 1 gate GO | Schema/versioning + transition policy validated | Architect | `../tv7-conductor/docs/.conductor/state.json`, tests/reports |
+| 3 Seed Workflow | Phase 2 gate GO | Deterministic minimal issues + scoped filters validated | Architect | `../tv7-conductor/docs/.conductor/reports/ticket-sync-*.md` |
 | 4 Expand Workflow | Phase 3 gate GO | Idempotent expansion + stage label transition validated | Architect | expand reports/checks |
 | 5 LangGraph Integration | Phase 4 gate GO | Idea ingestion and queue handoff stable | Architect | graph integration reports |
 | 6 Composio Execution | Phase 5 gate GO | Handoff bridge and artifact capture validated | Architect | execution logs/state artifacts |

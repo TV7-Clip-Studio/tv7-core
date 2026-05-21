@@ -119,7 +119,7 @@ See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 - `make dev-stop` — stop the background localhost stack.
 - `make dev-logs` — show recent localhost stack logs.
 - `make dev-backend`, `make dev-engine`, `make dev-site`, `make dev-studio` — run one service foreground from its native repo.
-- `make reviews` — collect all open PR review data across TV7 repos into `code-reviews/<repo>/`.
+- `make reviews` — collect all open PR review data across TV7 repos into `docs/code-reviews/<repo>/`.
 - `make set-secret` — set a GitHub Actions secret across repos via `tooling/set-secret.sh` (pass `SECRET_NAME`, `SECRET_VALUE`, and `REPOS` or `ALL`; optional `ORG`).
 
 ## Agent context loading contract

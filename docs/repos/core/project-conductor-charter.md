@@ -39,7 +39,7 @@ Decision:
 ## Success Metrics
 - Zero off-scope issue creation during scoped runs.
 - Stable item IDs and no duplicate issue creation on reruns.
-- Reproducible reports in `docs/.conductor/reports/` for each run mode.
+- Reproducible reports in `../tv7-conductor/docs/.conductor/reports/` for each run mode.
 - Review loops bounded by configurable max loops and clear escalation state.
 - Two clean full migration batches before decommissioning legacy commands.
 

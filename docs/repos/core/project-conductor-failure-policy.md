@@ -64,7 +64,7 @@ Escalation target:
 
 ## Minimum Operator Playbook
 1. Stop apply-mode command.
-2. Inspect latest report in `docs/.conductor/reports/`.
+2. Inspect latest report in `../tv7-conductor/docs/.conductor/reports/`.
 3. Inspect `make conductor-events` output.
 4. Apply smallest scoped corrective action.
 5. Resume with dry-run, then apply if safe.

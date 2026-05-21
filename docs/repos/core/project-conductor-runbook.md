@@ -43,9 +43,8 @@ Active runtime state lives in `tv7-conductor`:
 - Events log: `../tv7-conductor/docs/.conductor/events.jsonl`
 - Run artifacts: `../tv7-conductor/docs/.conductor/runs/`
 - Reports: `../tv7-conductor/docs/.conductor/reports/`
-- Historical pre-extraction state, if present: `docs/.conductor/`
 
-Do not delete historical state without running the conductor state migration check first.
+Generated `tv7-core/docs/.conductor` state is obsolete after extraction. Core shims route runtime state to `tv7-conductor`.
 
 ## Standard Lifecycle
 Default work item lifecycle:
@@ -183,7 +182,7 @@ Launch a preview when the repo profile has a preview command:
 make conductor-launch-preview \
   CONDUCTOR_REPO=tv7-astro-site \
   CONDUCTOR_ITEM_ID=ST-A01-02-01 \
-  CONDUCTOR_WORKTREE_PATH=docs/.conductor/worktrees/tv7-astro-site/ST-A01-02-01 \
+  CONDUCTOR_WORKTREE_PATH=../tv7-conductor/docs/.conductor/worktrees/tv7-astro-site/ST-A01-02-01 \
   CONDUCTOR_PREVIEW_PORT=4322 \
   CONDUCTOR_PREVIEW_COMMAND="npm run dev -- --host 127.0.0.1 --port 4322"
 ```
@@ -194,7 +193,7 @@ Validate the worktree:
 make conductor-validate-worktree \
   CONDUCTOR_REPO=tv7-astro-site \
   CONDUCTOR_ITEM_ID=ST-A01-02-01 \
-  CONDUCTOR_WORKTREE_PATH=docs/.conductor/worktrees/tv7-astro-site/ST-A01-02-01 \
+  CONDUCTOR_WORKTREE_PATH=../tv7-conductor/docs/.conductor/worktrees/tv7-astro-site/ST-A01-02-01 \
   CONDUCTOR_VALIDATION_COMMAND="npm run build"
 ```
 

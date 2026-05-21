@@ -113,12 +113,13 @@ See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 - `make status` — show git status for all tracked repos.
 - `make pull-all` — pull current branch in each repo (auto-sets upstream if present).
 - `make bootstrap` — clone/fix remotes and ensure sibling repos exist.
-- `make sync` (`make update`) — bootstrap, pull with rebase; outputs per-repo status.
+- `make sync` (`make update`) — bootstrap, pull with rebase; outputs per-repo status plus open PR number and URL for the local branch when `gh` is authenticated.
 - `make dev` (`make dev-up`) — start backend/Postgres, engine, and site for localhost development.
 - `make dev-status` — check localhost repo/process/health status.
 - `make dev-stop` — stop the background localhost stack.
 - `make dev-logs` — show recent localhost stack logs.
 - `make dev-backend`, `make dev-engine`, `make dev-site`, `make dev-studio` — run one service foreground from its native repo.
+- `make reviews` — collect all open PR review data across TV7 repos into `code-reviews/<repo>/`.
 - `make set-secret` — set a GitHub Actions secret across repos via `tooling/set-secret.sh` (pass `SECRET_NAME`, `SECRET_VALUE`, and `REPOS` or `ALL`; optional `ORG`).
 
 ## Agent context loading contract

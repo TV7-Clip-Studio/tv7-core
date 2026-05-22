@@ -65,33 +65,40 @@ def api(path: str) -> Any:
     return gh_json(["api", path])
 
 
-def collect_pr(repo: str, pr: dict[str, Any]) -> dict[str, Any]:
-    number = int(pr["number"])
-    full_name = f"{OWNER}/{repo}"
-    base_api = f"repos/{full_name}/pulls/{number}"
+def collect_pr(repo: str, pr: dict[str, Any]) -> dict[str, Any] | None:
+    try:
+        number = int(pr["number"])
+        full_name = f"{OWNER}/{repo}"
+        base_api = f"repos/{full_name}/pulls/{number}"
 
-    detail = gh_json(
-        [
-            "pr",
-            "view",
-            str(number),
-            "--repo",
-            full_name,
-            "--json",
-            "number,title,url,state,isDraft,author,headRefName,baseRefName,reviewDecision,mergeable,labels,assignees,createdAt,updatedAt,body,commits,files,comments,reviews,statusCheckRollup",
-        ]
-    )
+        detail = gh_json(
+            [
+                "pr",
+                "view",
+                str(number),
+                "--repo",
+                full_name,
+                "--json",
+                "number,title,url,state,isDraft,author,headRefName,baseRefName,reviewDecision,mergeable,labels,assignees,createdAt,updatedAt,body,commits,files,comments,reviews,statusCheckRollup",
+            ]
+        )
+        if not isinstance(detail, dict) or "number" not in detail:
+            print(f"Skipping PR #{number} in repo {repo}: pr view returned invalid JSON", file=sys.stderr)
+            return None
 
-    return {
-        "repo": repo,
-        "repository": full_name,
-        "collected_at": datetime.now(timezone.utc).isoformat(),
-        "pr": detail,
-        "issue_comments": api(f"repos/{full_name}/issues/{number}/comments?per_page=100"),
-        "reviews": api(f"{base_api}/reviews?per_page=100"),
-        "review_comments": api(f"{base_api}/comments?per_page=100"),
-        "files": api(f"{base_api}/files?per_page=100"),
-    }
+        return {
+            "repo": repo,
+            "repository": full_name,
+            "collected_at": datetime.now(timezone.utc).isoformat(),
+            "pr": detail,
+            "issue_comments": api(f"repos/{full_name}/issues/{number}/comments?per_page=100"),
+            "reviews": api(f"{base_api}/reviews?per_page=100"),
+            "review_comments": api(f"{base_api}/comments?per_page=100"),
+            "files": api(f"{base_api}/files?per_page=100"),
+        }
+    except Exception as exc:
+        print(f"Error collecting PR #{pr.get('number')} in repo {repo}: {exc}", file=sys.stderr)
+        return None
 
 
 def write_repo_outputs(repo: str, entries: list[dict[str, Any]]) -> None:
@@ -100,8 +107,12 @@ def write_repo_outputs(repo: str, entries: list[dict[str, Any]]) -> None:
 
     index: list[dict[str, Any]] = []
     for entry in entries:
-        pr = entry["pr"]
-        number = pr["number"]
+        pr = entry.get("pr")
+        if not isinstance(pr, dict):
+            continue
+        number = pr.get("number")
+        if number is None:
+            continue
         path = repo_dir / f"pr-{number}.json"
         path.write_text(json.dumps(entry, indent=2, sort_keys=True) + "\n")
         index.append(
@@ -146,24 +157,42 @@ def main() -> int:
 
     for repo in repos:
         full_name = f"{OWNER}/{repo}"
-        prs = gh_json(
-            [
-                "pr",
-                "list",
-                "--repo",
-                full_name,
-                "--state",
-                PR_STATE,
-                "--limit",
-                str(LIMIT),
-                "--json",
-                "number,title,url,state,headRefName,baseRefName,reviewDecision,isDraft,updatedAt",
-            ]
-        )
-        if not isinstance(prs, list):
-            prs = []
+        try:
+            prs = gh_json(
+                [
+                    "pr",
+                    "list",
+                    "--repo",
+                    full_name,
+                    "--state",
+                    PR_STATE,
+                    "--limit",
+                    str(LIMIT),
+                    "--json",
+                    "number,title,url,state,headRefName,baseRefName,reviewDecision,isDraft,updatedAt",
+                ]
+            )
+        except RuntimeError as exc:
+            print(f"Skipping repo {repo} due to API/access error: {exc}", file=sys.stderr)
+            continue
 
-        entries = [collect_pr(repo, pr) for pr in prs]
+        if not isinstance(prs, list):
+            print(f"Skipping repo {repo}: list response is not a JSON array", file=sys.stderr)
+            continue
+
+        valid_prs = []
+        for pr in prs:
+            if isinstance(pr, dict) and "number" in pr:
+                valid_prs.append(pr)
+            else:
+                print(f"Skipping malformed PR description in repo {repo}: {pr}", file=sys.stderr)
+
+        entries = []
+        for pr in valid_prs:
+            entry = collect_pr(repo, pr)
+            if entry is not None:
+                entries.append(entry)
+
         write_repo_outputs(repo, entries)
 
         repo_summary: list[dict[str, Any]] = []

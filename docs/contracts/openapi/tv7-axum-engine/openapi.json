@@ -364,17 +364,13 @@
             "type": "string"
           },
           "available": {
-            "type": [
-              "boolean",
-              "null"
-            ],
+            "type": "boolean",
+            "nullable": true,
             "description": "null means the tool is known but not checked for this milestone."
           },
           "version": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string",
+            "nullable": true
           },
           "required_for": {
             "type": "array",
@@ -383,10 +379,8 @@
             }
           },
           "error": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -405,10 +399,8 @@
             "type": "boolean"
           },
           "error": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -450,23 +442,17 @@
             "type": "string"
           },
           "duration_seconds": {
-            "type": [
-              "number",
-              "null"
-            ]
+            "type": "number",
+            "nullable": true
           },
           "width": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
+            "nullable": true,
             "minimum": 0
           },
           "height": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
+            "nullable": true,
             "minimum": 0
           },
           "format": {
@@ -492,10 +478,8 @@
             "type": "string"
           },
           "timestamp_seconds": {
-            "type": [
-              "number",
-              "null"
-            ],
+            "type": "number",
+            "nullable": true,
             "default": 1.0,
             "minimum": 0
           }
@@ -540,11 +524,13 @@
           },
           "start_seconds": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Start time of the clip in seconds. Must be >= 0 and less than end_seconds."
           },
           "end_seconds": {
             "type": "number",
-            "exclusiveMinimum": 0
+            "exclusiveMinimum": 0,
+            "description": "End time of the clip in seconds. Must be > start_seconds."
           }
         }
       },

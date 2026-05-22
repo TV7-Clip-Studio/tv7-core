@@ -32,6 +32,15 @@ ensure_dirs() {
   mkdir -p "$LOG_DIR" "$PID_DIR"
 }
 
+has_makefile_target() {
+  local repo_path="$1"
+  local target="$2"
+  if [[ ! -f "$repo_path/Makefile" ]]; then
+    return 1
+  fi
+  grep -q "^${target}:" "$repo_path/Makefile"
+}
+
 repo_exists() {
   local name="$1"
   local path="$2"
@@ -77,12 +86,25 @@ start_background() {
     cd "$dir"
     exec bash -lc "$command"
   ) >"$log_file" 2>&1 &
-  echo "$!" >"$pid_file"
-  echo "[ok] $name started (pid $(cat "$pid_file"), log $log_file)"
+  local pid=$!
+  echo "$pid" >"$pid_file"
+  
+  sleep 0.5
+  if kill -0 "$pid" >/dev/null 2>&1; then
+    echo "[ok] $name started (pid $pid, log $log_file)"
+  else
+    echo "[X] $name failed to start! See logs at $log_file"
+    rm -f "$pid_file"
+    return 1
+  fi
 }
 
 start_backend() {
   local log_file="$LOG_DIR/backend.log"
+  if ! has_makefile_target "$BACKEND_REPO" "up"; then
+    echo "[X] backend Makefile or target 'up' missing at $BACKEND_REPO"
+    return 1
+  fi
   echo "[..] starting backend api/postgres with docker compose"
   (
     cd "$BACKEND_REPO"
@@ -94,16 +116,26 @@ start_backend() {
 health_url() {
   local label="$1"
   local url="$2"
+  local max_retries="${3:-1}"
+  local delay="${4:-1}"
+  
   if ! command -v curl >/dev/null 2>&1; then
     echo "[?] $label $url (curl not installed)"
     return 0
   fi
-  if curl --fail --silent --max-time 2 "$url" >/dev/null; then
-    echo "[ok] $label $url"
-  else
-    echo "[X] $label $url"
-    return 1
-  fi
+  
+  for ((i=1; i<=max_retries; i++)); do
+    if curl --fail --silent --max-time 2 "$url" >/dev/null; then
+      echo "[ok] $label $url"
+      return 0
+    fi
+    if ((i < max_retries)); then
+      sleep "$delay"
+    fi
+  done
+  
+  echo "[X] $label $url"
+  return 1
 }
 
 process_status() {
@@ -120,9 +152,26 @@ process_status() {
 up() {
   ensure_dirs
   check_repos
-  start_backend
+  
+  if ! has_makefile_target "$ENGINE_REPO" "dev"; then
+    echo "[X] engine Makefile or target 'dev' missing at $ENGINE_REPO"
+    return 1
+  fi
+  if [[ ! -f "$SITE_REPO/package.json" ]]; then
+    echo "[X] site package.json missing at $SITE_REPO"
+    return 1
+  fi
+  
+  start_backend || true
   start_background "engine" "$ENGINE_REPO" "exec make dev"
   start_background "site" "$SITE_REPO" "exec npm run dev -- --host 127.0.0.1 --port '$SITE_PORT'"
+  
+  echo
+  echo "Verifying service startup..."
+  health_url "backend" "http://localhost:$BACKEND_PORT/health" 5 1 || true
+  health_url "engine" "http://127.0.0.1:$ENGINE_PORT/health" 5 1 || true
+  health_url "site" "http://localhost:$SITE_PORT/" 5 1 || true
+  
   echo
   echo "TV7 dev stack requested."
   echo "Backend: http://localhost:$BACKEND_PORT/health"

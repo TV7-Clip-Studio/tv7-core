@@ -36,6 +36,12 @@ This workspace contains multiple integrated services. Use the correct folder nam
 * **Before starting:** Claim the task (Status: `IN_PROGRESS`).
 * **After finishing:** Mark it done (Status: `DONE`) and add a multi-line status block.
 
+**Rule 3: Symlink Coordination**:
+* Product repos expose shared Core context through symlinks such as `.agent`, `docs/core`, and `Makefile.core`.
+* If the Codex app file tree does not show a symlinked folder, verify with the terminal before assuming it is missing.
+* Prefer repo-local shared paths (`docs/core/...`, `.agent/...`) inside a product repo; use canonical `../tv7-core/...` paths only when a symlink is missing or broken.
+* See `tv7-core/docs/repos/symlink-coordination.md`.
+
 ## 4. Execution & Testing Commands
 Execute commands inside the specific service directories:
 

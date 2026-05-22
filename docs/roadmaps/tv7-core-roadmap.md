@@ -3,7 +3,7 @@
 Roadmap Code: CO
 Batch Code: A01
 
-Last updated: 2026-02-08
+Last updated: 2026-05-21
 
 ## Done
 - [X] [CO-A01-01-01] Established `tv7-core` as the shared docs/tooling repo with symlink-first workflow.
@@ -16,8 +16,14 @@ Last updated: 2026-02-08
 - [ ] [CO-A01-02-02] Keep the product coordination roadmap current with active owners and status updates.
 - [ ] [CO-A01-02-03] Add a stable index for standards, architecture, and runbooks to reduce path drift.
 - [ ] [CO-A01-02-04] Tighten governance around what is allowed in repo-local docs vs core docs.
+- [X] [CO-A01-02-05] Document shared symlink coordination and Codex app visibility caveats.
+    **COMPLETED** | Core Agent | 2026-05-21 00:00
+    - **CROSS-AGENT-NOTES**: Applies to all TV7 product repos using `.agent`, `docs/core`, and `Makefile.core` symlinks.
+    - **NOTE**: Added `docs/repos/symlink-coordination.md`, indexed it from `docs/repos/README.md`, and updated `.agent/rules/project-context.md` to tell agents to verify symlinks from the terminal when the Codex app file tree hides them.
 
 ## Nice To Have
 - [ ] [CO-A01-03-01] Add a docs link checker in CI for all markdown links and symlink targets.
 - [ ] [CO-A01-03-02] Publish shared templates for recurring deliverables (roadmap updates, ADRs, handoffs).
 - [ ] [CO-A01-03-03] Add a single command for validating all repo symlinks and reporting drift.
+    **BACKLOG** | Core Agent | 2026-05-21 00:00
+    - **NOTE**: Should verify `.agent`, `docs/core`, `Makefile.core`, and repo-specific contract symlinks where applicable.

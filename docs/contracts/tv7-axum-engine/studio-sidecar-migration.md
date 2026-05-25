@@ -18,9 +18,10 @@ TV7_ENGINE_PORT=7070
 TV7_ENGINE_WORK_DIR=/absolute/path/to/studio/workspace
 TV7_ENGINE_FFMPEG_BIN=/absolute/path/to/bundled/ffmpeg
 TV7_ENGINE_FFPROBE_BIN=/absolute/path/to/bundled/ffprobe
+TV7_ENGINE_YT_DLP_BIN=/absolute/path/to/bundled/yt-dlp
 ```
 
-For developer builds, `TV7_ENGINE_FFMPEG_BIN` and `TV7_ENGINE_FFPROBE_BIN` may be omitted to use `PATH`.
+For developer builds, `TV7_ENGINE_FFMPEG_BIN`, `TV7_ENGINE_FFPROBE_BIN`, and `TV7_ENGINE_YT_DLP_BIN` may be omitted to use `PATH`.
 
 After launch, Studio should call:
 
@@ -61,7 +62,12 @@ GET /v1/diagnostics
     },
     {
       "name": "url_ingest",
-      "status": "degraded",
+      "status": "ready",
+      "required_tools": ["yt-dlp"]
+    },
+    {
+      "name": "transcript",
+      "status": "ready",
       "required_tools": ["yt-dlp"]
     }
   ],
@@ -82,9 +88,9 @@ GET /v1/diagnostics
     },
     {
       "name": "yt-dlp",
-      "available": null,
-      "version": null,
-      "required_for": ["url_ingest"],
+      "available": true,
+      "version": "yt-dlp 2026.01.01",
+      "required_for": ["url_ingest", "transcript"],
       "error": null
     }
   ],
@@ -96,7 +102,7 @@ GET /v1/diagnostics
 }
 ```
 
-For this milestone, `yt-dlp` is intentionally not checked. URL ingest moves behind Engine in `AX-A03`.
+For `AX-A03`, `yt-dlp` is checked by Engine diagnostics because URL ingest and transcript download are Engine-owned capabilities.
 
 ## Flutter Replacement Map
 
@@ -105,6 +111,8 @@ For this milestone, `yt-dlp` is intentionally not checked. URL ingest moves behi
 | `ToolRunner.getMediaInfo(path)` | `POST /v1/media/probe` | Use `metadata.duration_seconds`, `width`, `height`, `format`, and `size_bytes`. |
 | `ToolRunner.generateThumbnail(videoPath, thumbnailPath)` | `POST /v1/media/thumbnail` | Engine always overwrites `output_path`; Studio owns workspace naming. |
 | `ToolRunner.renderClip(sourcePath, start, end, outputPath)` | `POST /v1/media/render-clip` | Engine always overwrites `output_path`; validate user-facing ranges in Studio before calling. |
+| `MediaService.prepareIngestFromUrl(url)` | `POST /v1/ingest/url`, then `GET /v1/jobs/{id}` | Engine owns `yt-dlp` metadata and download execution. Studio owns UX and backend sync. |
+| `ToolRunner.downloadTranscript(url, outputPath, lang)` | `POST /v1/transcripts/download`, then `GET /v1/jobs/{id}` | Engine owns subtitle download. Studio may still normalize/display returned VTT content until a later normalization endpoint exists. |
 | `IngestPage._checkDependencies()` | `GET /v1/diagnostics` | Flutter should not run `which ffmpeg`; use Engine diagnostics. |
 
 ## Probe Example
@@ -172,6 +180,92 @@ Content-Type: application/json
 }
 ```
 
+## URL Ingest Job Example
+
+```http
+POST /v1/ingest/url
+Content-Type: application/json
+```
+
+```json
+{
+  "url": "https://example.com/video",
+  "output_dir": "/absolute/path/to/workspace",
+  "output_template": "%(title).200B.%(ext)s"
+}
+```
+
+```json
+{
+  "job": {
+    "id": "job_1",
+    "kind": "url_ingest",
+    "status": "queued",
+    "progress": 0.0,
+    "logs": ["queued"],
+    "result": null,
+    "error": null,
+    "cancel_requested": false
+  }
+}
+```
+
+Studio should poll:
+
+```http
+GET /v1/jobs/job_1
+```
+
+Studio may also poll logs separately:
+
+```http
+GET /v1/jobs/job_1/logs
+```
+
+To request cancellation:
+
+```http
+POST /v1/jobs/job_1/cancel
+```
+
+Initial AX-A04 cancellation is cooperative at the Engine job state boundary. Process-level termination for an already-running `yt-dlp` child process is a follow-up hardening item.
+
+Successful `result` contains:
+
+```json
+{
+  "url": "https://example.com/video",
+  "media_path": "/absolute/path/to/workspace/video.mp4",
+  "metadata": {
+    "title": "Video title"
+  }
+}
+```
+
+## Transcript Download Job Example
+
+```http
+POST /v1/transcripts/download
+Content-Type: application/json
+```
+
+```json
+{
+  "url": "https://example.com/video",
+  "output_path": "/absolute/path/to/video.vtt",
+  "language": "en"
+}
+```
+
+Successful job `result` contains:
+
+```json
+{
+  "transcript_path": "/absolute/path/to/video.en.vtt",
+  "language": "en"
+}
+```
+
 ```json
 {
   "result": {
@@ -200,6 +294,7 @@ Expected first-migration error codes:
 - `OUTPUT_PARENT_MISSING`
 - `SOURCE_OUTPUT_SAME`
 - `INVALID_TIME_RANGE`
+- `INVALID_URL`
 - `COMMAND_FAILED`
 - `OUTPUT_INVALID`
 - `IO_ERROR`

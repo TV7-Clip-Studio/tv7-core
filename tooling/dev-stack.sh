@@ -84,13 +84,21 @@ start_background() {
   echo "[..] starting $name"
   (
     cd "$dir"
-    exec bash -lc "$command"
+    bash -lc "$command"
   ) >"$log_file" 2>&1 &
   local pid=$!
   echo "$pid" >"$pid_file"
   
-  sleep 0.5
-  if kill -0 "$pid" >/dev/null 2>&1; then
+  local verified=1
+  for ((attempt=1; attempt<=3; attempt++)); do
+    sleep 0.5
+    if ! kill -0 "$pid" >/dev/null 2>&1; then
+      verified=0
+      break
+    fi
+  done
+
+  if [[ "$verified" -eq 1 ]]; then
     echo "[ok] $name started (pid $pid, log $log_file)"
   else
     echo "[X] $name failed to start! See logs at $log_file"
@@ -151,7 +159,7 @@ process_status() {
 
 up() {
   ensure_dirs
-  check_repos
+  check_repos || { echo "[X] Aborting: Missing required repos"; exit 1; }
   
   if ! has_makefile_target "$ENGINE_REPO" "dev"; then
     echo "[X] engine Makefile or target 'dev' missing at $ENGINE_REPO"

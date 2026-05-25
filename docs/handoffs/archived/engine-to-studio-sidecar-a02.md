@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: Active
+Status: Archived
 
 Producer: Engine Agent (`tv7-axum-engine`)
 
@@ -131,7 +131,7 @@ Do not add new direct `ffmpeg`/`ffprobe` fallback logic as rollback behavior.
 
 ## Done Criteria
 
-This handoff can be archived when:
+This handoff was archived on 2026-05-22 after:
 
 - `FL-A02-01-01` through `FL-A02-01-06` are complete or deliberately superseded.
 - Studio launches Engine on startup.

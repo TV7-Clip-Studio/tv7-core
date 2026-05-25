@@ -53,14 +53,25 @@ else:
     url = pr.get("url", "")
     print(f"PR: #{number} {state} {url}", end="")
 ' <<<"$json"
-else:
-  # Fallback: simple grep/cut/tr parser for basic JSON fields when Python is missing
-  number="$(echo "$json" | grep -o '"number":[0-9]*' | head -n1 | cut -d: -f2)"
-  state="$(echo "$json" | grep -o '"state":"[^"]*"' | head -n1 | cut -d: -f2 | tr -d '"' | tr '[:lower:]' '[:upper:]')"
-  url="$(echo "$json" | grep -o '"url":"[^"]*"' | head -n1 | cut -d: -f2- | tr -d '"')"
-  if [[ -n "$number" ]]; then
-    printf "PR: #%s %s %s" "$number" "$state" "$url"
+else
+  if command -v jq >/dev/null 2>&1; then
+    number="$(echo "$json" | jq -r '.[0].number // empty')"
+    state="$(echo "$json" | jq -r '.[0].state // "OPEN"' | tr '[:lower:]' '[:upper:]')"
+    url="$(echo "$json" | jq -r '.[0].url // empty')"
+    if [[ -n "$number" ]]; then
+      printf "PR: #%s %s %s" "$number" "$state" "$url"
+    else
+      printf "PR: none"
+    fi
   else
-    printf "PR: none"
+    # Fallback: simple grep/cut/tr parser for basic JSON fields when Python and jq are missing
+    number="$(echo "$json" | grep -o '"number":[0-9]*' | head -n1 | cut -d: -f2)"
+    state="$(echo "$json" | grep -o '"state":"[^"]*"' | head -n1 | cut -d: -f2 | tr -d '"' | tr '[:lower:]' '[:upper:]')"
+    url="$(echo "$json" | grep -o '"url":"[^"]*"' | head -n1 | cut -d: -f2- | tr -d '"')"
+    if [[ -n "$number" ]]; then
+      printf "PR: #%s %s %s" "$number" "$state" "$url"
+    else
+      printf "PR: none"
+    fi
   fi
 fi

@@ -65,6 +65,38 @@ def api(path: str) -> Any:
     return gh_json(["api", path])
 
 
+def check_gh_version() -> None:
+    try:
+        result = subprocess.run(["gh", "--version"], text=True, capture_output=True, check=False)
+        if result.returncode == 0:
+            first_line = result.stdout.splitlines()[0]
+            parts = first_line.split()
+            for part in parts:
+                if part and part[0].isdigit():
+                    major_ver = int(part.split(".")[0])
+                    if major_ver < 2:
+                        print(f"Warning: gh version {part} detected. GitHub CLI v2.0.0+ is required for --json support.", file=sys.stderr)
+                    break
+    except Exception as exc:
+        print(f"Warning: Could not check gh version: {exc}", file=sys.stderr)
+
+
+def api_paginated(path: str) -> list[Any]:
+    sep = "&" if "?" in path else "?"
+    results = []
+    page = 1
+    while True:
+        page_path = f"{path}{sep}page={page}&per_page=100"
+        page_data = gh_json(["api", page_path])
+        if not isinstance(page_data, list) or not page_data:
+            break
+        results.extend(page_data)
+        if len(page_data) < 100 or page >= 3:
+            break
+        page += 1
+    return results
+
+
 def collect_pr(repo: str, pr: dict[str, Any]) -> dict[str, Any] | None:
     try:
         number = int(pr["number"])
@@ -91,10 +123,10 @@ def collect_pr(repo: str, pr: dict[str, Any]) -> dict[str, Any] | None:
             "repository": full_name,
             "collected_at": datetime.now(timezone.utc).isoformat(),
             "pr": detail,
-            "issue_comments": api(f"repos/{full_name}/issues/{number}/comments?per_page=100"),
-            "reviews": api(f"{base_api}/reviews?per_page=100"),
-            "review_comments": api(f"{base_api}/comments?per_page=100"),
-            "files": api(f"{base_api}/files?per_page=100"),
+            "issue_comments": api_paginated(f"repos/{full_name}/issues/{number}/comments"),
+            "reviews": api_paginated(f"{base_api}/reviews"),
+            "review_comments": api_paginated(f"{base_api}/comments"),
+            "files": api_paginated(f"{base_api}/files"),
         }
     except Exception as exc:
         print(f"Error collecting PR #{pr.get('number')} in repo {repo}: {exc}", file=sys.stderr)
@@ -147,6 +179,7 @@ def print_summary(summary: list[dict[str, Any]]) -> None:
 def main() -> int:
     if shutil.which("gh") is None:
         raise SystemExit("Missing required command: gh")
+    check_gh_version()
     gh_check(["auth", "status"])
 
     repos = read_repos()
@@ -172,7 +205,7 @@ def main() -> int:
                     "number,title,url,state,headRefName,baseRefName,reviewDecision,isDraft,updatedAt",
                 ]
             )
-        except RuntimeError as exc:
+        except Exception as exc:
             print(f"Skipping repo {repo} due to API/access error: {exc}", file=sys.stderr)
             continue
 

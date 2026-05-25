@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "TV7 Axum Engine Local API",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Local-only engine sidecar API exposed on loopback. Studio starts this service and uses it as the mandatory boundary for local media compute."
   },
   "servers": [
@@ -196,6 +196,182 @@
           },
           "500": {
             "$ref": "#/components/responses/InternalFailure"
+          }
+        }
+      }
+    },
+    "/v1/ingest/url": {
+      "post": {
+        "summary": "Start a job-backed URL ingest",
+        "operationId": "startUrlIngest",
+        "description": "Starts a local yt-dlp ingest job. The initial response is 202 with a job payload; Studio polls /v1/jobs/{id} for completion.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UrlIngestRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "url": "https://example.com/video",
+                    "output_dir": "/absolute/path/to/workspace",
+                    "output_template": "%(title).200B.%(ext)s"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Ingest job accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/v1/transcripts/download": {
+      "post": {
+        "summary": "Start a job-backed transcript download",
+        "operationId": "startTranscriptDownload",
+        "description": "Starts a local yt-dlp transcript download job. Studio polls /v1/jobs/{id} for completion.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptDownloadRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "url": "https://example.com/video",
+                    "output_path": "/absolute/path/to/video.vtt",
+                    "language": "en"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Transcript job accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}": {
+      "get": {
+        "summary": "Fetch local Engine job state",
+        "operationId": "getJob",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineJob"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/logs": {
+      "get": {
+        "summary": "Fetch local Engine job logs",
+        "operationId": "getJobLogs",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobLogsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/cancel": {
+      "post": {
+        "summary": "Request local Engine job cancellation",
+        "operationId": "cancelJob",
+        "description": "Marks a queued or running job as cancelled. Initial AX-A04 cancellation is cooperative at the Engine job state boundary; process-level termination is a follow-up hardening item.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated job state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineJob"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -558,6 +734,182 @@
           "duration_seconds": {
             "type": "number",
             "minimum": 0
+          }
+        }
+      },
+      "UrlIngestRequest": {
+        "type": "object",
+        "required": [
+          "url",
+          "output_dir"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "output_dir": {
+            "type": "string",
+            "description": "Absolute local directory where Engine writes downloaded media."
+          },
+          "output_template": {
+            "type": "string",
+            "description": "Optional yt-dlp output template relative to output_dir."
+          }
+        }
+      },
+      "UrlIngestResult": {
+        "type": "object",
+        "required": [
+          "url",
+          "metadata"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "media_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "TranscriptDownloadRequest": {
+        "type": "object",
+        "required": [
+          "url",
+          "output_path"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "output_path": {
+            "type": "string",
+            "description": "Absolute local VTT output path requested by Studio."
+          },
+          "language": {
+            "type": "string",
+            "default": "en"
+          }
+        }
+      },
+      "TranscriptDownloadResult": {
+        "type": "object",
+        "required": [
+          "language"
+        ],
+        "properties": {
+          "transcript_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "language": {
+            "type": "string"
+          }
+        }
+      },
+      "JobCreateResponse": {
+        "type": "object",
+        "required": [
+          "job"
+        ],
+        "properties": {
+          "job": {
+            "$ref": "#/components/schemas/EngineJob"
+          }
+        }
+      },
+      "JobLogsResponse": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "logs"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "logs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "EngineJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "progress",
+          "logs",
+          "cancel_requested"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "url_ingest",
+              "transcript_download"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "progress": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "logs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "result": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UrlIngestResult"
+              },
+              {
+                "$ref": "#/components/schemas/TranscriptDownloadResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cancel_requested": {
+            "type": "boolean"
           }
         }
       },

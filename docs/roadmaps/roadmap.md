@@ -83,3 +83,21 @@ Status markers in checkbox position:
     **COMPLETED** | Architect Agent | 2026-02-08 12:15
     - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
     - **NOTE**: Removed repo-wide file map context, excluded deleted-file hunks from diff payload (`--diff-filter=ACMRTUXB`), capped docs/diff context size, and switched DeepSeek request body to `--data-binary @payload_file` to avoid `curl` argv overflow.
+- [x] [CO-M01-04-02] Fix reusable DeepSeek review comment normalizer step to be self-contained in child repos
+    **COMPLETED** | Architect Agent | 2026-05-25 18:42
+    - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
+    - **NOTE**: Converted the `Normalize DeepSeek review comment` step in the reusable workflow to an inline Python script. This removes dependencies on external helper scripts in workspace paths, fixing execution across all child repositories.
+- [x] [CO-M01-04-03] Address DeepSeek code review findings for local-dev-stack branch
+    **COMPLETED** | Architect Agent | 2026-05-25 18:48
+    - **CROSS-AGENT-NOTES**: Applies to all repos in local-dev-stack branch context.
+    - **NOTE**: Fixed startup race condition in `dev-stack.sh` by sleeping `0.5s` before checking if the PID is still alive, ensuring immediate failures are successfully caught and reported. Widened exception handling in `reviews.py` repo loop to catch any unexpected error and skip the repo cleanly.
+- [x] [CO-M01-04-04] Enhance DeepSeek review to follow-up on history and refine layout
+    **COMPLETED** | Architect Agent | 2026-05-25 18:52
+    - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
+    - **NOTE**: Integrated PR comment/review history parsing using the `gh` CLI and inlined Python logic. Previous reviews are now automatically injected into the DeepSeek system prompt to perform target checks on whether past findings were successfully resolved (under a new `### Follow-up on Previous Review` section). Completely removed the robotic `### Model narrative` wrapper heading and transitioned layout to clean Markdown `###` section headers.
+
+
+
+
+
+

@@ -175,6 +175,15 @@ dev-logs:
 	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" logs
 
 reviews reviews-json:
+	@if [ ! -f "$(TOOLING_DIR)/repos-checks.conf" ]; then \
+		echo "Error: $(TOOLING_DIR)/repos-checks.conf not found." >&2; \
+		exit 1; \
+	fi
+	@mkdir -p "$(REVIEWS_DIR)"
+	@if [ ! -w "$(REVIEWS_DIR)" ]; then \
+		echo "Error: Output directory $(REVIEWS_DIR) is not writable." >&2; \
+		exit 1; \
+	fi
 	@REPOS="$(REPOS)" OUT_DIR="$(REVIEWS_DIR)" CONFIG_FILE="$(TOOLING_DIR)/repos-checks.conf" "$(PYTHON)" "$(TOOLING_DIR)/reviews.py"
 
 batch-pr:

@@ -95,6 +95,12 @@ Status markers in checkbox position:
     **COMPLETED** | Architect Agent | 2026-05-25 18:52
     - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
     - **NOTE**: Integrated PR comment/review history parsing using the `gh` CLI and inlined Python logic. Previous reviews are now automatically injected into the DeepSeek system prompt to perform target checks on whether past findings were successfully resolved (under a new `### Follow-up on Previous Review` section). Completely removed the robotic `### Model narrative` wrapper heading and transitioned layout to clean Markdown `###` section headers.
+- [x] [CO-M01-04-05] Fix here-doc delimiter indentation in deepseek-review.yml
+    **COMPLETED** | Architect Agent | 2026-05-25 19:03
+    - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
+    - **NOTE**: Aligned the Python script here-document block and its closing delimiter `PY` to column 0 in the generated shell script (exactly 10 spaces of base indentation under YAML multiline `run: |` block). Verified syntactical correctness and execution logic locally using `bash -n`.
+
+
 
 
 

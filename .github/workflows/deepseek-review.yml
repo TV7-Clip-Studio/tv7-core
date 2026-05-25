@@ -273,57 +273,56 @@ jobs:
             echo "Warning: Could not fetch PR comments or reviews. Continuing without history."
             echo "No previous review history found." > /tmp/pr_history.txt
           else
-            # Use a brief Python script to extract the latest DeepSeek review comments
             python - <<'PY'
-            import json
-            import sys
-            from pathlib import Path
-            
-            raw_path = Path("/tmp/pr_comments_raw.json")
-            out_path = Path("/tmp/pr_history.txt")
-            
-            if not raw_path.exists():
-                out_path.write_text("No previous review history found.", encoding="utf-8")
-                sys.exit(0)
-                
-            try:
-                data = json.loads(raw_path.read_text(encoding="utf-8", errors="ignore"))
-            except Exception:
-                data = {}
-                
-            reviews = data.get("reviews") or []
-            comments = data.get("comments") or []
-            
-            all_items = []
-            for r in reviews:
-                author = r.get("author", {}).get("login") or ""
-                body = r.get("body") or ""
-                date = r.get("submittedAt") or ""
-                all_items.append((date, author, body))
-                
-            for c in comments:
-                author = c.get("author", {}).get("login") or ""
-                body = c.get("body") or ""
-                date = c.get("createdAt") or ""
-                all_items.append((date, author, body))
-                
-            # Sort items by date ascending
-            all_items.sort(key=lambda x: x[0])
-            
-            # Find the latest review that looks like a DeepSeek review
-            latest_ds_review = None
-            for date, author, body in reversed(all_items):
-                if "DeepSeek review" in body or "FINAL_VERDICT" in body:
-                    latest_ds_review = body
-                    break
-                    
-            if latest_ds_review:
-                out_path.write_text(latest_ds_review, encoding="utf-8")
-                print("Found previous DeepSeek review.")
-            else:
-                out_path.write_text("No previous DeepSeek review found in this PR.", encoding="utf-8")
-                print("No previous DeepSeek review found.")
-            PY
+          import json
+          import sys
+          from pathlib import Path
+          
+          raw_path = Path("/tmp/pr_comments_raw.json")
+          out_path = Path("/tmp/pr_history.txt")
+          
+          if not raw_path.exists():
+              out_path.write_text("No previous review history found.", encoding="utf-8")
+              sys.exit(0)
+              
+          try:
+              data = json.loads(raw_path.read_text(encoding="utf-8", errors="ignore"))
+          except Exception:
+              data = {}
+              
+          reviews = data.get("reviews") or []
+          comments = data.get("comments") or []
+          
+          all_items = []
+          for r in reviews:
+              author = r.get("author", {}).get("login") or ""
+              body = r.get("body") or ""
+              date = r.get("submittedAt") or ""
+              all_items.append((date, author, body))
+              
+          for c in comments:
+              author = c.get("author", {}).get("login") or ""
+              body = c.get("body") or ""
+              date = c.get("createdAt") or ""
+              all_items.append((date, author, body))
+              
+          # Sort items by date ascending
+          all_items.sort(key=lambda x: x[0])
+          
+          # Find the latest review that looks like a DeepSeek review
+          latest_ds_review = None
+          for date, author, body in reversed(all_items):
+              if "DeepSeek review" in body or "FINAL_VERDICT" in body:
+                  latest_ds_review = body
+                  break
+                  
+          if latest_ds_review:
+              out_path.write_text(latest_ds_review, encoding="utf-8")
+              print("Found previous DeepSeek review.")
+          else:
+              out_path.write_text("No previous DeepSeek review found in this PR.", encoding="utf-8")
+              print("No previous DeepSeek review found.")
+          PY
           fi
           echo "history-path=/tmp/pr_history.txt" >> "$GITHUB_OUTPUT"
 

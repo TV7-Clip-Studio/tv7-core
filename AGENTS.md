@@ -26,6 +26,7 @@ Default posture: coordinate first, execute cross-repo edits only when the task e
 - Prefer the minimal MCP set required for the active task.
 
 ## Workflow Rules
+- Agents must not run `git push`, create remote branches, open PRs, mark PRs ready, or mutate GitHub remotes unless the human explicitly asks for that exact remote action in the current turn.
 - Use roadmap format from `docs/roadmaps/roadmap.md`.
 - Claim task as `IN-PROGRESS` before edits; mark `COMPLETED` with a status note after finishing.
 - For implementation work, provide a numbered implementation plan before execution.

@@ -272,17 +272,24 @@ jobs:
           if ! gh pr view "$PR_NUMBER" --json reviews,comments > /tmp/pr_comments_raw.json 2>/dev/null; then
             echo "Warning: Could not fetch PR comments or reviews. Continuing without history."
             echo "No previous review history found." > /tmp/pr_history.txt
+            echo "" > /tmp/reviewed_sha.txt
+            echo "No previous PR discussions found." > /tmp/pr_qa_history.txt
           else
             python - <<'PY'
           import json
+          import re
           import sys
           from pathlib import Path
           
           raw_path = Path("/tmp/pr_comments_raw.json")
-          out_path = Path("/tmp/pr_history.txt")
+          out_history = Path("/tmp/pr_history.txt")
+          out_qa = Path("/tmp/pr_qa_history.txt")
+          out_sha = Path("/tmp/reviewed_sha.txt")
           
           if not raw_path.exists():
-              out_path.write_text("No previous review history found.", encoding="utf-8")
+              out_history.write_text("No previous review history found.", encoding="utf-8")
+              out_qa.write_text("No previous PR discussions found.", encoding="utf-8")
+              out_sha.write_text("", encoding="utf-8")
               sys.exit(0)
               
           try:
@@ -300,12 +307,6 @@ jobs:
               date = r.get("submittedAt") or ""
               all_items.append((date, author, body))
               
-          for c in comments:
-              author = c.get("author", {}).get("login") or ""
-              body = c.get("body") or ""
-              date = c.get("createdAt") or ""
-              all_items.append((date, author, body))
-              
           # Sort items by date ascending
           all_items.sort(key=lambda x: x[0])
           
@@ -317,14 +318,72 @@ jobs:
                   break
                   
           if latest_ds_review:
-              out_path.write_text(latest_ds_review, encoding="utf-8")
+              out_history.write_text(latest_ds_review, encoding="utf-8")
               print("Found previous DeepSeek review.")
+              # Extract REVIEWED_SHA
+              sha_match = re.search(r"<!--\s*REVIEWED_SHA:\s*([a-f0-9]+)\s*-->", latest_ds_review, re.IGNORECASE)
+              if sha_match:
+                  sha = sha_match.group(1).strip()
+                  out_sha.write_text(sha, encoding="utf-8")
+                  print(f"Found previous reviewed SHA: {sha}")
+              else:
+                  out_sha.write_text("", encoding="utf-8")
           else:
-              out_path.write_text("No previous DeepSeek review found in this PR.", encoding="utf-8")
+              out_history.write_text("No previous DeepSeek review found in this PR.", encoding="utf-8")
+              out_sha.write_text("", encoding="utf-8")
               print("No previous DeepSeek review found.")
+              
+          # Group comments into threads for QA Memory
+          threads = {}
+          parent_map = {}
+          
+          for c in comments:
+              c_id = c.get("id")
+              reply_to = c.get("replyTo")
+              if not reply_to:
+                  threads[c_id] = [c]
+                  parent_map[c_id] = c_id
+              else:
+                  parent_map[c_id] = reply_to
+                  
+          for c in comments:
+              c_id = c.get("id")
+              reply_to = c.get("replyTo")
+              if reply_to:
+                  parent = parent_map.get(reply_to, reply_to)
+                  if parent not in threads:
+                      threads[parent] = []
+                  threads[parent].append(c)
+                  
+          # Filter threads containing DeepSeek keywords
+          ds_threads = []
+          for parent, thread_comments in threads.items():
+              thread_comments.sort(key=lambda x: x.get("createdAt", ""))
+              has_ds = any("DeepSeek review" in c.get("body", "") or "FINAL_VERDICT" in c.get("body", "") for c in thread_comments)
+              if has_ds:
+                  ds_threads.append(thread_comments)
+                  
+          qa_parts = []
+          if ds_threads:
+              qa_parts.append("## PR QA & Discussion History")
+              for i, thread in enumerate(ds_threads, 1):
+                  qa_parts.append(f"=== Thread #{i} ===")
+                  for c in thread:
+                      author = c.get("author", {}).get("login") or "unknown"
+                      body = c.get("body") or ""
+                      date = c.get("createdAt") or ""
+                      qa_parts.append(f"- {author} [{date}]: {body}")
+                  qa_parts.append("")
+                  
+          if qa_parts:
+              out_qa.write_text("\n".join(qa_parts), encoding="utf-8")
+          else:
+              out_qa.write_text("No previous PR discussions found.", encoding="utf-8")
           PY
           fi
           echo "history-path=/tmp/pr_history.txt" >> "$GITHUB_OUTPUT"
+          echo "qa-path=/tmp/pr_qa_history.txt" >> "$GITHUB_OUTPUT"
+          echo "reviewed-sha-path=/tmp/reviewed_sha.txt" >> "$GITHUB_OUTPUT"
 
 
       - name: Call DeepSeek
@@ -426,42 +485,69 @@ jobs:
           fi
           export SUMMARY_BLOCK
 
-          payload_file=/tmp/deepseek_payload.json
-          python - "$DIFF_PATH" > "$payload_file" << 'PY'
-          import json, os, sys
+          python - > /tmp/deepseek_runner.log 2>&1 << 'PY'
+          import json
+          import os
+          import re
+          import sys
+          import urllib.request
           from pathlib import Path
- 
-          diff_cap_bytes = int(os.environ.get("DIFF_CAP_BYTES", "300000"))
-          diff_raw = Path(sys.argv[1]).read_bytes()
-          diff_truncated = len(diff_raw) > diff_cap_bytes
-          if diff_truncated:
-            diff_raw = diff_raw[:diff_cap_bytes]
-          diff = diff_raw.decode("utf-8", errors="ignore")
-          if diff_truncated:
-            diff += f"\n\n[diff truncated at {diff_cap_bytes} bytes; deleted-file hunks are excluded]"
+
+          diff_path = Path("/tmp/pr_diff.txt")
+          summary_path = Path("/tmp/pr_summary.txt")
+          history_path = Path("/tmp/pr_history.txt")
+          qa_path = Path("/tmp/pr_qa_history.txt")
+          sha_path = Path("/tmp/reviewed_sha.txt")
+          response_path = Path("/tmp/deepseek_response.json")
+
+          api_key = os.environ.get("DEEPSEEK_API_KEY")
           context = os.environ.get("PROJECT_CONTEXT") or "General Codebase (context not provided)"
           docs_context = os.environ.get("DOCS_CONTEXT") or ""
-          summary_block = os.environ.get("SUMMARY_BLOCK") or ""
- 
-          # Load previous DeepSeek review context if available
-          history_file = Path("/tmp/pr_history.txt")
-          previous_review = history_file.read_text(encoding="utf-8", errors="ignore").strip() if history_file.exists() else ""
-          has_history = previous_review and "No previous DeepSeek review found" not in previous_review
 
-          # Build the composite system prompt
+          diff_cap_bytes = int(os.environ.get("DIFF_CAP_BYTES", "300000"))
+          diff_raw = diff_path.read_bytes() if diff_path.exists() else b""
+          diff_truncated = len(diff_raw) > diff_cap_bytes
+          if diff_truncated:
+              diff_raw = diff_raw[:diff_cap_bytes]
+          diff = diff_raw.decode("utf-8", errors="ignore")
+          if diff_truncated:
+              diff += f"\n\n[diff truncated at {diff_cap_bytes} bytes; deleted-file hunks are excluded]"
+
+          summary_block = summary_path.read_text(encoding="utf-8", errors="ignore").strip() if summary_path.exists() else ""
+          previous_review = history_path.read_text(encoding="utf-8", errors="ignore").strip() if history_path.exists() else ""
+          qa_history = qa_path.read_text(encoding="utf-8", errors="ignore").strip() if qa_path.exists() else ""
+          reviewed_sha = sha_path.read_text(encoding="utf-8", errors="ignore").strip() if sha_path.exists() else ""
+
+          incremental_diff = ""
+          if reviewed_sha:
+              try:
+                  import subprocess
+                  subprocess.check_call(["git", "cat-file", "-e", reviewed_sha], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                  inc_raw = subprocess.check_output(
+                      ["git", "diff", "--unified=0", "--no-color", "--diff-filter=ACMRTUXB", reviewed_sha, "HEAD"],
+                      text=True
+                  )
+                  if inc_raw.strip():
+                      incremental_diff = inc_raw.strip()
+                      print(f"Loaded incremental diff since {reviewed_sha}")
+              except Exception as exc:
+                  print(f"Could not load incremental diff since {reviewed_sha}: {exc}")
+
           system_prompt_parts = [
               "You are a senior code reviewer. Use the provided project context to interpret APIs and patterns.",
               f"Project context: {context}",
               "",
           ]
- 
+
           if docs_context:
-              system_prompt_parts.append("## TV7 Project Documentation")
-              system_prompt_parts.append("The following documentation files provide architectural context and best practices:")
-              system_prompt_parts.append(docs_context)
-              system_prompt_parts.append("")
- 
-          if has_history:
+              system_prompt_parts.extend([
+                  "## TV7 Project Documentation",
+                  "The following documentation files provide architectural context and best practices:",
+                  docs_context,
+                  "",
+              ])
+
+          if previous_review and "No previous DeepSeek review found" not in previous_review:
               system_prompt_parts.extend([
                   "## Previous DeepSeek Review Context",
                   "A previous review was completed for a prior iteration of this PR with these comments/findings:",
@@ -472,17 +558,31 @@ jobs:
                   "",
               ])
 
+          if qa_history and "No previous PR discussions found" not in qa_history:
+              system_prompt_parts.extend([
+                  qa_history,
+                  "",
+              ])
+
           system_prompt_parts.extend([
-              "- If an API or symbol is unfamiliar, assume it may be project-defined; avoid claiming it does not exist.",
-              "- Use version information to reason about availability; do not suggest downgrades to older APIs.",
-              "- Prioritize logic errors, security issues, edge cases, and architectural risks.",
-              "- Be concise and high-signal. Do not restate diffs.",
-              "- Do not speculate about files or system areas not present in the provided diff.",
+              "## CRITICAL REVIEW GUARDRAILS (To Avoid False Positives)",
+              "1. HUNK BOUNDARY CONSTRAINT: You must ONLY comment on code lines that are explicitly added, removed, or modified inside the provided diff hunks. If you suspect an issue in an untouched function or sibling line that is not in the diff, you MUST ignore it. Do not speculate on untouched code.",
+              "2. SIBLING FILE/IMPORTS TRUST: If a class, method, variable, or decorator is imported or referenced from another file or package, assume it is completely valid and correct. Do not claim it is 'missing' or 'undefined' unless it is explicitly defined incorrectly within the current diff.",
+              "3. NIT vs CRITICAL THRESHOLD: '### Findings' must be reserved strictly for critical issues (logic bugs, security vulnerabilities, API contract violations, and immediate runtime failures). Stylistic preferences, optional enhancements, or minor nits must NEVER be placed in Findings or affect the final verdict; place them solely in '### Recommendations'.",
+              "",
+              "## CONTEXT REQUEST CAPABILITY",
+              "If you see an unfamiliar symbol, custom class definition, or need to inspect another local codebase file to verify if a finding is a false positive, you can request its contents from the environment.",
+              "To do so, output EXACTLY this JSON tool call block in your response and make no other comments or text:",
+              "REQUEST_CONTEXT: [\"path/to/file.py\", ...]",
+              "You can request up to 3 files. The environment will read them and provide them in the next turn.",
+              "If you have all the context you need, output your final review directly.",
+              "",
+              "## OUTPUT STRUCTURE",
               "- Use this exact mini-structure with these Markdown h3 section headers in order:",
               "  ### Summary",
           ])
 
-          if has_history:
+          if previous_review and "No previous DeepSeek review found" not in previous_review:
               system_prompt_parts.append("  ### Follow-up on Previous Review")
 
           system_prompt_parts.extend([
@@ -493,7 +593,7 @@ jobs:
               "- If no meaningful findings exist, say so explicitly under ### Findings.",
           ])
 
-          if has_history:
+          if previous_review and "No previous DeepSeek review found" not in previous_review:
               system_prompt_parts.append("- Under ### Follow-up on Previous Review, explicitly list each of the findings from the previous review and state whether they have been successfully addressed/applied in the current diff.")
 
           system_prompt_parts.extend([
@@ -503,30 +603,94 @@ jobs:
               "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. ",
               "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score.",
           ])
- 
+
           system_prompt = "\n".join(system_prompt_parts)
- 
-          payload = {
-              "model": "deepseek-coder",
-              "messages": [
-                  {"role": "system", "content": system_prompt},
-                  {"role": "user", "content": f"Repository summary:\\n{summary_block}\\n\\nReview this PR diff (unified=0):\\n\\n{diff}"},
-              ],
-              "temperature": 0.2,
-          }
- 
-          print(json.dumps(payload, ensure_ascii=False))
+
+          messages = [
+              {"role": "system", "content": system_prompt}
+          ]
+
+          user_content = [
+              f"Repository summary:\n{summary_block}",
+              f"Review this PR diff (unified=0):\n\n{diff}"
+          ]
+          if incremental_diff:
+              user_content.append(f"## Incremental Changes (Since Last Reviewed Commit):\n\n{incremental_diff}")
+
+          messages.append({"role": "user", "content": "\n\n".join(user_content)})
+
+          max_turns = 2
+          turn = 0
+          final_content = ""
+
+          while turn < max_turns:
+              turn += 1
+              print(f"=== DeepSeek API Turn {turn} ===")
+              
+              payload = {
+                  "model": "deepseek-coder",
+                  "messages": messages,
+                  "temperature": 0.2
+              }
+              
+              req = urllib.request.Request(
+                  "https://api.deepseek.com/v1/chat/completions",
+                  data=json.dumps(payload).encode("utf-8"),
+                  headers={
+                      "Content-Type": "application/json",
+                      "Authorization": f"Bearer {api_key}"
+                  },
+                  method="POST"
+              )
+              
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as res:
+                      res_data = json.loads(res.read().decode("utf-8"))
+                      response_json = res_data
+                      content = res_data["choices"][0]["message"]["content"] or ""
+              except Exception as exc:
+                  print(f"API call failed: {exc}")
+                  break
+                  
+              print(f"Received API response (bytes: {len(content)})")
+              
+              if "REQUEST_CONTEXT:" in content:
+                  match = re.search(r"REQUEST_CONTEXT:\s*(\[.*?\])", content, re.DOTALL)
+                  if match:
+                      try:
+                          requested_files = json.loads(match.group(1))
+                          print(f"Model requested context files: {requested_files}")
+                          
+                          context_blocks = []
+                          for file_path in requested_files:
+                              safe_path = Path(file_path).resolve()
+                              if safe_path.is_file() and str(safe_path).startswith(os.getcwd()):
+                                  file_content = safe_path.read_text(encoding="utf-8", errors="ignore")
+                                  context_blocks.append(f"=== File: {file_path} ===\n{file_content}")
+                              else:
+                                  context_blocks.append(f"=== File: {file_path} ===\n[File not found or access denied]")
+                                  
+                          messages.append({"role": "assistant", "content": content})
+                          messages.append({
+                              "role": "user",
+                              "content": "Here is the requested file context:\n\n" + "\n\n".join(context_blocks)
+                          })
+                          continue
+                      except Exception as e:
+                          print(f"Error reading context files: {e}")
+                          
+              final_content = content
+              response_path.write_text(json.dumps(response_json, indent=2) + "\n", encoding="utf-8")
+              break
+
+          if not final_content:
+              print("Error: No review content was produced.")
+              sys.exit(1)
           PY
-          payload_bytes=$(wc -c < "$payload_file" | tr -d ' ')
-          echo "DeepSeek payload bytes=${payload_bytes}"
 
-          response=$(curl -sS --max-time 60 --retry 2 --retry-delay 2 \
-            -X POST https://api.deepseek.com/v1/chat/completions \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
-            --data-binary "@$payload_file" || true)
+          # Cat runner logs for visibility in GH Actions output
+          cat /tmp/deepseek_runner.log || true
 
-          echo "$response" > /tmp/deepseek_response.json
           content=$(jq -r '.choices[0].message.content // ""' /tmp/deepseek_response.json)
           content_bytes=$(printf "%s" "$content" | wc -c | tr -d ' ')
 

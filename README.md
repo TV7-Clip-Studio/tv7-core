@@ -114,6 +114,7 @@ See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 - `make pull-all` — pull current branch in each repo (auto-sets upstream if present).
 - `make bootstrap` — clone/fix remotes and ensure sibling repos exist.
 - `make sync` (`make update`) — bootstrap, pull with rebase; outputs per-repo status plus open PR number and URL for the local branch when `gh` is authenticated.
+- `make install-guardrails` — install the local no-push Git hook across TV7 repos. Humans can override with `TV7_ALLOW_PUSH=1 git push`.
 - `make dev` (`make dev-up`) — start backend/Postgres, engine, and site for localhost development.
 - `make dev-status` — check localhost repo/process/health status.
 - `make dev-stop` — stop the background localhost stack.

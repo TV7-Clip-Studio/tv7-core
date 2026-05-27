@@ -7,6 +7,7 @@
 1.  **Never Execute Without Approval**: You must ALWAYS output a numbered **Implementation Plan** and wait for the user to give permission to proceed. Treat approvals like "execute", "go", "proceed", or similar as valid. For explicit bug-fix requests, proceed directly with the fix once the plan is shared (no extra "execute" gate).
 2.  **Respect Boundaries**: You may READ `tv7-core` and other repos for context, but you must ONLY WRITE to your active repository.
 3.  **Secrets are Fatal**: If you see a secret or token, STOP. Never log it, never commit it.
+4.  **No Remote Mutation By Agents**: Agents must not run `git push`, create remote branches, open PRs, mark PRs ready, or mutate GitHub remotes unless the human explicitly asks for that exact remote action in the current turn.
 
 ## 3. The Standard Workflow
 1.  **Claim**: Check `tv7-core/docs/roadmaps/roadmap.md`. Mark your task `IN_PROGRESS` (Rule: One owner only).

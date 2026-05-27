@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${TV7_ALLOW_PUSH:-}" == "1" ]]; then
+  echo "TV7 guardrail: git push override detected (TV7_ALLOW_PUSH=1). Proceeding..." >&2
+  exit 0
+fi
+
+cat >&2 <<'EOF'
+TV7 guardrail: git push is blocked from this checkout.
+
+Agents must not mutate remotes. A human may push intentionally with:
+  TV7_ALLOW_PUSH=1 git push
+EOF
+
+exit 1

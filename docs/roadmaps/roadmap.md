@@ -103,6 +103,11 @@ Status markers in checkbox position:
     **COMPLETED** | Architect Agent | 2026-05-25 19:11
     - **CROSS-AGENT-NOTES**: Applies to all repos in local-dev-stack context.
     - **NOTE**: Addressed key follow-up findings from the review: (1) Added structural comments explaining mandatory process decisions in `dev-stack.sh` (why `exec` is required to prevent daemon orphans, and why we do a liveness check instead of a retry loop). (2) Replaced `compgen` in `dev-stack.sh` logs with a portable shell glob expansion check. (3) Increased pagination limit in `reviews.py` from `3` to `10` pages (up to 1,000 items). (4) De-duplicated fields list in `reviews.py` by removing `files`, `comments`, and `reviews` from the `gh pr view` call, speeding up API runs.
+- [x] [CO-M01-04-08] Implement multi-turn agentic code reviewer and QA memory
+    **COMPLETED** | Architect Agent | 2026-05-27 22:25
+    - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
+    - **NOTE**: Upgraded the GHA reviewer into a multi-turn agentic system (max 2 turns) using standard Python runner inside GHA runner. The reviewer can request up to 3 local files inside the workspace dynamically to clarify symbols and resolve false positives. Integrated full PR QA and discussion thread reconstruction using inlined Python and `gh` CLI JSON comments, helping the bot respect previous developer/reviewer interactions.
+
 
 
 

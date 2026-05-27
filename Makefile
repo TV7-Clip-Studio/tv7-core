@@ -62,7 +62,7 @@ CONDUCTOR_GRAPH_BATCH_CODE ?= C01
 CONDUCTOR_GRAPH_DEFAULT_EPIC ?= 01
 CONDUCTOR_GRAPH_HANDOFF ?= 1
 
-.PHONY: status pull-all bootstrap sync update set-secret update-secrets dev dev-up dev-backend dev-engine dev-site dev-studio dev-status dev-stop dev-logs reviews reviews-json batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status deepseek-followup deepseek-fix conductor-init conductor-plan conductor-graph-plan conductor-graph-plan-apply conductor-profiles conductor-tickets conductor-tickets-apply conductor-tickets-gemini conductor-tickets-gemini-apply conductor-tickets-codex conductor-tickets-codex-apply conductor-expand conductor-expand-apply conductor-expand-label-check conductor-expand-label-check-apply conductor-execute conductor-execute-apply conductor-review conductor-review-apply conductor-tickets-reset conductor-tickets-reset-apply conductor-tickets-reset-scan conductor-tickets-reset-scan-apply conductor-run conductor-run-once conductor-status conductor-ops-status conductor-events conductor-shim-check orchestrator-init orchestrator-plan orchestrator-profiles orchestrator-tickets orchestrator-tickets-apply orchestrator-tickets-gemini orchestrator-tickets-gemini-apply orchestrator-tickets-codex orchestrator-tickets-codex-apply orchestrator-tickets-reset orchestrator-tickets-reset-apply orchestrator-tickets-reset-scan orchestrator-tickets-reset-scan-apply orchestrator-run-once orchestrator-status orchestrator-ops-status orchestrator-events
+.PHONY: status pull-all bootstrap sync update set-secret update-secrets install-guardrails dev dev-up dev-backend dev-engine dev-site dev-studio dev-status dev-stop dev-logs reviews reviews-json batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status deepseek-followup deepseek-fix conductor-init conductor-plan conductor-graph-plan conductor-graph-plan-apply conductor-profiles conductor-tickets conductor-tickets-apply conductor-tickets-gemini conductor-tickets-gemini-apply conductor-tickets-codex conductor-tickets-codex-apply conductor-expand conductor-expand-apply conductor-expand-label-check conductor-expand-label-check-apply conductor-execute conductor-execute-apply conductor-review conductor-review-apply conductor-tickets-reset conductor-tickets-reset-apply conductor-tickets-reset-scan conductor-tickets-reset-scan-apply conductor-run conductor-run-once conductor-status conductor-ops-status conductor-events conductor-shim-check orchestrator-init orchestrator-plan orchestrator-profiles orchestrator-tickets orchestrator-tickets-apply orchestrator-tickets-gemini orchestrator-tickets-gemini-apply orchestrator-tickets-codex orchestrator-tickets-codex-apply orchestrator-tickets-reset orchestrator-tickets-reset-apply orchestrator-tickets-reset-scan orchestrator-tickets-reset-scan-apply orchestrator-run-once orchestrator-status orchestrator-ops-status orchestrator-events
 
 status:
 	@bash "$(TOOLING_DIR)/status.sh"
@@ -149,6 +149,20 @@ sync update:
 
 set-secret:
 	@SECRET_NAME=$(SECRET_NAME) SECRET_VALUE=$(SECRET_VALUE) REPOS="$(REPOS)" ALL=$(ALL) ORG=$(ORG) bash "$(CURDIR)/tooling/set-secret.sh"
+
+install-guardrails:
+	@hook="$(TOOLING_DIR)/git-hooks/pre-push"; \
+	for repo in $(REPOS); do \
+		path="$(REPO_ROOT)/$$repo"; \
+		if [ ! -d "$$path/.git" ]; then \
+			echo "[skip] $$repo missing at $$path"; \
+			continue; \
+		fi; \
+		mkdir -p "$$path/.git/hooks"; \
+		cp "$$hook" "$$path/.git/hooks/pre-push"; \
+		chmod +x "$$path/.git/hooks/pre-push"; \
+		echo "[ok] installed no-push guardrail in $$repo"; \
+	done
 
 dev dev-up:
 	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" up

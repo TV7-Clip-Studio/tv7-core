@@ -82,6 +82,9 @@ start_background() {
   fi
 
   echo "[..] starting $name"
+  # Note: Caller commands are prefixed with 'exec' (e.g., 'exec make dev') so that the actual
+  # command process replaces the wrapper bash shell. This ensures the PID we record ($!) is
+  # the target process itself, so killing the PID later terminates the server rather than leaving an orphan.
   (
     cd "$dir"
     bash -lc "$command"
@@ -89,6 +92,9 @@ start_background() {
   local pid=$!
   echo "$pid" >"$pid_file"
   
+  # Liveness monitor: Sleep 0.5s on each check and verify the PID remains active.
+  # This ensures any immediate startup failure (e.g. port already in use or command error)
+  # is caught and reported to the developer, rather than falsely declaring success.
   local verified=1
   for ((attempt=1; attempt<=3; attempt++)); do
     sleep 0.5
@@ -241,7 +247,9 @@ stop() {
 
 logs() {
   ensure_dirs
-  if compgen -G "$LOG_DIR/*.log" >/dev/null; then
+  local files
+  files=("$LOG_DIR"/*.log)
+  if [[ -f "${files[0]}" ]]; then
     tail -n 80 "$LOG_DIR"/*.log
   else
     echo "No dev-stack logs yet at $LOG_DIR"

@@ -99,6 +99,12 @@ Status markers in checkbox position:
     **COMPLETED** | Architect Agent | 2026-05-25 19:03
     - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
     - **NOTE**: Aligned the Python script here-document block and its closing delimiter `PY` to column 0 in the generated shell script (exactly 10 spaces of base indentation under YAML multiline `run: |` block). Verified syntactical correctness and execution logic locally using `bash -n`.
+- [x] [CO-M01-04-06] Address follow-up DeepSeek code review findings
+    **COMPLETED** | Architect Agent | 2026-05-25 19:11
+    - **CROSS-AGENT-NOTES**: Applies to all repos in local-dev-stack context.
+    - **NOTE**: Addressed key follow-up findings from the review: (1) Added structural comments explaining mandatory process decisions in `dev-stack.sh` (why `exec` is required to prevent daemon orphans, and why we do a liveness check instead of a retry loop). (2) Replaced `compgen` in `dev-stack.sh` logs with a portable shell glob expansion check. (3) Increased pagination limit in `reviews.py` from `3` to `10` pages (up to 1,000 items). (4) De-duplicated fields list in `reviews.py` by removing `files`, `comments`, and `reviews` from the `gh pr view` call, speeding up API runs.
+
+
 
 
 

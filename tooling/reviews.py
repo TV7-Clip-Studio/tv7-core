@@ -91,7 +91,7 @@ def api_paginated(path: str) -> list[Any]:
         if not isinstance(page_data, list) or not page_data:
             break
         results.extend(page_data)
-        if len(page_data) < 100 or page >= 3:
+        if len(page_data) < 100 or page >= 10:
             break
         page += 1
     return results
@@ -111,7 +111,7 @@ def collect_pr(repo: str, pr: dict[str, Any]) -> dict[str, Any] | None:
                 "--repo",
                 full_name,
                 "--json",
-                "number,title,url,state,isDraft,author,headRefName,baseRefName,reviewDecision,mergeable,labels,assignees,createdAt,updatedAt,body,commits,files,comments,reviews,statusCheckRollup",
+                "number,title,url,state,isDraft,author,headRefName,baseRefName,reviewDecision,mergeable,labels,assignees,createdAt,updatedAt,body,commits,statusCheckRollup",
             ]
         )
         if not isinstance(detail, dict) or "number" not in detail:

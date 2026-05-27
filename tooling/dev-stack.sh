@@ -176,7 +176,10 @@ up() {
     return 1
   fi
   
-  start_backend || true
+  if ! start_backend; then
+    echo "[X] Aborting: backend/Postgres failed to start. See $LOG_DIR/backend.log"
+    return 1
+  fi
   start_background "engine" "$ENGINE_REPO" "exec make dev"
   start_background "site" "$SITE_REPO" "exec npm run dev -- --host 127.0.0.1 --port '$SITE_PORT'"
   

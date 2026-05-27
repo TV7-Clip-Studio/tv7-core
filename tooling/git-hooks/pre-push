@@ -2,6 +2,7 @@
 set -euo pipefail
 
 if [[ "${TV7_ALLOW_PUSH:-}" == "1" ]]; then
+  echo "TV7 guardrail: git push override detected (TV7_ALLOW_PUSH=1). Proceeding..." >&2
   exit 0
 fi
 

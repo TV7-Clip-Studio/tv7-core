@@ -528,7 +528,13 @@ jobs:
                       text=True
                   )
                   if inc_raw.strip():
-                      incremental_diff = inc_raw.strip()
+                      inc_raw_bytes = inc_raw.encode("utf-8", errors="ignore")
+                      inc_truncated = len(inc_raw_bytes) > diff_cap_bytes
+                      if inc_truncated:
+                          inc_raw_bytes = inc_raw_bytes[:diff_cap_bytes]
+                      incremental_diff = inc_raw_bytes.decode("utf-8", errors="ignore")
+                      if inc_truncated:
+                          incremental_diff += f"\n\n[incremental diff truncated at {diff_cap_bytes} bytes]"
                       print(f"Loaded incremental diff since {reviewed_sha}")
               except Exception as exc:
                   print(f"Could not load incremental diff since {reviewed_sha}: {exc}")

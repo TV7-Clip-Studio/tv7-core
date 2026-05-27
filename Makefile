@@ -2,6 +2,7 @@
 
 REPO_ROOT ?= ..
 REPO_ROOT := $(abspath $(REPO_ROOT))
+OWNER ?= TV7-Clip-Studio
 REPOS ?= tv7-core tv7-conductor tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site
 TOOLING_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/tooling
 CONDUCTOR_REPO ?= $(REPO_ROOT)/tv7-conductor
@@ -12,6 +13,11 @@ SKIP_DEPS ?= 0
 SKIP_IDE ?= 0
 PYTHON ?= python3
 TMP_DIR ?= $(CURDIR)/docs/.tmp
+DEV_STATE_DIR ?= $(TMP_DIR)/dev-stack
+BACKEND_PORT ?= 8000
+ENGINE_PORT ?= 7070
+SITE_PORT ?= 4321
+REVIEWS_DIR ?= $(CURDIR)/docs/code-reviews
 CURRENT_BRANCH := $(shell git -C "$(CURDIR)" rev-parse --abbrev-ref HEAD 2>/dev/null)
 AUTO_BATCH_ID := $(shell printf '%s' "$(CURRENT_BRANCH)" | sed -nE 's/^codex\/batch-tv7-core-//p')
 BATCH_ID ?= $(AUTO_BATCH_ID)
@@ -56,7 +62,7 @@ CONDUCTOR_GRAPH_BATCH_CODE ?= C01
 CONDUCTOR_GRAPH_DEFAULT_EPIC ?= 01
 CONDUCTOR_GRAPH_HANDOFF ?= 1
 
-.PHONY: status pull-all bootstrap sync update set-secret update-secrets batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status deepseek-followup deepseek-fix conductor-init conductor-plan conductor-graph-plan conductor-graph-plan-apply conductor-profiles conductor-tickets conductor-tickets-apply conductor-tickets-gemini conductor-tickets-gemini-apply conductor-tickets-codex conductor-tickets-codex-apply conductor-expand conductor-expand-apply conductor-expand-label-check conductor-expand-label-check-apply conductor-execute conductor-execute-apply conductor-review conductor-review-apply conductor-tickets-reset conductor-tickets-reset-apply conductor-tickets-reset-scan conductor-tickets-reset-scan-apply conductor-run conductor-run-once conductor-status conductor-ops-status conductor-events conductor-shim-check orchestrator-init orchestrator-plan orchestrator-profiles orchestrator-tickets orchestrator-tickets-apply orchestrator-tickets-gemini orchestrator-tickets-gemini-apply orchestrator-tickets-codex orchestrator-tickets-codex-apply orchestrator-tickets-reset orchestrator-tickets-reset-apply orchestrator-tickets-reset-scan orchestrator-tickets-reset-scan-apply orchestrator-run-once orchestrator-status orchestrator-ops-status orchestrator-events
+.PHONY: status pull-all bootstrap sync update set-secret update-secrets dev dev-up dev-backend dev-engine dev-site dev-studio dev-status dev-stop dev-logs reviews reviews-json batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status deepseek-followup deepseek-fix conductor-init conductor-plan conductor-graph-plan conductor-graph-plan-apply conductor-profiles conductor-tickets conductor-tickets-apply conductor-tickets-gemini conductor-tickets-gemini-apply conductor-tickets-codex conductor-tickets-codex-apply conductor-expand conductor-expand-apply conductor-expand-label-check conductor-expand-label-check-apply conductor-execute conductor-execute-apply conductor-review conductor-review-apply conductor-tickets-reset conductor-tickets-reset-apply conductor-tickets-reset-scan conductor-tickets-reset-scan-apply conductor-run conductor-run-once conductor-status conductor-ops-status conductor-events conductor-shim-check orchestrator-init orchestrator-plan orchestrator-profiles orchestrator-tickets orchestrator-tickets-apply orchestrator-tickets-gemini orchestrator-tickets-gemini-apply orchestrator-tickets-codex orchestrator-tickets-codex-apply orchestrator-tickets-reset orchestrator-tickets-reset-apply orchestrator-tickets-reset-scan orchestrator-tickets-reset-scan-apply orchestrator-run-once orchestrator-status orchestrator-ops-status orchestrator-events
 
 status:
 	@bash "$(TOOLING_DIR)/status.sh"
@@ -129,8 +135,13 @@ sync update:
 				note="rebase failed onto $$upstream; $$conflicts"; \
 			fi; \
 		fi; \
-		if [ -n "$$note" ]; then \
+		pr_note="$$(OWNER="$(OWNER)" bash "$(TOOLING_DIR)/pr-info.sh" "$$repo" "$$branch" 2>/dev/null || true)"; \
+		if [ -n "$$note" ] && [ -n "$$pr_note" ]; then \
+			echo "$$status $$repo ($$branch) - $$note - $$pr_note"; \
+		elif [ -n "$$note" ]; then \
 			echo "$$status $$repo ($$branch) - $$note"; \
+		elif [ -n "$$pr_note" ]; then \
+			echo "$$status $$repo ($$branch) - $$pr_note"; \
 		else \
 			echo "$$status $$repo ($$branch)"; \
 		fi; \
@@ -138,6 +149,42 @@ sync update:
 
 set-secret:
 	@SECRET_NAME=$(SECRET_NAME) SECRET_VALUE=$(SECRET_VALUE) REPOS="$(REPOS)" ALL=$(ALL) ORG=$(ORG) bash "$(CURDIR)/tooling/set-secret.sh"
+
+dev dev-up:
+	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" up
+
+dev-backend:
+	@$(MAKE) -C "$(REPO_ROOT)/tv7-fastapi-backend" dev
+
+dev-engine:
+	@$(MAKE) -C "$(REPO_ROOT)/tv7-axum-engine" dev
+
+dev-site:
+	@cd "$(REPO_ROOT)/tv7-astro-site" && npm run dev -- --host 127.0.0.1 --port "$(SITE_PORT)"
+
+dev-studio:
+	@$(MAKE) -C "$(REPO_ROOT)/tv7-flutter-studio" run-desktop
+
+dev-status:
+	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" status
+
+dev-stop:
+	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" stop
+
+dev-logs:
+	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" logs
+
+reviews reviews-json:
+	@if [ ! -f "$(TOOLING_DIR)/repos-checks.conf" ]; then \
+		echo "Error: $(TOOLING_DIR)/repos-checks.conf not found." >&2; \
+		exit 1; \
+	fi
+	@mkdir -p "$(REVIEWS_DIR)"
+	@if [ ! -w "$(REVIEWS_DIR)" ]; then \
+		echo "Error: Output directory $(REVIEWS_DIR) is not writable." >&2; \
+		exit 1; \
+	fi
+	@REPOS="$(REPOS)" OUT_DIR="$(REVIEWS_DIR)" CONFIG_FILE="$(TOOLING_DIR)/repos-checks.conf" "$(PYTHON)" "$(TOOLING_DIR)/reviews.py"
 
 batch-pr:
 	@REPO_ROOT="$(REPO_ROOT)" OPEN_PR=1 PUSH_BRANCH=1 RUN_CHECKS_IN_ALL_REPOS=1 bash "$(TOOLING_DIR)/batch-pr.sh"

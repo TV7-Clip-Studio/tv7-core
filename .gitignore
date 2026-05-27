@@ -10,5 +10,6 @@ __pycache__/
 docs/.tmp/
 docs/.orchestrator/
 docs/.conductor/
+docs/code-reviews/
 tooling/__pycache__/
 tooling/orchestrator/__pycache__/

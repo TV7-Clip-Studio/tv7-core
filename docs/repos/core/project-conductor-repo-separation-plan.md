@@ -8,7 +8,7 @@
 ## Current Finding
 The extraction is partially complete:
 - `tv7-conductor` contains the runtime package, policies, tests, local Makefile, runbook copies, and `docs/.conductor` state.
-- `tv7-core` contains governance docs, roadmap files, shim scripts, `make conductor-*` entry points, deprecated `orchestrator-*` aliases, and historical `docs/.conductor` state.
+- `tv7-core` contains governance docs, roadmap files, shim scripts, `make conductor-*` entry points, and deprecated `orchestrator-*` aliases. Runtime state no longer lives in `tv7-core`.
 - The runtime still treats a single `core_dir` argument as the source for roadmaps, state storage, report output, and command working directory. That was workable when the runtime lived in `tv7-core`, but it is now the wrong abstraction.
 
 ## Revised Boundary
@@ -52,10 +52,10 @@ Replace the single overloaded `core_dir` concept with explicit path roles:
    - Update Conductor CLI and state store APIs to accept separate roadmap source and state output roots.
    - Preserve backward compatibility for existing `--core-dir` callers during one migration window, but mark it as deprecated once explicit path flags exist.
 
-3. Migrate state deliberately.
-   - Treat `tv7-core/docs/.conductor` as historical state from the pre-extraction runtime.
+3. Keep state in the runtime repo.
    - Keep `tv7-conductor/docs/.conductor` as the active state root after path split.
-   - Provide a one-time migration/check command that reports whether both locations differ before any archive or deletion.
+   - Remove generated `tv7-core/docs/.conductor` state from local workspaces; core shims route state writes to `tv7-conductor`.
+   - Treat any old `tv7-core/docs/.conductor` copy as disposable generated state unless an operator explicitly exported it before cleanup.
 
 4. Deduplicate docs.
    - Keep canonical architecture decision and governance docs in `tv7-core`.
@@ -87,7 +87,7 @@ Replace the single overloaded `core_dir` concept with explicit path roles:
 - Do not move canonical product roadmaps out of `tv7-core` in this pass.
 - Do not convert Conductor into a daemon or hosted service.
 - Do not remove compatibility shims until clean-batch deprecation criteria are met.
-- Do not auto-delete historical state until an explicit migration/check command reports what would be lost.
+- Do not write new Conductor runtime state into `tv7-core`; core is a governance and shim surface only.
 - Do not make isolated preview/test environments replace repo-local CI; they are operator convenience and validation aids.
 
 ## Acceptance Criteria

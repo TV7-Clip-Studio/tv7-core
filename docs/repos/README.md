@@ -10,6 +10,7 @@ Repo-scoped documentation that is useful across teams lives here and is canonica
 ## Workflow Docs
 - `repo-policy.md` - branch/check/commit/PR standard for all repos.
 - `cross-repo-policy.md` - required coordination rules for multi-repo changes.
+- `symlink-coordination.md` - shared symlink contract and Codex app visibility guidance.
 - `batch-pr-runbook.md` - how to run and troubleshoot the batch PR automation.
 - `core/project-conductor-runbook.md` - source of truth for `conductor-*` workflows.
 

@@ -347,9 +347,11 @@ Project Conductor migrates TV7 from the current custom local orchestrator to a s
     **COMPLETED** | Architect Agent | 2026-04-27 12:50
     - **NOTE**: Acceptance: shimmed runs read `tv7-core/docs/roadmaps` and write active runtime state under `tv7-conductor/docs/.conductor`.
     - **NOTE**: `tv7-core/tooling/conductor.py`, `conductor_run.py`, and `orchestrator.py` now inject explicit path roles; Make targets route through these shims.
-- [ ] [CO-C01-11-03] Resolve duplicated Project Conductor docs and historical state after the path contract lands.
-    **BACKLOG** | Architect Agent | 2026-04-25 10:55
-    - **NOTE**: Preserve historical `tv7-core/docs/.conductor` until a migration/check command reports the diff and an explicit apply is requested.
+- [X] [CO-C01-11-03] Resolve duplicated Project Conductor docs and historical state after the path contract lands.
+    **COMPLETED** | Architect Agent | 2026-05-21 00:00
+    - **NOTE**: Updated core docs to match the extracted runtime boundary.
+    - **NOTE**: Active Conductor state is `../tv7-conductor/docs/.conductor`; generated `tv7-core/docs/.conductor` local state was removed from this workspace.
+    - **NOTE**: Validation: `python3 -m py_compile tooling/reviews.py`; `make -n reviews`; `make -n sync`; `git diff --check`.
 - [X] [CO-C01-11-04] Restore clean test ownership after extraction.
     **COMPLETED** | Architect Agent | 2026-04-27 12:50
     - **NOTE**: `tv7-conductor` tests must not import `tv7-core`-owned DeepSeek shared tooling; keep `deepseek_review_comment.py`, `deepseek_followup.py`, and `deepseek_fix.py` coverage in `tv7-core`.

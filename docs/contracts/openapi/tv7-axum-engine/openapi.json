@@ -1,0 +1,933 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TV7 Axum Engine Local API",
+    "version": "0.3.0",
+    "description": "Local-only engine sidecar API exposed on loopback. Studio starts this service and uses it as the mandatory boundary for local media compute."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:7070",
+      "description": "Default local sidecar address"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/diagnostics": {
+      "get": {
+        "summary": "Inspect local engine readiness",
+        "operationId": "getDiagnostics",
+        "description": "Reports readiness for the first Studio sidecar milestone. ffmpeg and ffprobe are required; yt-dlp is reported as a future url_ingest dependency and is not checked yet.",
+        "responses": {
+          "200": {
+            "description": "Diagnostics payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineDiagnostics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/media/probe": {
+      "post": {
+        "summary": "Probe local media metadata",
+        "operationId": "probeMedia",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProbeRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "path": "/absolute/path/to/video.mp4"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Probe metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/CommandFailed"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalFailure"
+          },
+          "502": {
+            "$ref": "#/components/responses/OutputInvalid"
+          }
+        }
+      }
+    },
+    "/v1/media/thumbnail": {
+      "post": {
+        "summary": "Generate a thumbnail image for local media",
+        "operationId": "generateThumbnail",
+        "description": "Always overwrites the output file. Studio owns workspace paths and passes absolute source and output paths.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThumbnailRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "source_path": "/absolute/path/to/video.mp4",
+                    "output_path": "/absolute/path/to/video.mp4.thumb.jpg",
+                    "timestamp_seconds": 1.0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Thumbnail generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThumbnailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/CommandFailed"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalFailure"
+          }
+        }
+      }
+    },
+    "/v1/media/render-clip": {
+      "post": {
+        "summary": "Render a frame-accurate local clip",
+        "operationId": "renderClip",
+        "description": "Always overwrites the output file. Studio owns workspace paths and passes absolute source and output paths.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderClipRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "source_path": "/absolute/path/to/video.mp4",
+                    "output_path": "/absolute/path/to/video_clip.mp4",
+                    "start_seconds": 12.5,
+                    "end_seconds": 42.5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Clip rendered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderClipResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/CommandFailed"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalFailure"
+          }
+        }
+      }
+    },
+    "/v1/ingest/url": {
+      "post": {
+        "summary": "Start a job-backed URL ingest",
+        "operationId": "startUrlIngest",
+        "description": "Starts a local yt-dlp ingest job. The initial response is 202 with a job payload; Studio polls /v1/jobs/{id} for completion.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UrlIngestRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "url": "https://example.com/video",
+                    "output_dir": "/absolute/path/to/workspace",
+                    "output_template": "%(title).200B.%(ext)s"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Ingest job accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/v1/transcripts/download": {
+      "post": {
+        "summary": "Start a job-backed transcript download",
+        "operationId": "startTranscriptDownload",
+        "description": "Starts a local yt-dlp transcript download job. Studio polls /v1/jobs/{id} for completion.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptDownloadRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "url": "https://example.com/video",
+                    "output_path": "/absolute/path/to/video.vtt",
+                    "language": "en"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Transcript job accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}": {
+      "get": {
+        "summary": "Fetch local Engine job state",
+        "operationId": "getJob",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineJob"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/logs": {
+      "get": {
+        "summary": "Fetch local Engine job logs",
+        "operationId": "getJobLogs",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobLogsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/cancel": {
+      "post": {
+        "summary": "Request local Engine job cancellation",
+        "operationId": "cancelJob",
+        "description": "Marks a queued or running job as cancelled. Initial AX-A04 cancellation is cooperative at the Engine job state boundary; process-level termination is a follow-up hardening item.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated job state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineJob"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "File not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "CommandFailed": {
+        "description": "Local media command failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "OutputInvalid": {
+        "description": "Unexpected command output",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "InternalFailure": {
+        "description": "Internal failure",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          }
+        }
+      },
+      "EngineDiagnostics": {
+        "type": "object",
+        "required": [
+          "status",
+          "runtime",
+          "capabilities",
+          "tools",
+          "work_dir"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/DiagnosticStatus"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/RuntimeDiagnostic"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityDiagnostic"
+            }
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolDiagnostic"
+            }
+          },
+          "work_dir": {
+            "$ref": "#/components/schemas/WorkDirDiagnostic"
+          }
+        }
+      },
+      "RuntimeDiagnostic": {
+        "type": "object",
+        "required": [
+          "engine_version",
+          "host",
+          "port"
+        ],
+        "properties": {
+          "engine_version": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          }
+        }
+      },
+      "DiagnosticStatus": {
+        "type": "string",
+        "enum": [
+          "ready",
+          "degraded"
+        ]
+      },
+      "CapabilityDiagnostic": {
+        "type": "object",
+        "required": [
+          "name",
+          "status",
+          "required_tools"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DiagnosticStatus"
+          },
+          "required_tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ToolDiagnostic": {
+        "type": "object",
+        "required": [
+          "name",
+          "available",
+          "version",
+          "required_for",
+          "error"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "available": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "null means the tool is known but not checked for this milestone."
+          },
+          "version": {
+            "type": "string",
+            "nullable": true
+          },
+          "required_for": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "WorkDirDiagnostic": {
+        "type": "object",
+        "required": [
+          "path",
+          "ready",
+          "error"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "ready": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ProbeRequest": {
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Absolute local filesystem path to media file."
+          }
+        }
+      },
+      "ProbeResponse": {
+        "type": "object",
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "$ref": "#/components/schemas/MediaMetadata"
+          }
+        }
+      },
+      "MediaMetadata": {
+        "type": "object",
+        "required": [
+          "path",
+          "duration_seconds",
+          "width",
+          "height",
+          "format",
+          "size_bytes"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "nullable": true
+          },
+          "width": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "height": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "format": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ThumbnailRequest": {
+        "type": "object",
+        "required": [
+          "source_path",
+          "output_path"
+        ],
+        "properties": {
+          "source_path": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "timestamp_seconds": {
+            "type": "number",
+            "nullable": true,
+            "default": 1.0,
+            "minimum": 0
+          }
+        }
+      },
+      "ThumbnailResponse": {
+        "type": "object",
+        "required": [
+          "result"
+        ],
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/ThumbnailResult"
+          }
+        }
+      },
+      "ThumbnailResult": {
+        "type": "object",
+        "required": [
+          "output_path"
+        ],
+        "properties": {
+          "output_path": {
+            "type": "string"
+          }
+        }
+      },
+      "RenderClipRequest": {
+        "type": "object",
+        "required": [
+          "source_path",
+          "output_path",
+          "start_seconds",
+          "end_seconds"
+        ],
+        "properties": {
+          "source_path": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "start_seconds": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Start time of the clip in seconds. Must be >= 0 and less than end_seconds."
+          },
+          "end_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "End time of the clip in seconds. Must be > start_seconds."
+          }
+        }
+      },
+      "RenderClipResponse": {
+        "type": "object",
+        "required": [
+          "result"
+        ],
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/RenderClipResult"
+          }
+        }
+      },
+      "RenderClipResult": {
+        "type": "object",
+        "required": [
+          "output_path",
+          "duration_seconds"
+        ],
+        "properties": {
+          "output_path": {
+            "type": "string"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "UrlIngestRequest": {
+        "type": "object",
+        "required": [
+          "url",
+          "output_dir"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "output_dir": {
+            "type": "string",
+            "description": "Absolute local directory where Engine writes downloaded media."
+          },
+          "output_template": {
+            "type": "string",
+            "description": "Optional yt-dlp output template relative to output_dir."
+          }
+        }
+      },
+      "UrlIngestResult": {
+        "type": "object",
+        "required": [
+          "url",
+          "metadata"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "media_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "TranscriptDownloadRequest": {
+        "type": "object",
+        "required": [
+          "url",
+          "output_path"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "output_path": {
+            "type": "string",
+            "description": "Absolute local VTT output path requested by Studio."
+          },
+          "language": {
+            "type": "string",
+            "default": "en"
+          }
+        }
+      },
+      "TranscriptDownloadResult": {
+        "type": "object",
+        "required": [
+          "language"
+        ],
+        "properties": {
+          "transcript_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "language": {
+            "type": "string"
+          }
+        }
+      },
+      "JobCreateResponse": {
+        "type": "object",
+        "required": [
+          "job"
+        ],
+        "properties": {
+          "job": {
+            "$ref": "#/components/schemas/EngineJob"
+          }
+        }
+      },
+      "JobLogsResponse": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "logs"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "logs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "EngineJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "progress",
+          "logs",
+          "cancel_requested"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "url_ingest",
+              "transcript_download"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "progress": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "logs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "result": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UrlIngestResult"
+              },
+              {
+                "$ref": "#/components/schemas/TranscriptDownloadResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cancel_requested": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

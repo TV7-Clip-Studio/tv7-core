@@ -20,6 +20,48 @@
 - Symlinks keep shared docs/tooling live and avoid detached SHA churn.
 - Simpler mental model: edit through the link, commit in `tv7-core`, done.
 
+## New developer localhost flow
+From a fresh sibling checkout, use `tv7-core` as the workspace entrypoint:
+
+```
+cd tv7-core
+make sync
+make dev-status
+make dev
+```
+
+Local prerequisites:
+- Docker Desktop or Docker Engine for backend Postgres/API containers.
+- Rust/Cargo for the Axum engine.
+- Node/npm for the Astro site.
+- Flutter with macOS desktop support for Studio.
+
+`make dev` starts the product services that make sense as a background local stack:
+- FastAPI backend and Postgres through `tv7-fastapi-backend` Docker Compose.
+- Axum engine through `tv7-axum-engine`.
+- Astro site through `tv7-astro-site`.
+
+Flutter Studio is a desktop app and stays explicit:
+
+```
+make dev-studio
+```
+
+Default local URLs:
+- Backend health: `http://localhost:8000/health`
+- Engine health: `http://127.0.0.1:7070/health`
+- Astro site: `http://localhost:4321/`
+
+Useful controls:
+- `make dev-backend` — run the backend foreground dev command in its repo.
+- `make dev-engine` — run the engine foreground dev command in its repo.
+- `make dev-site` — run the Astro foreground dev server in its repo.
+- `make dev-status` — check repo presence, background pids, and local health endpoints.
+- `make dev-logs` — show recent background stack logs from `docs/.tmp/dev-stack/logs`.
+- `make dev-stop` — stop background engine/site pids and backend Docker Compose.
+
+The Conductor repo participates in `make sync` as a sibling repo, but it is not part of the TV7 localhost product stack.
+
 ## Mounting in other repos (symlinked)
 - Ensure `tv7-core` is a sibling directory to each repo (see layout above).
 - Add symlinks so shared assets are visible in each repo (tracked as links, content lives in `tv7-core`). From repo root:
@@ -71,7 +113,13 @@ See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 - `make status` — show git status for all tracked repos.
 - `make pull-all` — pull current branch in each repo (auto-sets upstream if present).
 - `make bootstrap` — clone/fix remotes and ensure sibling repos exist.
-- `make sync` (`make update`) — bootstrap, pull with rebase; outputs per-repo status.
+- `make sync` (`make update`) — bootstrap, pull with rebase; outputs per-repo status plus open PR number and URL for the local branch when `gh` is authenticated.
+- `make dev` (`make dev-up`) — start backend/Postgres, engine, and site for localhost development.
+- `make dev-status` — check localhost repo/process/health status.
+- `make dev-stop` — stop the background localhost stack.
+- `make dev-logs` — show recent localhost stack logs.
+- `make dev-backend`, `make dev-engine`, `make dev-site`, `make dev-studio` — run one service foreground from its native repo.
+- `make reviews` — collect all open PR review data across TV7 repos into `docs/code-reviews/<repo>/`.
 - `make set-secret` — set a GitHub Actions secret across repos via `tooling/set-secret.sh` (pass `SECRET_NAME`, `SECRET_VALUE`, and `REPOS` or `ALL`; optional `ORG`).
 
 ## Agent context loading contract

@@ -115,6 +115,42 @@ For `AX-A03`, `yt-dlp` is checked by Engine diagnostics because URL ingest and t
 | `ToolRunner.downloadTranscript(url, outputPath, lang)` | `POST /v1/transcripts/download`, then `GET /v1/jobs/{id}` | Engine owns subtitle download. Studio may still normalize/display returned VTT content until a later normalization endpoint exists. |
 | `IngestPage._checkDependencies()` | `GET /v1/diagnostics` | Flutter should not run `which ffmpeg`; use Engine diagnostics. |
 
+## Studio Diagnostics Contract
+
+Studio Diagnostics should treat `GET /v1/diagnostics` as the source of truth for local media readiness.
+
+Studio should display these Engine capabilities from the diagnostics payload:
+
+- `probe`
+- `thumbnail`
+- `render_clip`
+- `url_ingest`
+- `transcript`
+
+Studio should display these Engine-managed tools from the diagnostics payload when present:
+
+- `ffprobe`
+- `ffmpeg`
+- `yt-dlp`
+
+Studio should not run direct shell checks such as `which ffmpeg`, `which ffprobe`, or `which yt-dlp`.
+
+Manual endpoint smoke diagnostics may call the Engine endpoints, but they should not run real public URL downloads by default. Use Engine diagnostics to verify `yt-dlp` availability, and reserve real URL ingest checks for explicit manual tests.
+
+## Path Ownership
+
+All media paths sent to Engine must be absolute local filesystem paths.
+
+For `POST /v1/media/thumbnail` and `POST /v1/media/render-clip`, Studio owns workspace naming and must create the output parent directory before calling Engine. Engine validates the parent directory and returns `OUTPUT_PARENT_MISSING` if it does not exist.
+
+For `POST /v1/ingest/url`, Studio passes an existing absolute `output_dir`. Engine writes downloaded media inside that directory using `output_template` when provided.
+
+For `POST /v1/transcripts/download`, Studio passes an absolute `output_path`; its parent directory must already exist. Engine may return a transcript path with a language suffix added by `yt-dlp`.
+
+## URL Safety
+
+URL ingest accepts only `http` and `https` URLs with a host. Engine rejects localhost and private-network URL hosts by default. This does not affect Studio talking to Engine on `127.0.0.1`; it only limits the media URL that Engine asks `yt-dlp` to download.
+
 ## Probe Example
 
 ```http
@@ -228,7 +264,7 @@ To request cancellation:
 POST /v1/jobs/job_1/cancel
 ```
 
-Initial AX-A04 cancellation is cooperative at the Engine job state boundary. Process-level termination for an already-running `yt-dlp` child process is a follow-up hardening item.
+Current AX-A04 cancellation is cooperative at the Engine job state boundary. Cancelling a queued job prevents it from starting, and late results do not overwrite a cancelled job. Process-level termination for an already-running `yt-dlp` child process is a follow-up hardening item.
 
 Successful `result` contains:
 

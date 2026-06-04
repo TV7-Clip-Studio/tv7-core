@@ -17,7 +17,7 @@ PID_DIR="$DEV_STATE_DIR/pids"
 
 usage() {
   cat <<EOF
-Usage: dev-stack.sh {up|status|stop|logs}
+Usage: dev-stack.sh {up|backend|engine|site|studio|status|stop|logs}
 
 Environment:
   REPO_ROOT       Workspace root containing the TV7 repos. Default: $REPO_ROOT
@@ -25,6 +25,7 @@ Environment:
   BACKEND_PORT   Backend API port. Default: $BACKEND_PORT
   ENGINE_PORT    Axum engine port. Default: $ENGINE_PORT
   SITE_PORT      Astro site port. Default: $SITE_PORT
+  FORCE          Set to 1 to stop unknown managed-port or Studio-like processes.
 EOF
 }
 
@@ -69,6 +70,110 @@ pid_alive() {
   kill -0 "$pid" >/dev/null 2>&1
 }
 
+pid_command() {
+  local pid="$1"
+  ps -p "$pid" -o args= 2>/dev/null || true
+}
+
+require_lsof() {
+  if command -v lsof >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "[X] Missing required command: lsof" >&2
+  echo "    Install lsof or run this on a standard macOS/Linux dev environment." >&2
+  return 1
+}
+
+pid_cwd() {
+  local pid="$1"
+  require_lsof || return 0
+  lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -n1 || true
+}
+
+port_pid() {
+  local port="$1"
+  require_lsof || return 0
+  lsof -nP -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | head -n1 || true
+}
+
+known_engine_pid() {
+  local pid="$1"
+  local args
+  args="$(pid_command "$pid")"
+  [[ "$args" == *"tv7-axum-engine"* || "$args" == *"engine-service"* ]]
+}
+
+known_site_pid() {
+  local pid="$1"
+  local args cwd
+  args="$(pid_command "$pid")"
+  cwd="$(pid_cwd "$pid")"
+  [[ "$args" == *"tv7-astro-site"* || "$cwd" == "$SITE_REPO"* ]]
+}
+
+known_studio_pid() {
+  local pid="$1"
+  local args cwd
+  args="$(pid_command "$pid")"
+  cwd="$(pid_cwd "$pid")"
+  [[ "$args" == *"forgotten_client"* || ( "$cwd" == "$STUDIO_REPO"* && "$args" == *"flutter"* ) ]]
+}
+
+unique_lines() {
+  awk 'NF && !seen[$0]++'
+}
+
+stop_pid_value() {
+  local label="$1"
+  local pid="$2"
+  if [[ -z "$pid" ]]; then
+    return 0
+  fi
+  if ! kill -0 "$pid" >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "[..] stopping $label pid $pid"
+  kill "$pid" >/dev/null 2>&1 || true
+  for _ in 1 2 3 4 5; do
+    if ! kill -0 "$pid" >/dev/null 2>&1; then
+      echo "[ok] $label stopped"
+      return 0
+    fi
+    sleep 0.5
+  done
+  echo "[..] force stopping $label pid $pid"
+  kill -9 "$pid" >/dev/null 2>&1 || true
+  echo "[ok] $label stopped"
+}
+
+stop_known_port_owner() {
+  local label="$1"
+  local port="$2"
+  local known_fn="$3"
+  local pid
+  pid="$(port_pid "$port")"
+  if [[ -z "$pid" ]]; then
+    return 0
+  fi
+
+  local args
+  args="$(pid_command "$pid")"
+  echo "[..] $label port $port is occupied by pid $pid"
+  if "$known_fn" "$pid" || [[ "${FORCE:-0}" == "1" ]]; then
+    # Development guardrail: re-check ownership immediately before kill to avoid
+    # stopping a replacement process if the original listener exited meanwhile.
+    if [[ "$(port_pid "$port")" != "$pid" ]]; then
+      echo "[X] $label port $port owner changed before stop; retry the command."
+      return 1
+    fi
+    stop_pid_value "$label port owner" "$pid"
+  else
+    echo "[X] Refusing to stop unknown process on port $port: $args"
+    echo "    Re-run with FORCE=1 if this process should be replaced."
+    return 1
+  fi
+}
+
 start_background() {
   local name="$1"
   local dir="$2"
@@ -76,18 +181,10 @@ start_background() {
   local pid_file="$PID_DIR/$name.pid"
   local log_file="$LOG_DIR/$name.log"
 
-  if pid_alive "$pid_file"; then
-    echo "[ok] $name already running (pid $(cat "$pid_file"))"
-    return 0
-  fi
-
   echo "[..] starting $name"
-  # Note: Caller commands are prefixed with 'exec' (e.g., 'exec make dev') so that the actual
-  # command process replaces the wrapper bash shell. This ensures the PID we record ($!) is
-  # the target process itself, so killing the PID later terminates the server rather than leaving an orphan.
   (
     cd "$dir"
-    bash -lc "$command"
+    exec bash -lc "$command"
   ) >"$log_file" 2>&1 &
   local pid=$!
   echo "$pid" >"$pid_file"
@@ -127,6 +224,34 @@ start_backend() {
   echo "[ok] backend compose requested (log $log_file)"
 }
 
+stop_backend() {
+  ensure_dirs
+  if [[ -d "$BACKEND_REPO" ]]; then
+    echo "[..] stopping backend compose"
+    (
+      cd "$BACKEND_REPO"
+      make down
+    ) >"$LOG_DIR/backend-stop.log" 2>&1 || {
+      echo "[X] backend compose stop failed (log $LOG_DIR/backend-stop.log)"
+      return 1
+    }
+    echo "[ok] backend compose stopped"
+  fi
+}
+
+follow_backend_logs() {
+  cd "$BACKEND_REPO"
+  exec make logs
+}
+
+follow_log() {
+  local name="$1"
+  local log_file="$LOG_DIR/$name.log"
+  echo "[..] following $name logs from $log_file"
+  touch "$log_file"
+  exec tail -n 80 -f "$log_file"
+}
+
 health_url() {
   local label="$1"
   local url="$2"
@@ -152,6 +277,12 @@ health_url() {
   return 1
 }
 
+url_ok() {
+  local url="$1"
+  command -v curl >/dev/null 2>&1 || return 1
+  curl --fail --silent --max-time 2 "$url" >/dev/null
+}
+
 process_status() {
   local name="$1"
   local pid_file="$PID_DIR/$name.pid"
@@ -160,6 +291,79 @@ process_status() {
   else
     echo "[X] $name process not running"
     return 1
+  fi
+}
+
+port_status() {
+  local label="$1"
+  local port="$2"
+  local pid
+  pid="$(port_pid "$port")"
+  if [[ -z "$pid" ]]; then
+    echo "[X] $label port $port not listening"
+    return 1
+  fi
+  echo "[ok] $label port $port pid $pid - $(pid_command "$pid")"
+}
+
+studio_pids() {
+  {
+    pgrep -x forgotten_client 2>/dev/null || true
+    pgrep -f "flutter_tools.snapshot run|flutter run|make .*run-desktop|make -C .*run-desktop" 2>/dev/null || true
+  } | while read -r pid; do
+    [[ -n "$pid" ]] || continue
+    if known_studio_pid "$pid"; then
+      echo "$pid"
+    fi
+  done | unique_lines
+}
+
+studio_status() {
+  local pids pid app_pid runner_pid
+  pids="$(studio_pids)"
+  if [[ -z "$pids" ]]; then
+    echo "[X] studio process not running"
+    return 1
+  fi
+
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] || continue
+    if [[ "$(pid_command "$pid")" == *"forgotten_client.app"* ]]; then
+      app_pid="$pid"
+    elif [[ -z "${runner_pid:-}" ]]; then
+      runner_pid="$pid"
+    fi
+  done <<<"$pids"
+
+  if [[ -n "${app_pid:-}" ]]; then
+    echo "[ok] studio app pid $app_pid - $(pid_command "$app_pid")"
+  fi
+  if [[ -n "${runner_pid:-}" ]]; then
+    echo "[ok] studio runner pid $runner_pid - $(pid_command "$runner_pid")"
+  fi
+}
+
+print_next_steps() {
+  local printed=0
+  echo "Next:"
+  if ! url_ok "http://localhost:$BACKEND_PORT/health"; then
+    echo "- Backend down: run make dev-backend"
+    printed=1
+  fi
+  if ! url_ok "http://127.0.0.1:$ENGINE_PORT/health"; then
+    echo "- Engine down: run make dev-engine"
+    printed=1
+  fi
+  if ! url_ok "http://localhost:$SITE_PORT/"; then
+    echo "- Site down: run make dev-site"
+    printed=1
+  fi
+  if ! studio_status >/dev/null 2>&1; then
+    echo "- Studio down: run make dev-studio"
+    printed=1
+  fi
+  if [[ "$printed" -eq 0 ]]; then
+    echo "- All local services appear to be up."
   fi
 }
 
@@ -180,6 +384,8 @@ up() {
     echo "[X] Aborting: backend/Postgres failed to start. See $LOG_DIR/backend.log"
     return 1
   fi
+  stop_engine
+  stop_site
   start_background "engine" "$ENGINE_REPO" "exec make dev"
   start_background "site" "$SITE_REPO" "exec npm run dev -- --host 127.0.0.1 --port '$SITE_PORT'"
   
@@ -206,6 +412,12 @@ status() {
   echo "Processes:"
   process_status "engine" || true
   process_status "site" || true
+  studio_status || true
+  echo
+  echo "Ports:"
+  port_status "backend" "$BACKEND_PORT" || true
+  port_status "engine" "$ENGINE_PORT" || true
+  port_status "site" "$SITE_PORT" || true
   echo
   echo "Health:"
   health_url "backend" "http://localhost:$BACKEND_PORT/health" || true
@@ -213,6 +425,8 @@ status() {
   health_url "site" "http://localhost:$SITE_PORT/" || true
   echo
   echo "Logs: $LOG_DIR"
+  echo
+  print_next_steps
 }
 
 stop_pid() {
@@ -231,20 +445,88 @@ stop_pid() {
   fi
 }
 
-stop() {
+stop_engine() {
+  ensure_dirs
+  stop_pid "engine"
+  stop_known_port_owner "engine" "$ENGINE_PORT" known_engine_pid
+}
+
+stop_site() {
   ensure_dirs
   stop_pid "site"
-  stop_pid "engine"
-  if [[ -d "$BACKEND_REPO" ]]; then
-    echo "[..] stopping backend compose"
-    (
-      cd "$BACKEND_REPO"
-      make down
-    ) >"$LOG_DIR/backend-stop.log" 2>&1 || {
-      echo "[X] backend compose stop failed (log $LOG_DIR/backend-stop.log)"
+  stop_known_port_owner "site" "$SITE_PORT" known_site_pid
+}
+
+stop_studio() {
+  ensure_dirs
+  local pids pid
+  pids="$(studio_pids)"
+  if [[ -z "$pids" ]]; then
+    echo "[ok] studio not running"
+    return 0
+  fi
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] || continue
+    if known_studio_pid "$pid" || [[ "${FORCE:-0}" == "1" ]]; then
+      stop_pid_value "studio" "$pid"
+    else
+      echo "[X] Refusing to stop unknown studio-like process pid $pid: $(pid_command "$pid")"
+      echo "    Re-run with FORCE=1 if this process should be replaced."
       return 1
-    }
-    echo "[ok] backend compose stopped"
+    fi
+  done <<<"$pids"
+}
+
+backend() {
+  ensure_dirs
+  repo_exists "backend" "$BACKEND_REPO"
+  stop_backend
+  start_backend
+  follow_backend_logs
+}
+
+engine() {
+  ensure_dirs
+  repo_exists "engine" "$ENGINE_REPO"
+  if ! has_makefile_target "$ENGINE_REPO" "dev"; then
+    echo "[X] engine Makefile or target 'dev' missing at $ENGINE_REPO"
+    return 1
+  fi
+  stop_engine
+  echo "[..] starting engine in foreground"
+  cd "$ENGINE_REPO"
+  exec make dev
+}
+
+site() {
+  ensure_dirs
+  repo_exists "site" "$SITE_REPO"
+  if [[ ! -f "$SITE_REPO/package.json" ]]; then
+    echo "[X] site package.json missing at $SITE_REPO"
+    return 1
+  fi
+  stop_site
+  echo "[..] starting site in foreground"
+  cd "$SITE_REPO"
+  exec npm run dev -- --host 127.0.0.1 --port "$SITE_PORT"
+}
+
+studio() {
+  ensure_dirs
+  repo_exists "studio" "$STUDIO_REPO"
+  stop_studio
+  echo "[..] starting studio in foreground"
+  cd "$STUDIO_REPO"
+  exec make run-desktop
+}
+
+stop() {
+  ensure_dirs
+  stop_site
+  stop_engine
+  stop_backend
+  if [[ "${INCLUDE_STUDIO:-0}" == "1" ]]; then
+    stop_studio
   fi
 }
 
@@ -262,6 +544,10 @@ logs() {
 command="${1:-}"
 case "$command" in
   up) up ;;
+  backend) backend ;;
+  engine) engine ;;
+  site) site ;;
+  studio) studio ;;
   status) status ;;
   stop) stop ;;
   logs) logs ;;

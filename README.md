@@ -32,6 +32,7 @@ make dev
 
 Local prerequisites:
 - Docker Desktop or Docker Engine for backend Postgres/API containers.
+- `lsof` for local port/process ownership checks.
 - Rust/Cargo for the Axum engine.
 - Node/npm for the Astro site.
 - Flutter with macOS desktop support for Studio.
@@ -119,7 +120,7 @@ See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 - `make dev-status` — check localhost repo/process/health status.
 - `make dev-stop` — stop the background localhost stack.
 - `make dev-logs` — show recent localhost stack logs.
-- `make dev-backend`, `make dev-engine`, `make dev-site`, `make dev-studio` — run one service foreground from its native repo.
+- `make dev-backend`, `make dev-engine`, `make dev-site`, `make dev-studio` — refresh one service from core, then stream its logs in the current terminal.
 - `make reviews` — collect all open PR review data across TV7 repos into `docs/code-reviews/<repo>/`.
 - `make set-secret` — set a GitHub Actions secret across repos via `tooling/set-secret.sh` (pass `SECRET_NAME`, `SECRET_VALUE`, and `REPOS` or `ALL`; optional `ORG`).
 

@@ -3,7 +3,7 @@
 Roadmap Code: FL
 Batch Code: A01
 
-Last updated: 2026-05-21
+Last updated: 2026-06-03
 
 ## Done
 - [X] [FL-A01-01-01] Scaffolded Flutter client foundation with flavor entrypoints (`dev`, `stage`, `prod`).
@@ -13,9 +13,15 @@ Last updated: 2026-05-21
 
 ## Needs To Be Done
 - [ ] [FL-A01-02-01] Regenerate and adopt OpenAPI client against the current FastAPI contract.
-- [ ] [FL-A01-02-02] Wire clip suggestion/highlight APIs into production auto-clip flows with robust error UX.
-- [ ] [FL-A01-02-03] Harden local ingest workspace (dependency checks, diagnostics, logs, recoverability).
-- [ ] [FL-A01-02-04] Build timeline trim/subtitle/export UX around the current local processing pipeline.
+- [X] [FL-A01-02-02] Wire clip suggestion/highlight APIs into production auto-clip flows with robust error UX.
+    **COMPLETED** | Studio Agent | 2026-05-29 16:15
+    - **NOTE**: Fully resolved the backend highlights 404 bad response by transitioning to a 100% local, offline intelligence pipeline. Integrated a custom high-performance VTT subtitle parser, a timeline gap detection algorithm (targeting unclipped content strictly), duration segmenting (Short: 10-15s, Medium: 30-45s, Long: 60-90s Presets) aligned to cues and sentence boundaries, and a rule-based smart social post copywriting generator. Designed a premium glassmorphic Quick Clip Config Bottom Sheet (ChoiceChips, ListTiles) and an M3 status card progress overlay featuring a linear progress bar. Completely integrated and verified with the local Rust Media Engine sidecar. All tests pass green.
+- [X] [FL-A01-02-03] Harden local ingest workspace (dependency checks, diagnostics, logs, recoverability).
+    **COMPLETED** | Studio Agent | 2026-05-29 09:37
+    - **NOTE**: Hardened workspace metadata and synchronization logic. Added dynamic `synced` flag to `VideoItem` (clips check meta synced state, sources check backend registration). Fixed the YouTube `Unknown duration` parsing bug inside `_enrichVideo` by supporting both `num` and `String` duration fields from yt-dlp. Re-persisted synced details in local `.meta.json` files during manual and auto-highlight sync cycles. Re-architected Dashboard listing into a premium layout with overlaid resolution/duration badges, a collapsed horizontal stats capsule grid (clip count, sync ratio, size, cloud state), compact button action bars, and beautifully padded generated clip card rows. Verified with `make check`.
+- [X] [FL-A01-02-04] Build timeline trim/subtitle/export UX around the current local processing pipeline.
+    **COMPLETED** | Studio Agent | 2026-05-28 19:26
+    - **NOTE**: Complete redesign of the Clip Editor UX. Added resizable double-pane split workspace (clips list on left, center vertical drag handle, main column on right). Reorganized right column to group Video player and a compact Clip Properties card side-by-side on top, with the Timeline spanning full-width on the bottom. Redesigned all inputs with dense, rounded Material 3 fields and time prefix icons. Beautified clips list using bold titles, access time badges, and animated accent stripes. Verified with `make check`.
 - [ ] [FL-A01-02-05] Add durable local cache/queue and retry logic for metadata/upload sync.
 
 ## Epic FL-A02: Mandatory Engine Sidecar Adoption
@@ -53,15 +59,45 @@ Last updated: 2026-05-21
     - **NOTE**: Resolved a cached diagnostics fixture bug by updating `_prepareSmokeFixture()` to always overwrite the file, preventing older degraded 40-byte files on local disks from persisting and blocking new tests. Validated with `flutter test`.
 
 ## Epic FL-A03: Engine-Owned Ingest And Transcript Migration
-- [ ] [FL-A03-01-01] Replace direct `yt-dlp` URL ingest with Engine ingest APIs.
-    **BACKLOG** | Studio Agent | 2026-05-21 00:00
-    - **CROSS-AGENT-NOTES**: Depends on Engine `AX-A03` APIs. Engine now exposes initial job-backed `/v1/ingest/url` and `/v1/jobs/{id}` contracts; wait for Engine progress/log hardening if Studio UX needs streamed output parity.
-- [ ] [FL-A03-01-02] Replace direct transcript download and VTT normalization workflow with Engine transcript APIs.
-    **BACKLOG** | Studio Agent | 2026-05-21 00:00
-    - **NOTE**: Studio remains responsible for UX and backend metadata sync; Engine owns local compute. Engine now exposes initial `/v1/transcripts/download` job contract returning a VTT path.
-- [ ] [FL-A03-01-03] Surface Engine job progress, logs, and cancellation for long-running media work.
-    **BACKLOG** | Studio Agent | 2026-05-21 00:00
+- [X] [FL-A03-01-01] Replace direct yt-dlp URL ingest with Engine ingest APIs.
+    **COMPLETED** | Engine Agent + Studio Agent | 2026-05-28 00:00
+    - **CROSS-AGENT-NOTES**: Studio URL ingest now calls Engine `/v1/ingest/url`, polls `/v1/jobs/{id}`, reads `/v1/jobs/{id}/logs`, stores Engine-returned metadata, and no longer launches `yt-dlp` directly. Validated with `make check`.
+- [X] [FL-A03-01-02] Replace direct transcript download and VTT normalization workflow with Engine transcript APIs.
+    **COMPLETED** | Engine Agent + Studio Agent | 2026-05-28 00:00
+    - **NOTE**: Studio transcript download now calls Engine `/v1/transcripts/download` and uses the returned VTT path while preserving Studio-side VTT read/normalization. No direct Studio `yt-dlp` transcript execution remains. Validated with `make check`.
+- [P] [FL-A03-01-03] Surface Engine job progress, logs, and cancellation for long-running media work.
+    **IN-PROGRESS** | Studio Agent | 2026-05-28 18:30
     - **CROSS-AGENT-NOTES**: Depends on Engine `AX-A04` job APIs.
+    - **NOTE**: Studio now surfaces coarse Engine job logs/status during URL ingest. Cancellation client support exists, but a user-facing cancellation control is still pending.
+    - **NOTE**: Hardened Engine job waiting for long-running work by replacing fixed 10/30 minute Studio-side caps with a shared bounded-backoff poller. Production polling now waits for Engine terminal job state unless a caller explicitly opts into a timeout. Engine process startup/shutdown checks were also tightened for non-executable binaries and failed process signaling.
+    - **NOTE**: Addressed review follow-up by retrying transient Engine job polling failures with bounded backoff, clarifying Unix executable-bit checks, avoiding shutdown signals for already-exited Engine processes, and adding a visible Diagnostics collection error state. Validated with `make check`.
+    - **NOTE**: Fixed the transient polling retry timeout regression by enforcing explicit poller deadlines outside the retry catch path, and allowed Unix symlinked Engine binary paths by resolving symlinks before file/executable validation.
+
+## Epic FL-A04: Packaged Engine And First-Run AI Setup
+- [ ] [FL-A04-01-01] Resolve packaged Engine and runtime asset paths for desktop builds.
+    **BACKLOG** | Studio Agent | 2026-06-03 00:00
+    - **CROSS-AGENT-NOTES**: Depends on Engine `AX-A06-01-01` and `AX-A06-01-02`. Development builds may keep sibling-repo Engine resolution; release builds must resolve bundled app resources.
+    - **NOTE**: Pass configured paths for Engine, `ffmpeg`, `ffprobe`, and `yt-dlp` into the Engine process. Fresh installs must not depend on developer repos or Homebrew paths.
+- [ ] [FL-A04-01-02] Add first-run setup for AI provider selection.
+    **BACKLOG** | Studio Agent | 2026-06-03 00:00
+    - **CROSS-AGENT-NOTES**: Studio owns setup UX, provider choice, and secrets entry. Engine owns AI execution, prompts, context packing, local model use, and cloud provider request shaping.
+    - **NOTE**: Offer `local`, `openai`, `deepseek`, and `later/disabled`. Explain privacy, offline behavior, disk usage, internet requirements, and expected quality tradeoffs before confirmation.
+- [ ] [FL-A04-01-03] Wire first-run setup to Engine setup/download jobs.
+    **BACKLOG** | Studio Agent | 2026-06-03 00:00
+    - **CROSS-AGENT-NOTES**: Depends on Engine `AX-A06-01-03`. Studio should call Engine setup APIs after explicit user confirmation and surface progress, retry, failure, disk-space, and setup-complete states.
+    - **NOTE**: TV7 uses a small installer. Offline creation becomes available after required local assets are installed or imported; no silent downloads at app startup.
+- [ ] [FL-A04-01-04] Add secure cloud provider key configuration.
+    **BACKLOG** | Studio Agent | 2026-06-03 00:00
+    - **CROSS-AGENT-NOTES**: Depends on Engine `AX-A05-01-02`. Studio stores or supplies user-provided OpenAI/DeepSeek keys; Engine receives configured execution context without persisting secrets unless explicitly designed later.
+    - **NOTE**: Cloud AI is opt-in and requires internet. Local media creation/export should remain usable without cloud keys.
+- [ ] [FL-A04-01-05] Expand Diagnostics to show capability readiness.
+    **BACKLOG** | Studio Agent | 2026-06-03 00:00
+    - **CROSS-AGENT-NOTES**: Depends on Engine `AX-A06-01-04`. Diagnostics should show Engine health separately from `media_core`, `url_ingest`, `transcription`, `local_llm`, `cloud_llm`, `rendering`, and `offline_creation` readiness.
+    - **NOTE**: Missing models, missing API keys, or cloud provider offline states should be repair/setup prompts, not generic Engine failures.
+- [ ] [FL-A04-01-06] Add fresh-install offline readiness release verification.
+    **BACKLOG** | Studio Agent | 2026-06-03 00:00
+    - **CROSS-AGENT-NOTES**: Coordinate with Engine `AX-A06` and Core contract docs. Validate packaged Studio on a clean profile with no developer repos and no Homebrew dependency assumptions.
+    - **NOTE**: Verify local media import, probe, transcription when local assets exist, AI transcript analysis when local LLM is configured, render, and local export without internet. URL ingest and social publishing may require internet.
 
 ## Nice To Have
 - [ ] [FL-A01-03-01] Add local transcription path through Engine.
@@ -69,4 +105,4 @@ Last updated: 2026-05-21
     - **NOTE**: Local media compute is mandatory through Engine after sidecar adoption; do not add direct Flutter `whisper.cpp` shell integration.
 - [ ] [FL-A01-03-02] Complete Pro scheduler UX: publish scheduling, polling, and failure visibility.
 - [ ] [FL-A01-03-03] Implement licensing/config enforcement and plan-aware feature gating.
-- [ ] [FL-A01-03-04] Improve packaging/release UX (desktop artifacts, updater flow, telemetry opt-in).
+- [ ] [FL-A01-03-04] Improve packaging/release UX outside first-run Engine setup (desktop artifacts, updater flow, telemetry opt-in).

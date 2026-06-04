@@ -107,8 +107,10 @@ Status markers in checkbox position:
     **COMPLETED** | Architect Agent | 2026-05-27 22:25
     - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
     - **NOTE**: Upgraded the GHA reviewer into a multi-turn agentic system (max 2 turns) using standard Python runner inside GHA runner. The reviewer can request up to 3 local files inside the workspace dynamically to clarify symbols and resolve false positives. Integrated full PR QA and discussion thread reconstruction using inlined Python and `gh` CLI JSON comments, helping the bot respect previous developer/reviewer interactions.
-
-
+- [X] [CO-M01-04-09] Harden DeepSeek follow-up review against stale repeated findings.
+    **COMPLETED** | Architect Agent | 2026-06-03 00:00
+    - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
+    - **NOTE**: DeepSeek follow-up reviews now attach current snippets for files cited by the prior review, resolve Core docs by basename anywhere under `docs/`, and explicitly require previous findings to be revalidated before being repeated as active blockers. Engine review context now passes `engine_architecture.md`. Validated with workflow YAML parsing, inline runner Python compilation, helper script `py_compile`, doc lookup smoke, and `git diff --check`.
 
 
 

@@ -34,7 +34,7 @@
       "get": {
         "summary": "Inspect local engine readiness",
         "operationId": "getDiagnostics",
-        "description": "Reports readiness for the first Studio sidecar milestone. ffmpeg and ffprobe are required; yt-dlp is reported as a future url_ingest dependency and is not checked yet.",
+        "description": "Reports Engine-managed media readiness for Studio. ffmpeg and ffprobe are required for probe, thumbnail, and render_clip. yt-dlp is required for url_ingest and transcript.",
         "responses": {
           "200": {
             "description": "Diagnostics payload",
@@ -103,7 +103,7 @@
       "post": {
         "summary": "Generate a thumbnail image for local media",
         "operationId": "generateThumbnail",
-        "description": "Always overwrites the output file. Studio owns workspace paths and passes absolute source and output paths.",
+        "description": "Always overwrites the output file. Studio owns workspace paths, must pass absolute source and output paths, and must create the output parent directory before calling Engine.",
         "requestBody": {
           "required": true,
           "content": {
@@ -153,7 +153,7 @@
       "post": {
         "summary": "Render a frame-accurate local clip",
         "operationId": "renderClip",
-        "description": "Always overwrites the output file. Studio owns workspace paths and passes absolute source and output paths.",
+        "description": "Always overwrites the output file. Studio owns workspace paths, must pass absolute source and output paths, and must create the output parent directory before calling Engine.",
         "requestBody": {
           "required": true,
           "content": {
@@ -204,7 +204,7 @@
       "post": {
         "summary": "Start a job-backed URL ingest",
         "operationId": "startUrlIngest",
-        "description": "Starts a local yt-dlp ingest job. The initial response is 202 with a job payload; Studio polls /v1/jobs/{id} for completion.",
+        "description": "Starts a local yt-dlp ingest job. URL must be public http/https; localhost and private-network hosts are rejected. The initial response is 202 with a job payload; Studio polls /v1/jobs/{id} for completion.",
         "requestBody": {
           "required": true,
           "content": {
@@ -245,7 +245,7 @@
       "post": {
         "summary": "Start a job-backed transcript download",
         "operationId": "startTranscriptDownload",
-        "description": "Starts a local yt-dlp transcript download job. Studio polls /v1/jobs/{id} for completion.",
+        "description": "Starts a local yt-dlp transcript download job. URL must be public http/https; localhost and private-network hosts are rejected. Studio polls /v1/jobs/{id} for completion.",
         "requestBody": {
           "required": true,
           "content": {
@@ -348,7 +348,7 @@
       "post": {
         "summary": "Request local Engine job cancellation",
         "operationId": "cancelJob",
-        "description": "Marks a queued or running job as cancelled. Initial AX-A04 cancellation is cooperative at the Engine job state boundary; process-level termination is a follow-up hardening item.",
+        "description": "Marks a queued or running job as cancelled. Current AX-A04 cancellation is cooperative at the Engine job state boundary; process-level termination for an already-running yt-dlp child process is a follow-up hardening item.",
         "parameters": [
           {
             "name": "id",
@@ -750,7 +750,7 @@
           },
           "output_dir": {
             "type": "string",
-            "description": "Absolute local directory where Engine writes downloaded media."
+            "description": "Existing absolute local directory where Engine writes downloaded media. Studio must create it before calling Engine."
           },
           "output_template": {
             "type": "string",
@@ -793,7 +793,7 @@
           },
           "output_path": {
             "type": "string",
-            "description": "Absolute local VTT output path requested by Studio."
+            "description": "Absolute local VTT output path requested by Studio. The parent directory must exist before calling Engine."
           },
           "language": {
             "type": "string",

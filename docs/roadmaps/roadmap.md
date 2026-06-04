@@ -111,8 +111,10 @@ Status markers in checkbox position:
     **COMPLETED** | Architect Agent | 2026-06-03 00:00
     - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
     - **NOTE**: DeepSeek follow-up reviews now attach current snippets for files cited by the prior review, resolve Core docs by basename anywhere under `docs/`, and explicitly require previous findings to be revalidated before being repeated as active blockers. Engine review context now passes `engine_architecture.md`. Validated with workflow YAML parsing, inline runner Python compilation, helper script `py_compile`, doc lookup smoke, and `git diff --check`.
-
-
+- [X] [CO-M01-04-10] Rebuild DeepSeek multi-round review context as structured current-source checklist.
+    **COMPLETED** | Architect Agent | 2026-06-04 00:00
+    - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
+    - **NOTE**: Replaced raw previous-review prose injection with `tooling/deepseek_review_context.py`, which extracts only prior Findings into a structured checklist and attaches current source snippets for cited files. The reusable workflow now passes checklist/current-source context to DeepSeek, not prior Recommendations/Risks/final verdict prose. Added unit tests for Markdown/plain heading extraction, recommendation exclusion, finding splitting, and current snippet attachment. Validated with `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, workflow YAML parse, inline runner compile, `py_compile`, and `git diff --check`.
 
 
 

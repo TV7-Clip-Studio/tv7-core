@@ -32,6 +32,7 @@ make dev
 
 Local prerequisites:
 - Docker Desktop or Docker Engine for backend Postgres/API containers.
+- `lsof` for local port/process ownership checks.
 - Rust/Cargo for the Axum engine.
 - Node/npm for the Astro site.
 - Flutter with macOS desktop support for Studio.

@@ -25,7 +25,7 @@ Environment:
   BACKEND_PORT   Backend API port. Default: $BACKEND_PORT
   ENGINE_PORT    Axum engine port. Default: $ENGINE_PORT
   SITE_PORT      Astro site port. Default: $SITE_PORT
-  FORCE          Set to 1 to stop an unknown process on a managed port.
+  FORCE          Set to 1 to stop unknown managed-port or Studio-like processes.
 EOF
 }
 
@@ -75,13 +75,24 @@ pid_command() {
   ps -p "$pid" -o args= 2>/dev/null || true
 }
 
+require_lsof() {
+  if command -v lsof >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "[X] Missing required command: lsof" >&2
+  echo "    Install lsof or run this on a standard macOS/Linux dev environment." >&2
+  return 1
+}
+
 pid_cwd() {
   local pid="$1"
+  require_lsof || return 0
   lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -n1 || true
 }
 
 port_pid() {
   local port="$1"
+  require_lsof || return 0
   lsof -nP -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | head -n1 || true
 }
 
@@ -149,6 +160,12 @@ stop_known_port_owner() {
   args="$(pid_command "$pid")"
   echo "[..] $label port $port is occupied by pid $pid"
   if "$known_fn" "$pid" || [[ "${FORCE:-0}" == "1" ]]; then
+    # Development guardrail: re-check ownership immediately before kill to avoid
+    # stopping a replacement process if the original listener exited meanwhile.
+    if [[ "$(port_pid "$port")" != "$pid" ]]; then
+      echo "[X] $label port $port owner changed before stop; retry the command."
+      return 1
+    fi
     stop_pid_value "$label port owner" "$pid"
   else
     echo "[X] Refusing to stop unknown process on port $port: $args"

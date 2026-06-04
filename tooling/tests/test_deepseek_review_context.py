@@ -42,6 +42,16 @@ No meaningful findings.
 
         self.assertEqual(extract_prior_findings(review), [])
 
+    def test_no_critical_issues_text_is_empty_checklist(self):
+        review = """### Findings
+No critical issues found. The code is well structured.
+
+### Recommendations
+- Minor cleanup.
+"""
+
+        self.assertEqual(extract_prior_findings(review), [])
+
     def test_section_extraction_stops_at_next_heading(self):
         review = """### Findings
 one

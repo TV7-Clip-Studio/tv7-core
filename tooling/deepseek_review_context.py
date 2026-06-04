@@ -26,6 +26,13 @@ KNOWN_SECTIONS = {
     "recommendations",
     "final_verdict",
 }
+NO_FINDINGS_PHRASES = (
+    "no critical issues found",
+    "no meaningful findings",
+    "no findings",
+    "none identified",
+    "nothing to report",
+)
 
 
 @dataclass
@@ -126,19 +133,23 @@ def _file_refs(text: str) -> list[str]:
     return refs
 
 
+def _is_no_findings_text(text: str) -> bool:
+    normalized = re.sub(r"\s+", " ", text).strip().lower()
+    return any(phrase in normalized for phrase in NO_FINDINGS_PHRASES)
+
+
 def extract_prior_findings(previous_review: str) -> list[PriorFinding]:
     findings = extract_section(previous_review, "Findings")
     if not findings:
         return []
 
-    lowered = findings.lower()
-    if "no meaningful findings" in lowered or "no findings" in lowered:
+    if _is_no_findings_text(findings):
         return []
 
     result: list[PriorFinding] = []
     for block in _split_finding_blocks(findings):
         claim = _normalise_claim(block)
-        if not claim:
+        if not claim or _is_no_findings_text(claim):
             continue
         refs = _file_refs(block)
         result.append(
@@ -156,15 +167,20 @@ def extract_prior_findings(previous_review: str) -> list[PriorFinding]:
     return result
 
 
-def _line_numbers(refs: list[str], path: str) -> list[int]:
-    lines: list[int] = []
-    prefix = f"{path}:"
-    for ref in refs:
-        if ref.startswith(prefix):
-            raw = ref[len(prefix) :]
-            if raw.isdigit():
-                lines.append(int(raw))
-    return sorted(set(lines))
+def _line_refs_by_path(findings: list[PriorFinding]) -> dict[str, list[int]]:
+    refs_by_path: dict[str, set[int]] = {}
+    for finding in findings:
+        for ref in finding.file_refs:
+            path, separator, raw = ref.partition(":")
+            refs_by_path.setdefault(path, set())
+            if separator and raw.isdigit():
+                refs_by_path[path].add(int(raw))
+
+    return {path: sorted(lines) for path, lines in refs_by_path.items()}
+
+
+def _line_numbers(refs_by_path: dict[str, list[int]], path: str) -> list[int]:
+    return refs_by_path.get(path, [])
 
 
 def build_current_file_context(
@@ -178,6 +194,7 @@ def build_current_file_context(
     workspace = workspace.resolve()
     paths: list[str] = []
     seen_paths: set[str] = set()
+    refs_by_path = _line_refs_by_path(findings)
     for finding in findings:
         for ref in finding.file_refs:
             path = ref.split(":", 1)[0]
@@ -194,10 +211,7 @@ def build_current_file_context(
         if not safe_path.is_file() or not str(safe_path).startswith(str(workspace)):
             continue
         file_lines = safe_path.read_text(encoding="utf-8", errors="ignore").splitlines()
-        line_refs = _line_numbers(
-            [ref for finding in findings for ref in finding.file_refs],
-            rel_path,
-        )
+        line_refs = _line_numbers(refs_by_path, rel_path)
 
         if line_refs:
             ranges: list[tuple[int, int]] = []

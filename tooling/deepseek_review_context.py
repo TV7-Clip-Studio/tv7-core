@@ -83,7 +83,7 @@ def _normalise_claim(text: str) -> str:
     text = re.sub(r"\s+", " ", text).strip()
     text = re.sub(r"^[-*]\s+", "", text)
     text = re.sub(r"^\d+[.)]\s+", "", text)
-    return text
+    return text.rstrip(".,;:")
 
 
 def _split_finding_blocks(findings_section: str) -> list[str]:

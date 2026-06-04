@@ -92,6 +92,15 @@ Something.
         self.assertEqual(findings[0].file_refs, ["a/b.dart:10"])
         self.assertEqual(findings[1].file_refs, ["c/d.dart:20"])
 
+    def test_claims_strip_trailing_punctuation(self):
+        review = """### Findings
+- First bug.;
+"""
+
+        findings = extract_prior_findings(review)
+
+        self.assertEqual(findings[0].claim, "First bug")
+
     def test_builds_current_context_for_cited_files(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

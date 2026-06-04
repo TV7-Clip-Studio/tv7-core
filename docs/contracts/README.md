@@ -8,6 +8,7 @@ Cross-repo interface contracts are stored here as canonical artifacts.
 
 ## Engine Handoffs
 - `tv7-axum-engine/studio-sidecar-migration.md` - Engine-to-Studio migration contract for mandatory sidecar adoption.
+- `tv7-axum-engine/runtime-setup.md` - Engine-managed runtime asset manifest and first-run setup contract.
 
 ## Ownership
 - Each producing repo exports and maintains its contract artifact here.

@@ -168,16 +168,16 @@ dev dev-up:
 	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" up
 
 dev-backend:
-	@$(MAKE) -C "$(REPO_ROOT)/tv7-fastapi-backend" dev
+	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" backend
 
 dev-engine:
-	@$(MAKE) -C "$(REPO_ROOT)/tv7-axum-engine" dev
+	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" engine
 
 dev-site:
-	@cd "$(REPO_ROOT)/tv7-astro-site" && npm run dev -- --host 127.0.0.1 --port "$(SITE_PORT)"
+	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" site
 
 dev-studio:
-	@$(MAKE) -C "$(REPO_ROOT)/tv7-flutter-studio" run-desktop
+	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" studio
 
 dev-status:
 	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" status

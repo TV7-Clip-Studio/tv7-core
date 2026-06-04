@@ -3,7 +3,7 @@
 Roadmap Code: AX
 Batch Code: A01
 
-Last updated: 2026-05-21
+Last updated: 2026-06-03
 
 ## Done
 - [X] [AX-A01-01-01] Created Rust workspace with `engine-core` and `engine-service` crates.
@@ -66,24 +66,47 @@ Last updated: 2026-05-21
     **IN-PROGRESS** | Engine Agent | 2026-05-22 00:00
     - **CROSS-AGENT-NOTES**: Studio should surface progress from Engine instead of parsing process output directly.
     - **NOTE**: Added `GET /v1/jobs/{id}` status polling, `GET /v1/jobs/{id}/logs`, and `POST /v1/jobs/{id}/cancel` with coarse logs and cooperative cancellation state. Process-level `yt-dlp` termination and streamed progress parsing remain to be implemented.
+    - **NOTE**: Studio contract now documents current cancellation behavior, path ownership, URL safety rules, and diagnostics expectations. Job IDs now use sequentially consistent atomic ordering to close review feedback, though atomic uniqueness did not depend on this ordering.
 
-## Epic AX-A05: Local Transcription And Clip Intelligence
+## Epic AX-A05: Local AI, Transcription, And Clip Intelligence
 - [ ] [AX-A05-01-01] Add local transcription backend abstraction and model configuration.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
-    - **NOTE**: Keep cloud/business policy out of Engine; Engine only executes configured local compute.
-- [ ] [AX-A05-01-02] Add local clip detection interfaces for transcript-to-segment workflows.
+    - **NOTE**: Keep cloud/business policy out of Engine; Engine executes configured local compute and reports exact model/runtime readiness to Studio.
+- [ ] [AX-A05-01-02] Add AI provider configuration and runtime dispatch.
+    **BACKLOG** | Engine Agent | 2026-06-03 00:00
+    - **CROSS-AGENT-NOTES**: Studio owns setup UX and user secrets entry. Engine owns provider selection at execution time, prompt/context policy, local model execution, and cloud provider request shaping for configured providers.
+    - **NOTE**: Support provider modes `local`, `openai`, `deepseek`, and `disabled`. Cloud providers are opt-in and require internet; local provider is the privacy-first/offline path after setup.
+- [ ] [AX-A05-01-03] Add transcript intelligence APIs for local/cloud LLM providers.
+    **BACKLOG** | Engine Agent | 2026-06-03 00:00
+    - **NOTE**: Engine should own transcript chunking, summarization, clip suggestion scoring, prompt templates, model-specific request shaping, and structured outputs consumed by Studio.
+- [ ] [AX-A05-01-04] Add post copy generation APIs for selected clips.
+    **BACKLOG** | Engine Agent | 2026-06-03 00:00
+    - **NOTE**: Generate platform-aware titles, hooks, descriptions, captions, hashtags, and variants from selected clips/transcripts while reporting provider/model used.
+- [ ] [AX-A05-01-05] Add local clip detection interfaces for transcript-to-segment workflows.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
-    - **CROSS-AGENT-NOTES**: Coordinate with Backend/Studio if cloud highlight APIs remain available for paid or fallback workflows.
+    - **CROSS-AGENT-NOTES**: Coordinate with Studio on UX and with Backend only for publishing/scheduling boundaries. Backend must not own local transcript analysis or clip scoring.
 
-## Epic AX-A06: Packaging, Distribution, And Future FFI
+## Epic AX-A06: Packaging, First-Run Setup, Distribution, And Future FFI
 - [ ] [AX-A06-01-01] Package Engine binary for Studio-managed startup on desktop.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
     - **CROSS-AGENT-NOTES**: Studio must launch Engine automatically at app startup so TV7 behaves as one app for users.
-- [ ] [AX-A06-01-02] Add benchmark harness for probe/transcode/transcription hot paths.
+- [X] [AX-A06-01-02] Define Engine-managed runtime asset manifest and setup contract.
+    **COMPLETED** | Engine Agent | 2026-06-03 00:00
+    - **CROSS-AGENT-NOTES**: Studio first-run setup chooses `local`, `openai`, `deepseek`, or `later`, then calls Engine setup APIs. Engine installs/verifies approved local runtime assets and reports progress/readiness.
+    - **NOTE**: Track Engine binary version, media tools (`ffmpeg`, `ffprobe`, `yt-dlp`), Whisper runtime/model assets, local LLM runtime/model assets, checksums, disk requirements, and install locations. No silent startup downloads.
+    - **NOTE**: Added `docs/contracts/tv7-axum-engine/runtime-setup.md` defining provider modes, runtime asset categories, capability readiness groups, setup endpoint drafts, download/verification rules, fresh-install expectations, and privacy constraints. Linked it from the Core contracts index.
+- [ ] [AX-A06-01-03] Add Engine setup/download job APIs for first-run local asset installation.
+    **BACKLOG** | Engine Agent | 2026-06-03 00:00
+    - **NOTE**: Support explicit user-confirmed downloads, progress/logs, retry/resume where practical, checksum validation, disk-space failures, partial download cleanup, and setup-complete status.
+- [ ] [AX-A06-01-04] Extend diagnostics with capability readiness groups.
+    **BACKLOG** | Engine Agent | 2026-06-03 00:00
+    - **CROSS-AGENT-NOTES**: Studio diagnostics should distinguish app/Engine health from capability readiness. Missing local LLM, missing Whisper model, or unconfigured cloud key should be shown as feature setup states, not Engine startup failure.
+    - **NOTE**: Report `media_core`, `url_ingest`, `transcription`, `local_llm`, `cloud_llm`, `rendering`, and `offline_creation` readiness with exact missing assets/configuration.
+- [ ] [AX-A06-01-05] Add benchmark harness for probe/transcode/transcription/LLM hot paths.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
-- [ ] [AX-A06-01-03] Add `engine-ffi` crate stub for Flutter/mobile interoperability planning.
+- [ ] [AX-A06-01-06] Add `engine-ffi` crate stub for Flutter/mobile interoperability planning.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
-- [ ] [AX-A06-01-04] Add feature flags for optional GPU acceleration and model backends.
+- [ ] [AX-A06-01-07] Add feature flags for optional GPU acceleration and model backends.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
-- [ ] [AX-A06-01-05] Publish a compatibility matrix for supported codecs, formats, and platform constraints.
+- [ ] [AX-A06-01-08] Publish a compatibility matrix for supported codecs, formats, AI runtimes, and platform constraints.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00

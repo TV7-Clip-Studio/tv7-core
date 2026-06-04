@@ -447,6 +447,9 @@ jobs:
                 break
               fi
               file="$DOCS_PATH/$filename"
+              if [ ! -f "$file" ]; then
+                file=$(find "$DOCS_PATH" -type f -name "$filename" | head -n 1 || true)
+              fi
               if [ -f "$file" ]; then
                 file_bytes=$(wc -c < "$file" | tr -d ' ')
                 content=$(head -c "$max_doc_file_bytes" "$file")
@@ -518,6 +521,85 @@ jobs:
           qa_history = qa_path.read_text(encoding="utf-8", errors="ignore").strip() if qa_path.exists() else ""
           reviewed_sha = sha_path.read_text(encoding="utf-8", errors="ignore").strip() if sha_path.exists() else ""
 
+          def _collect_previous_review_file_context(previous_review: str) -> str:
+              if not previous_review or "No previous DeepSeek review found" in previous_review:
+                  return ""
+
+              path_re = re.compile(
+                  r"(?P<path>(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+\."
+                  r"(?:dart|rs|py|toml|yaml|yml|json|md|txt|sh|js|ts|tsx|jsx))"
+                  r"(?::(?P<line>\d+))?"
+              )
+              refs = {}
+              for match in path_re.finditer(previous_review):
+                  path = match.group("path")
+                  line = match.group("line")
+                  if path.startswith((".git/", "node_modules/", "target/", "build/")):
+                      continue
+                  refs.setdefault(path, set())
+                  if line:
+                      refs[path].add(int(line))
+
+              if not refs:
+                  return ""
+
+              workspace = Path.cwd().resolve()
+              total_cap = 60000
+              file_cap = 14000
+              window = 45
+              parts = ["## Current File Context For Previous Findings"]
+              used = 0
+
+              for rel_path, lines in list(refs.items())[:8]:
+                  safe_path = (workspace / rel_path).resolve()
+                  if not safe_path.is_file() or not str(safe_path).startswith(str(workspace)):
+                      continue
+                  text = safe_path.read_text(encoding="utf-8", errors="ignore")
+                  file_lines = text.splitlines()
+                  if lines:
+                      ranges = []
+                      for line in sorted(lines)[:6]:
+                          start = max(1, line - window)
+                          end = min(len(file_lines), line + window)
+                          ranges.append((start, end))
+                      merged = []
+                      for start, end in ranges:
+                          if merged and start <= merged[-1][1] + 1:
+                              merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+                          else:
+                              merged.append((start, end))
+                      snippet_parts = []
+                      for start, end in merged:
+                          body = "\n".join(
+                              f"{idx}: {file_lines[idx - 1]}"
+                              for idx in range(start, end + 1)
+                          )
+                          snippet_parts.append(f"--- {rel_path}:{start}-{end} ---\n{body}")
+                      snippet = "\n".join(snippet_parts)
+                  else:
+                      snippet = "\n".join(
+                          f"{idx}: {line}"
+                          for idx, line in enumerate(file_lines[:160], start=1)
+                      )
+
+                  encoded = snippet.encode("utf-8", errors="ignore")
+                  if len(encoded) > file_cap:
+                      snippet = encoded[:file_cap].decode("utf-8", errors="ignore")
+                      snippet += f"\n[previous-review file context truncated at {file_cap} bytes]"
+                  block = f"=== Current file: {rel_path} ===\n{snippet}"
+                  block_bytes = len(block.encode("utf-8", errors="ignore"))
+                  if used + block_bytes > total_cap:
+                      parts.append(f"[previous-review file context truncated at {total_cap} bytes]")
+                      break
+                  parts.append(block)
+                  used += block_bytes
+
+              if len(parts) == 1:
+                  return ""
+              return "\n\n".join(parts)
+
+          previous_file_context = _collect_previous_review_file_context(previous_review)
+
           incremental_diff = ""
           if reviewed_sha:
               try:
@@ -564,6 +646,14 @@ jobs:
                   "",
               ])
 
+          if previous_file_context:
+              system_prompt_parts.extend([
+                  previous_file_context,
+                  "",
+                  "Use this current file context to verify whether previous findings are still true before repeating them.",
+                  "",
+              ])
+
           if qa_history and "No previous PR discussions found" not in qa_history:
               system_prompt_parts.extend([
                   qa_history,
@@ -575,6 +665,7 @@ jobs:
               "1. HUNK BOUNDARY CONSTRAINT: You must ONLY comment on code lines that are explicitly added, removed, or modified inside the provided diff hunks. If you suspect an issue in an untouched function or sibling line that is not in the diff, you MUST ignore it. Do not speculate on untouched code.",
               "2. SIBLING FILE/IMPORTS TRUST: If a class, method, variable, or decorator is imported or referenced from another file or package, assume it is completely valid and correct. Do not claim it is 'missing' or 'undefined' unless it is explicitly defined incorrectly within the current diff.",
               "3. NIT vs CRITICAL THRESHOLD: '### Findings' must be reserved strictly for critical issues (logic bugs, security vulnerabilities, API contract violations, and immediate runtime failures). Stylistic preferences, optional enhancements, or minor nits must NEVER be placed in Findings or affect the final verdict; place them solely in '### Recommendations'.",
+              "4. FOLLOW-UP VERIFICATION: Prior review findings are not automatically current findings. Before repeating any previous finding, compare it against the current diff, incremental diff, and current file context. If the cited code now contains the requested fix, mark the prior item addressed under Follow-up and do not repeat it under Findings.",
               "",
               "## CONTEXT REQUEST CAPABILITY",
               "If you see an unfamiliar symbol, custom class definition, or need to inspect another local codebase file to verify if a finding is a false positive, you can request its contents from the environment.",
@@ -600,7 +691,7 @@ jobs:
           ])
 
           if previous_review and "No previous DeepSeek review found" not in previous_review:
-              system_prompt_parts.append("- Under ### Follow-up on Previous Review, explicitly list each of the findings from the previous review and state whether they have been successfully addressed/applied in the current diff.")
+              system_prompt_parts.append("- Under ### Follow-up on Previous Review, explicitly list each previous finding and state whether it is addressed, still valid, or unverifiable from the current context. Only move a previous finding into ### Findings when current evidence proves it remains valid.")
 
           system_prompt_parts.extend([
               "At the end of your review, add one final line in this format:",

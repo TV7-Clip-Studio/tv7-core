@@ -15,7 +15,7 @@ Makefile.core -> ../tv7-core/tooling/Makefile.core
 Some repos may also expose contract-specific symlinks. For example, the FastAPI backend exposes:
 
 ```text
-openapi.json -> ../tv7-core/docs/contracts/openapi/tv7-fastapi-backend/openapi.json
+openapi.json -> ../tv7-core/docs/contracts/openapi/tv7-backend/openapi.json
 ```
 
 ## Purpose
@@ -79,9 +79,9 @@ find . -maxdepth 3 -type l -ls
 Expected examples:
 
 ```text
-tv7-axum-engine/.agent -> ../tv7-core/.agent
-tv7-axum-engine/docs/core -> ../../tv7-core/docs
-tv7-axum-engine/Makefile.core -> ../tv7-core/tooling/Makefile.core
+tv7-engine/.agent -> ../tv7-core/.agent
+tv7-engine/docs/core -> ../../tv7-core/docs
+tv7-engine/Makefile.core -> ../tv7-core/tooling/Makefile.core
 ```
 
 ## Agent Rule

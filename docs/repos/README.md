@@ -4,8 +4,8 @@ Repo-scoped documentation that is useful across teams lives here and is canonica
 
 ## Current Repos
 - `core/` - cross-repo operating docs and runbooks (Project Conductor, policies).
-- `tv7-flutter-studio/` - architecture, integration docs, plans, and workflows for the Flutter client.
-- `tv7-fastapi-backend/` - guides and setup docs for the FastAPI control plane.
+- `tv7-studio/` - architecture, integration docs, plans, and workflows for the Flutter client.
+- `tv7-backend/` - guides and setup docs for the FastAPI control plane.
 
 ## Workflow Docs
 - `repo-policy.md` - branch/check/commit/PR standard for all repos.

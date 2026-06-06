@@ -9,11 +9,11 @@ Batch Code: M01
 - `tv7-core` orchestration initiative: `docs/roadmaps/core/agent-orchestration-roadmap.md`
 - `tv7-core` Project Conductor migration: `docs/roadmaps/core/project-conductor-roadmap.md`
 - `tv7-conductor`: `../tv7-conductor/docs/roadmaps/tv7-conductor-roadmap.md`
-- `tv7-fastapi-backend`: `docs/roadmaps/tv7-fastapi-backend-roadmap.md`
-- `tv7-fastapi-backend` off-roadmap: `docs/roadmaps/tv7-fastapi-backend-off-roadmap.md`
-- `tv7-flutter-studio`: `docs/roadmaps/tv7-flutter-studio-roadmap.md`
-- `tv7-astro-site`: `docs/roadmaps/tv7-astro-site-roadmap.md`
-- `tv7-axum-engine`: `docs/roadmaps/tv7-axum-engine-roadmap.md`
+- `tv7-backend`: `docs/roadmaps/tv7-backend-roadmap.md`
+- `tv7-backend` off-roadmap: `docs/roadmaps/tv7-backend-off-roadmap.md`
+- `tv7-studio`: `docs/roadmaps/tv7-studio-roadmap.md`
+- `tv7-site`: `docs/roadmaps/tv7-site-roadmap.md`
+- `tv7-engine`: `docs/roadmaps/tv7-engine-roadmap.md`
 
 ### Task Model & Coordination Rules
 All tasks in this roadmap must follow this strict format to ensure visibility across agents.
@@ -71,11 +71,11 @@ Status markers in checkbox position:
     - **NOTE**: Updated `admin/routes.py` and templates
 
 ## Phase 2: Architecture Sync
-- [ ] [CO-M01-03-01] Ensure `tv7-flutter-studio` implements the "Post Now" vs "Schedule" distinction correctly.
+- [ ] [CO-M01-03-01] Ensure `tv7-studio` implements the "Post Now" vs "Schedule" distinction correctly.
     **BACKLOG** | Studio Agent | 2025-12-17 15:20
 - [ ] [CO-M01-03-02] Verify `tv7-engine` API surface matches the "local compute only" mandate.
     **BACKLOG** | Engine Agent | 2025-12-17 15:20
-- [ ] [CO-M01-03-03] Validate `tv7-fastapi-backend` credit ledger implementation.
+- [ ] [CO-M01-03-03] Validate `tv7-backend` credit ledger implementation.
     **BACKLOG** | Backend Agent | 2025-12-17 15:20
 
 ## Phase 3: Feature Development

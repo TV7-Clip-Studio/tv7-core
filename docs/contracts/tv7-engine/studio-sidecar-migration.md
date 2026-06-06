@@ -102,7 +102,7 @@ GET /v1/diagnostics
 }
 ```
 
-For `AX-A03`, `yt-dlp` is checked by Engine diagnostics because URL ingest and transcript download are Engine-owned capabilities.
+For `EN-A03`, `yt-dlp` is checked by Engine diagnostics because URL ingest and transcript download are Engine-owned capabilities.
 
 ## Flutter Replacement Map
 
@@ -264,7 +264,7 @@ To request cancellation:
 POST /v1/jobs/job_1/cancel
 ```
 
-Current AX-A04 cancellation is cooperative at the Engine job state boundary. Cancelling a queued job prevents it from starting, and late results do not overwrite a cancelled job. Process-level termination for an already-running `yt-dlp` child process is a follow-up hardening item.
+Current EN-A04 cancellation is cooperative at the Engine job state boundary. Cancelling a queued job prevents it from starting, and late results do not overwrite a cancelled job. Process-level termination for an already-running `yt-dlp` child process is a follow-up hardening item.
 
 Successful `result` contains:
 

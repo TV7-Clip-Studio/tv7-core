@@ -1,4 +1,4 @@
-# TV7 Flutter Studio (Desktop App) Architecture
+# TV7 Studio Architecture
 
 Primary user interface for the whole workflow.
 

@@ -38,14 +38,14 @@
 This workspace includes custom Model Context Protocol (MCP) servers to bridge the gap between AI agents and local engines.
 - **`tv7-media-mcp`**: Provides high-performance media probing and clipping. ALWAYS check if a media task can be performed via this tool before attempting raw FFMPEG commands.
 - **Location**: `.agent/mcp/tv7-media-mcp`
-- **Python (`tv7-fastapi-backend`)**:
+- **Python (`tv7-backend`)**:
     - `make check` (Run all checks) or individual: `make fmt`, `make lint`, `make type`, `make sec`, `make test`
     - **Note**: `make up` to start services.
-- **Flutter (`tv7-flutter-studio`)**:
+- **Flutter (`tv7-studio`)**:
     - `make check` (Format, Analyze, Test)
     - **Note**: `make run-desktop` to launch.
     - **Workflow**: Use `/sync-backend-to-flutter` after backend changes.
-- **Rust (`tv7-axum-engine`)**:
+- **Rust (`tv7-engine`)**:
     - *Tooling pending.* Use `cargo check` / `cargo clippy` for now.
-- **Astro (`tv7-astro-site`)**:
+- **Astro (`tv7-site`)**:
     - `npm run lint`, `npm run format` (Standard)

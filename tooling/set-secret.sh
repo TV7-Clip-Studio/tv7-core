@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Set a GitHub Actions secret across repos using GitHub CLI.
 # Usage examples (run from repo root):
-#   SECRET_NAME=DEEPSEEK_API_KEY REPOS="tv7-core tv7-fastapi-backend" ./tooling/set-secret.sh
+#   SECRET_NAME=DEEPSEEK_API_KEY REPOS="tv7-core tv7-backend" ./tooling/set-secret.sh
 #   SECRET_NAME=DEEPSEEK_API_KEY ALL=1 ./tooling/set-secret.sh   # all repos in ORG
 #
 # Env vars:

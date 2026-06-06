@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "TV7 Axum Engine Local API",
+    "title": "TV7 Engine Local API",
     "version": "0.3.0",
     "description": "Local-only engine sidecar API exposed on loopback. Studio starts this service and uses it as the mandatory boundary for local media compute."
   },
@@ -348,7 +348,7 @@
       "post": {
         "summary": "Request local Engine job cancellation",
         "operationId": "cancelJob",
-        "description": "Marks a queued or running job as cancelled. Current AX-A04 cancellation is cooperative at the Engine job state boundary; process-level termination for an already-running yt-dlp child process is a follow-up hardening item.",
+        "description": "Marks a queued or running job as cancelled. Current EN-A04 cancellation is cooperative at the Engine job state boundary; process-level termination for an already-running yt-dlp child process is a follow-up hardening item.",
         "parameters": [
           {
             "name": "id",

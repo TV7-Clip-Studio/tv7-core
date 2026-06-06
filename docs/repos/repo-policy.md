@@ -4,10 +4,10 @@ This policy defines the default branch/check/commit/PR workflow across TV7 repos
 
 ## Scope
 - `tv7-core`
-- `tv7-axum-engine`
-- `tv7-fastapi-backend`
-- `tv7-flutter-studio`
-- `tv7-astro-site`
+- `tv7-engine`
+- `tv7-backend`
+- `tv7-studio`
+- `tv7-site`
 
 ## Branching
 - Never open PRs from `main`/`master`.
@@ -19,10 +19,10 @@ This policy defines the default branch/check/commit/PR workflow across TV7 repos
 - Repo command map is defined in `tooling/repos-checks.conf`.
 - Default commands:
   - `tv7-core`: no hard check gate (docs-only allowed)
-  - `tv7-axum-engine`: `cargo check`
-  - `tv7-fastapi-backend`: `make test`
-  - `tv7-flutter-studio`: `make check`
-  - `tv7-astro-site`: `npm run build`
+  - `tv7-engine`: `cargo check`
+  - `tv7-backend`: `make test`
+  - `tv7-studio`: `make check`
+  - `tv7-site`: `npm run build`
 
 ## Commit Rules
 - Commit only when checks pass for that repo.

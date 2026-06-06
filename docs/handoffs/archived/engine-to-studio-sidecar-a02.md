@@ -4,9 +4,9 @@
 
 Status: Archived
 
-Producer: Engine Agent (`tv7-axum-engine`)
+Producer: Engine Agent (`tv7-engine`)
 
-Consumer: Studio Agent (`tv7-flutter-studio`)
+Consumer: Studio Agent (`tv7-studio`)
 
 Epic: Mandatory Engine sidecar adoption
 
@@ -14,20 +14,20 @@ Epic: Mandatory Engine sidecar adoption
 
 Engine producer items:
 
-- `AX-A02-01-01`: Define Studio-facing Engine API contract.
-- `AX-A02-01-02`: Implement Engine diagnostics.
-- `AX-A02-01-03`: Implement thumbnail endpoint.
-- `AX-A02-01-04`: Implement render-clip endpoint.
-- `AX-A02-01-05`: Add contract examples and compatibility notes.
+- `EN-A02-01-01`: Define Studio-facing Engine API contract.
+- `EN-A02-01-02`: Implement Engine diagnostics.
+- `EN-A02-01-03`: Implement thumbnail endpoint.
+- `EN-A02-01-04`: Implement render-clip endpoint.
+- `EN-A02-01-05`: Add contract examples and compatibility notes.
 
 Studio consumer items:
 
-- `FL-A02-01-01`: Add Studio-managed Engine process lifecycle at app startup.
-- `FL-A02-01-02`: Add Engine client and health/diagnostics integration.
-- `FL-A02-01-03`: Replace direct `ffprobe` usage with Engine probe API.
-- `FL-A02-01-04`: Replace direct thumbnail generation with Engine thumbnail API.
-- `FL-A02-01-05`: Replace direct clip rendering with Engine render API.
-- `FL-A02-01-06`: Remove user-facing direct media tool dependency checks after Engine adoption.
+- `ST-A02-01-01`: Add Studio-managed Engine process lifecycle at app startup.
+- `ST-A02-01-02`: Add Engine client and health/diagnostics integration.
+- `ST-A02-01-03`: Replace direct `ffprobe` usage with Engine probe API.
+- `ST-A02-01-04`: Replace direct thumbnail generation with Engine thumbnail API.
+- `ST-A02-01-05`: Replace direct clip rendering with Engine render API.
+- `ST-A02-01-06`: Remove user-facing direct media tool dependency checks after Engine adoption.
 
 ## Product Decisions
 
@@ -36,24 +36,24 @@ Studio consumer items:
 - Engine is mandatory for local media compute after adoption.
 - Studio should not keep direct `ffmpeg`/`ffprobe` fallback paths after migration.
 - Version stays inside `GET /v1/diagnostics`; do not add a separate `/version` endpoint for this milestone.
-- `yt-dlp` is future `AX-A03` ingest work and is not checked by `AX-A02` diagnostics.
+- `yt-dlp` is future `EN-A03` ingest work and is not checked by `EN-A02` diagnostics.
 
 ## Contract Artifacts
 
 Canonical Core artifacts:
 
-- `docs/core/contracts/openapi/tv7-axum-engine/openapi.json`
-- `docs/core/contracts/tv7-axum-engine/studio-sidecar-migration.md`
+- `docs/core/contracts/openapi/tv7-engine/openapi.json`
+- `docs/core/contracts/tv7-engine/studio-sidecar-migration.md`
 
 Canonical workspace paths:
 
-- `tv7-core/docs/contracts/openapi/tv7-axum-engine/openapi.json`
-- `tv7-core/docs/contracts/tv7-axum-engine/studio-sidecar-migration.md`
+- `tv7-core/docs/contracts/openapi/tv7-engine/openapi.json`
+- `tv7-core/docs/contracts/tv7-engine/studio-sidecar-migration.md`
 
 Published staging artifact hash:
 
 ```text
-75bd0d4f49fca3132e5bcff0febfcf4a8b3f4ad8a0379f4101400bb9038b46fd  docs/core/contracts/tv7-axum-engine/studio-sidecar-migration.md
+75bd0d4f49fca3132e5bcff0febfcf4a8b3f4ad8a0379f4101400bb9038b46fd  docs/core/contracts/tv7-engine/studio-sidecar-migration.md
 ```
 
 ## Engine API Surface
@@ -72,12 +72,12 @@ Thumbnail and render-clip always overwrite output paths.
 
 Inspect these Studio files first:
 
-- `tv7-flutter-studio/forgotten_client/lib/data/local/tool_runner.dart`
-- `tv7-flutter-studio/forgotten_client/lib/data/local/media_service.dart`
-- `tv7-flutter-studio/forgotten_client/lib/data/local/local_video_repository.dart`
-- `tv7-flutter-studio/forgotten_client/lib/features/ingest/ingest_page.dart`
-- `tv7-flutter-studio/forgotten_client/lib/bootstrap.dart`
-- `tv7-flutter-studio/forgotten_client/lib/app.dart`
+- `tv7-studio/forgotten_client/lib/data/local/tool_runner.dart`
+- `tv7-studio/forgotten_client/lib/data/local/media_service.dart`
+- `tv7-studio/forgotten_client/lib/data/local/local_video_repository.dart`
+- `tv7-studio/forgotten_client/lib/features/ingest/ingest_page.dart`
+- `tv7-studio/forgotten_client/lib/bootstrap.dart`
+- `tv7-studio/forgotten_client/lib/app.dart`
 
 Expected replacements:
 
@@ -90,11 +90,11 @@ Expected replacements:
 
 ## Suggested Studio Execution Order
 
-1. Claim `FL-A02-01-01`.
+1. Claim `ST-A02-01-01`.
 2. Add an Engine process manager that starts the Engine binary at app startup.
 3. Add health and diagnostics checks after launch.
 4. Surface degraded diagnostics in the app without trying direct shell fallbacks.
-5. Claim `FL-A02-01-02`.
+5. Claim `ST-A02-01-02`.
 6. Add an Engine client wrapper for the local HTTP API.
 7. Replace probe, thumbnail, and render usage in the smallest safe increments.
 8. Remove direct user-facing dependency checks after Engine diagnostics is wired.
@@ -111,7 +111,7 @@ Engine validation already passed:
 
 Studio validation required after consumer implementation:
 
-- Run from `tv7-flutter-studio`: `make check`
+- Run from `tv7-studio`: `make check`
 - For manual desktop validation: `make run-desktop DEVICE=macos ENV_FILE=.env.dev`
 
 ## Risks
@@ -119,7 +119,7 @@ Studio validation required after consumer implementation:
 - Studio packaging may not yet know where the Engine binary and bundled tools should live.
 - macOS app sandboxing/notarization may require a later packaging pass.
 - Existing Studio workflows may assume direct process output from `ffmpeg`; Engine currently returns structured success/error only.
-- URL ingest still uses direct `yt-dlp` until `AX-A03` and `FL-A03`.
+- URL ingest still uses direct `yt-dlp` until `EN-A03` and `ST-A03`.
 
 ## Rollback
 
@@ -133,7 +133,7 @@ Do not add new direct `ffmpeg`/`ffprobe` fallback logic as rollback behavior.
 
 This handoff was archived on 2026-05-22 after:
 
-- `FL-A02-01-01` through `FL-A02-01-06` are complete or deliberately superseded.
+- `ST-A02-01-01` through `ST-A02-01-06` are complete or deliberately superseded.
 - Studio launches Engine on startup.
 - Studio uses Engine diagnostics for media readiness.
 - Studio uses Engine for probe, thumbnail, and render-clip.

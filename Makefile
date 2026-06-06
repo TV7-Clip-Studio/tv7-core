@@ -3,7 +3,7 @@
 REPO_ROOT ?= ..
 REPO_ROOT := $(abspath $(REPO_ROOT))
 OWNER ?= TV7-Clip-Studio
-REPOS ?= tv7-core tv7-conductor tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site
+REPOS ?= tv7-core tv7-conductor tv7-engine tv7-backend tv7-studio tv7-site
 TOOLING_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/tooling
 CONDUCTOR_REPO ?= $(REPO_ROOT)/tv7-conductor
 CONDUCTOR_TOOLING_DIR ?= $(CONDUCTOR_REPO)/tooling

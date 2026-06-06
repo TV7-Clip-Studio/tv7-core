@@ -1,8 +1,8 @@
-# TV7 Flutter Studio Repo Docs
+# TV7 Studio Repo Docs
 
 Last updated: 2026-02-12
 
-Canonical docs for `tv7-flutter-studio`:
+Canonical docs for `tv7-studio`:
 - `architecture.md` - repo architecture boundaries and component roles.
 - `backend_integration.md` - Studio/FastAPI contract integration workflow.
 - `publishing_contract.md` - publish ownership and contract expectations.

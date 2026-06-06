@@ -3,12 +3,12 @@
 Cross-repo interface contracts are stored here as canonical artifacts.
 
 ## OpenAPI
-- `openapi/tv7-fastapi-backend/openapi.json` - canonical FastAPI contract export.
-- `openapi/tv7-axum-engine/openapi.json` - canonical local Engine sidecar contract export.
+- `openapi/tv7-backend/openapi.json` - canonical FastAPI contract export.
+- `openapi/tv7-engine/openapi.json` - canonical local Engine sidecar contract export.
 
 ## Engine Handoffs
-- `tv7-axum-engine/studio-sidecar-migration.md` - Engine-to-Studio migration contract for mandatory sidecar adoption.
-- `tv7-axum-engine/runtime-setup.md` - Engine-managed runtime asset manifest and first-run setup contract.
+- `tv7-engine/studio-sidecar-migration.md` - Engine-to-Studio migration contract for mandatory sidecar adoption.
+- `tv7-engine/runtime-setup.md` - Engine-managed runtime asset manifest and first-run setup contract.
 
 ## Ownership
 - Each producing repo exports and maintains its contract artifact here.

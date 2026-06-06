@@ -3,8 +3,8 @@
 ## Overview
 TV7 is a local-first video clipping and repurposing application consisting of a desktop/mobile studio, a local compute engine, and a cloud control plane.
 
-## 1. TV7 Flutter Studio (Desktop App)
-*See [Flutter Architecture](flutter_architecture.md) for details.*
+## 1. TV7 Studio
+*See [Studio Architecture](studio_architecture.md) for details.*
 
 Primary user interface for the whole workflow. Manages the local Engine process and connects to the Backend for scheduling/billing.
 
@@ -18,8 +18,8 @@ Runs locally on the user machine. Performs all compute-heavy work (transcription
 
 Supports account, scheduling, and posting execution. Not involved in clip detection, LLM, or media generation.
 
-## 4. TV7 Astro Site (Marketing / Downloads)
-*See [Astro Architecture](astro_architecture.md) for details.*
+## 4. TV7 Site
+*See [Site Architecture](site_architecture.md) for details.*
 
 Public landing pages and download sources. No billing or engine interaction.
 

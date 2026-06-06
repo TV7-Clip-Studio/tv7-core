@@ -14,10 +14,10 @@ log() { [ "$quiet" = "1" ] || echo "$@"; }
 warn() { echo "$@" >&2; }
 
 declare -A REPO_URLS=(
-  ["tv7-axum-engine"]="${TV7_AXUM_URL:-git@github.com:TV7-Clip-Studio/tv7-axum-engine.git}"
-  ["tv7-fastapi-backend"]="${TV7_FASTAPI_URL:-git@github.com:TV7-Clip-Studio/tv7-fastapi-backend.git}"
-  ["tv7-flutter-studio"]="${TV7_FLUTTER_URL:-git@github.com:TV7-Clip-Studio/tv7-flutter-studio.git}"
-  ["tv7-astro-site"]="${TV7_ASTRO_URL:-git@github.com:TV7-Clip-Studio/tv7-astro-site.git}"
+  ["tv7-engine"]="${TV7_ENGINE_URL:-git@github.com:TV7-Clip-Studio/tv7-engine.git}"
+  ["tv7-backend"]="${TV7_BACKEND_URL:-git@github.com:TV7-Clip-Studio/tv7-backend.git}"
+  ["tv7-studio"]="${TV7_STUDIO_URL:-git@github.com:TV7-Clip-Studio/tv7-studio.git}"
+  ["tv7-site"]="${TV7_SITE_URL:-git@github.com:TV7-Clip-Studio/tv7-site.git}"
 )
 
 ensure_link() {

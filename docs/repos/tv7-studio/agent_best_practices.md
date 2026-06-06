@@ -6,7 +6,7 @@
 - Run desktop (no flavor flag needed on macOS/Windows/Linux): `make run-desktop DEVICE=macos ENV_FILE=.env.dev`.
 - Run mobile flavors (once schemes exist): `make run FLAVOR=dev ENV_FILE=.env.dev`.
 - Lint/test: `make check` (format + analyze + test).
-- OpenAPI: use canonical spec at `docs/contracts/openapi/tv7-fastapi-backend/openapi.json` and run `make gen-api`.
+- OpenAPI: use canonical spec at `docs/contracts/openapi/tv7-backend/openapi.json` and run `make gen-api`.
 
 ## What to avoid
 - Don’t store platform OAuth tokens or secrets client-side; publishing is backend-owned.
@@ -26,7 +26,7 @@
 
 ## Coordination with FastAPI
 - Backend publishes OpenAPI; client generates Dart SDK from it. If spec missing, request export.
-- Publishing contract: see `docs/repos/tv7-flutter-studio/publishing_contract.md`; backend owns platform tokens/publish jobs. Client triggers/polls and uploads assets if required.
+- Publishing contract: see `docs/repos/tv7-studio/publishing_contract.md`; backend owns platform tokens/publish jobs. Client triggers/polls and uploads assets if required.
 - Config endpoint needed: `publishing_enabled`, `asset_upload_required`, allowed platforms, size limits, OpenAI policy.
 
 ## Flow to bootstrap a feature

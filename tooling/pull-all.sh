@@ -3,7 +3,7 @@
 # Pull all TV7 repositories with safety flags and readable output.
 #
 # Usage:
-#   ./pull_all.sh [--repos "tv7-core tv7-axum-engine"] [--repos-file path] [--no-color] [--dry-run] [--help]
+#   ./pull_all.sh [--repos "tv7-core tv7-engine"] [--repos-file path] [--no-color] [--dry-run] [--help]
 # Env vars:
 #   REPO_ROOT   : base directory containing repos (default: ..)
 #   REPOS       : space-separated repos to pull (fallback if no --repos/--repos-file)
@@ -15,7 +15,7 @@ set -euo pipefail
 # Defaults
 REPO_ROOT="${REPO_ROOT:-..}"
 REPO_ROOT="$(cd "$REPO_ROOT" && pwd)"
-DEFAULT_REPOS="tv7-core tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site"
+DEFAULT_REPOS="tv7-core tv7-engine tv7-backend tv7-studio tv7-site"
 REPOS="${REPOS:-$DEFAULT_REPOS}"
 REPOS_FILE=""
 USE_COLOR=1

@@ -7,7 +7,7 @@ This document describes the current repository structure and the expected develo
 ## Repo Layout
 - Flutter app root: `forgotten_client/`
 - Makefile entrypoint (repo root): `Makefile`
-- Canonical backend contract artifact: `docs/contracts/openapi/tv7-fastapi-backend/openapi.json`
+- Canonical backend contract artifact: `docs/contracts/openapi/tv7-backend/openapi.json`
 
 ## Current App Structure
 - Entrypoints: `forgotten_client/lib/main_dev.dart`, `forgotten_client/lib/main_stage.dart`, `forgotten_client/lib/main_prod.dart`

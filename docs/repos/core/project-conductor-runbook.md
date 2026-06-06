@@ -11,8 +11,8 @@ Product repos own their implementation, validation commands, and PRs.
 Conductor creates or links issues in each target repo, not in one central queue repo.
 
 Examples:
-- `tv7-fastapi-backend` roadmap items create/link issues in `TV7-Clip-Studio/tv7-fastapi-backend`.
-- `tv7-flutter-studio` roadmap items create/link issues in `TV7-Clip-Studio/tv7-flutter-studio`.
+- `tv7-backend` roadmap items create/link issues in `TV7-Clip-Studio/tv7-backend`.
+- `tv7-studio` roadmap items create/link issues in `TV7-Clip-Studio/tv7-studio`.
 - `tv7-conductor` roadmap items create/link issues in `TV7-Clip-Studio/tv7-conductor`.
 - Cross-repo items may target multiple repos, but each repo gets its own issue target and validation path.
 
@@ -26,11 +26,11 @@ Canonical roadmap sources:
 | Conductor migration governance | `tv7-core` | `docs/roadmaps/core/project-conductor-roadmap.md` |
 | Product master | `tv7-core` | `docs/roadmaps/roadmap.md` |
 | Conductor runtime | `tv7-conductor` | `docs/roadmaps/tv7-conductor-roadmap.md` |
-| Backend control plane | `tv7-fastapi-backend` | `../tv7-core/docs/roadmaps/tv7-fastapi-backend-roadmap.md` |
-| Backend off-roadmap | `tv7-fastapi-backend` | `../tv7-core/docs/roadmaps/tv7-fastapi-backend-off-roadmap.md` |
-| Flutter Studio | `tv7-flutter-studio` | `../tv7-core/docs/roadmaps/tv7-flutter-studio-roadmap.md` |
-| Astro Site | `tv7-astro-site` | `../tv7-core/docs/roadmaps/tv7-astro-site-roadmap.md` |
-| Axum Engine | `tv7-axum-engine` | `../tv7-core/docs/roadmaps/tv7-axum-engine-roadmap.md` |
+| Backend control plane | `tv7-backend` | `../tv7-core/docs/roadmaps/tv7-backend-roadmap.md` |
+| Backend off-roadmap | `tv7-backend` | `../tv7-core/docs/roadmaps/tv7-backend-off-roadmap.md` |
+| Studio | `tv7-studio` | `../tv7-core/docs/roadmaps/tv7-studio-roadmap.md` |
+| Site | `tv7-site` | `../tv7-core/docs/roadmaps/tv7-site-roadmap.md` |
+| Engine | `tv7-engine` | `../tv7-core/docs/roadmaps/tv7-engine-roadmap.md` |
 
 Roadmap IDs and batch mappings are configured in `../tv7-conductor/tooling/orchestrator/roadmap_ids.toml`.
 Repo defaults and validation hints are configured in `../tv7-conductor/tooling/orchestrator/repo_defaults.toml`.
@@ -93,30 +93,30 @@ make conductor-status
 Before mutating GitHub, inspect the planned scope:
 
 ```bash
-make conductor-tickets CONDUCTOR_TICKET_REPO=tv7-astro-site
-make conductor-tickets CONDUCTOR_TICKET_ROADMAP=docs/roadmaps/tv7-astro-site-roadmap.md
-make conductor-tickets CONDUCTOR_TICKET_ITEM_PREFIX=ST-A01-02
+make conductor-tickets CONDUCTOR_TICKET_REPO=tv7-site
+make conductor-tickets CONDUCTOR_TICKET_ROADMAP=docs/roadmaps/tv7-site-roadmap.md
+make conductor-tickets CONDUCTOR_TICKET_ITEM_PREFIX=SI-A01-02
 ```
 
 Seed issues only after the dry-run report is correct:
 
 ```bash
-make conductor-tickets-apply CONDUCTOR_TICKET_REPO=tv7-astro-site
+make conductor-tickets-apply CONDUCTOR_TICKET_REPO=tv7-site
 ```
 
 Expand issues in small batches:
 
 ```bash
-make conductor-expand CONDUCTOR_TICKET_REPO=tv7-astro-site CONDUCTOR_EXPAND_LIMIT=1
-make conductor-expand-apply CONDUCTOR_TICKET_REPO=tv7-astro-site CONDUCTOR_EXPAND_LIMIT=1
-make conductor-expand-label-check CONDUCTOR_TICKET_REPO=tv7-astro-site
+make conductor-expand CONDUCTOR_TICKET_REPO=tv7-site CONDUCTOR_EXPAND_LIMIT=1
+make conductor-expand-apply CONDUCTOR_TICKET_REPO=tv7-site CONDUCTOR_EXPAND_LIMIT=1
+make conductor-expand-label-check CONDUCTOR_TICKET_REPO=tv7-site
 ```
 
 Execute only after expansion is clean:
 
 ```bash
-make conductor-execute CONDUCTOR_TICKET_REPO=tv7-astro-site CONDUCTOR_EXECUTE_LIMIT=1
-make conductor-execute-apply CONDUCTOR_TICKET_REPO=tv7-astro-site CONDUCTOR_EXECUTE_LIMIT=1
+make conductor-execute CONDUCTOR_TICKET_REPO=tv7-site CONDUCTOR_EXECUTE_LIMIT=1
+make conductor-execute-apply CONDUCTOR_TICKET_REPO=tv7-site CONDUCTOR_EXECUTE_LIMIT=1
 ```
 
 Run local review and worktree/preview helpers from `tv7-conductor`:
@@ -124,8 +124,8 @@ Run local review and worktree/preview helpers from `tv7-conductor`:
 ```bash
 cd ../tv7-conductor
 make conductor-local-review \
-  CONDUCTOR_REPO=tv7-astro-site \
-  CONDUCTOR_ITEM_ID=ST-A01-02-01 \
+  CONDUCTOR_REPO=tv7-site \
+  CONDUCTOR_ITEM_ID=SI-A01-02-01 \
   CONDUCTOR_LOCAL_REVIEW_COMMAND="npm run build"
 ```
 
@@ -133,16 +133,16 @@ After local review passes and the item reaches `pr_ready`, the operator opens or
 
 ```bash
 make conductor-external-review \
-  CONDUCTOR_REPO=tv7-astro-site \
-  CONDUCTOR_ITEM_ID=ST-A01-02-01
+  CONDUCTOR_REPO=tv7-site \
+  CONDUCTOR_ITEM_ID=SI-A01-02-01
 ```
 
 Paid/API external reviewers require explicit opt-in:
 
 ```bash
 make conductor-external-review \
-  CONDUCTOR_REPO=tv7-astro-site \
-  CONDUCTOR_ITEM_ID=ST-A01-02-01 \
+  CONDUCTOR_REPO=tv7-site \
+  CONDUCTOR_ITEM_ID=SI-A01-02-01 \
   CONDUCTOR_REVIEW_ALLOW_PAID=1
 ```
 
@@ -153,10 +153,10 @@ Use these lanes when selecting work:
 | --- | --- | --- | --- |
 | Core governance | `tv7-core` | all repos for shared docs/tooling impact | `make conductor-shim-check` |
 | Conductor runtime | `tv7-conductor` | `tv7-core` shims/runbooks | `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` |
-| Backend control plane | `tv7-fastapi-backend` | Flutter API clients and publish UX | `make lint`, `make type`, `make test` |
-| Flutter Studio | `tv7-flutter-studio` | Backend API contract and Engine sidecar contract | `make check` |
-| Axum Engine | `tv7-axum-engine` | Flutter local sidecar integration | `make check`, `make test` |
-| Astro Site | `tv7-astro-site` | product truth from Studio/Backend/Engine | `npm run build` |
+| Backend control plane | `tv7-backend` | Flutter API clients and publish UX | `make lint`, `make type`, `make test` |
+| Studio | `tv7-studio` | Backend API contract and Engine sidecar contract | `make check` |
+| Engine | `tv7-engine` | Studio local sidecar integration | `make check`, `make test` |
+| Site | `tv7-site` | product truth from Studio/Backend/Engine | `npm run build` |
 
 Cross-repo contract rule:
 - Backend API changes require Flutter client and `tv7-core` OpenAPI contract review.
@@ -171,8 +171,8 @@ For human testing without disturbing the primary checkout, use `tv7-conductor`:
 ```bash
 cd tv7-conductor
 make conductor-prepare-worktree \
-  CONDUCTOR_REPO=tv7-astro-site \
-  CONDUCTOR_ITEM_ID=ST-A01-02-01 \
+  CONDUCTOR_REPO=tv7-site \
+  CONDUCTOR_ITEM_ID=SI-A01-02-01 \
   CONDUCTOR_APPLY=1
 ```
 
@@ -180,9 +180,9 @@ Launch a preview when the repo profile has a preview command:
 
 ```bash
 make conductor-launch-preview \
-  CONDUCTOR_REPO=tv7-astro-site \
-  CONDUCTOR_ITEM_ID=ST-A01-02-01 \
-  CONDUCTOR_WORKTREE_PATH=../tv7-conductor/docs/.conductor/worktrees/tv7-astro-site/ST-A01-02-01 \
+  CONDUCTOR_REPO=tv7-site \
+  CONDUCTOR_ITEM_ID=SI-A01-02-01 \
+  CONDUCTOR_WORKTREE_PATH=../tv7-conductor/docs/.conductor/worktrees/tv7-site/SI-A01-02-01 \
   CONDUCTOR_PREVIEW_PORT=4322 \
   CONDUCTOR_PREVIEW_COMMAND="npm run dev -- --host 127.0.0.1 --port 4322"
 ```
@@ -191,9 +191,9 @@ Validate the worktree:
 
 ```bash
 make conductor-validate-worktree \
-  CONDUCTOR_REPO=tv7-astro-site \
-  CONDUCTOR_ITEM_ID=ST-A01-02-01 \
-  CONDUCTOR_WORKTREE_PATH=../tv7-conductor/docs/.conductor/worktrees/tv7-astro-site/ST-A01-02-01 \
+  CONDUCTOR_REPO=tv7-site \
+  CONDUCTOR_ITEM_ID=SI-A01-02-01 \
+  CONDUCTOR_WORKTREE_PATH=../tv7-conductor/docs/.conductor/worktrees/tv7-site/SI-A01-02-01 \
   CONDUCTOR_VALIDATION_COMMAND="npm run build"
 ```
 

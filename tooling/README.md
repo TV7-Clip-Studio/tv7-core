@@ -38,9 +38,9 @@ Per-repo seed defaults now live in:
 
 ## Examples
 - `make conductor-status`
-- `make conductor-plan CONDUCTOR_PLAN_ROADMAP=docs/roadmaps/tv7-astro-site-roadmap.md`
-- `make conductor-expand-apply CONDUCTOR_TICKET_REPO=tv7-astro-site CONDUCTOR_TICKET_ITEM_PREFIX=ST-A01-02-01 CONDUCTOR_EXPAND_LIMIT=1 CONDUCTOR_EXPAND_AGENT=gemini`
-- `make conductor-execute-apply CONDUCTOR_TICKET_REPO=tv7-astro-site CONDUCTOR_TICKET_ITEM_PREFIX=ST-A01-02-01 CONDUCTOR_EXECUTE_LIMIT=1`
+- `make conductor-plan CONDUCTOR_PLAN_ROADMAP=docs/roadmaps/tv7-site-roadmap.md`
+- `make conductor-expand-apply CONDUCTOR_TICKET_REPO=tv7-site CONDUCTOR_TICKET_ITEM_PREFIX=SI-A01-02-01 CONDUCTOR_EXPAND_LIMIT=1 CONDUCTOR_EXPAND_AGENT=gemini`
+- `make conductor-execute-apply CONDUCTOR_TICKET_REPO=tv7-site CONDUCTOR_TICKET_ITEM_PREFIX=SI-A01-02-01 CONDUCTOR_EXECUTE_LIMIT=1`
 
 ## Legacy note
 `orchestrator-*` targets are deprecated compatibility aliases. Use `conductor-*` only.

@@ -34,7 +34,7 @@ ICON_DIRTY="*"
 # Configuration
 REPO_ROOT="${REPO_ROOT:-..}"
 REPO_ROOT=$(cd "$REPO_ROOT" && pwd)
-REPOS="${REPOS:-tv7-core tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site}"
+REPOS="${REPOS:-tv7-core tv7-engine tv7-backend tv7-studio tv7-site}"
 
 # Header
 printf "${BOLD}%-25s %-20s %-30s %-20s${RESET}\n" "REPOSITORY" "BRANCH" "SYNC STATUS" "CHANGES"

@@ -7,10 +7,10 @@ BACKEND_PORT="${BACKEND_PORT:-8000}"
 ENGINE_PORT="${ENGINE_PORT:-7070}"
 SITE_PORT="${SITE_PORT:-4321}"
 
-BACKEND_REPO="$REPO_ROOT/tv7-fastapi-backend"
-ENGINE_REPO="$REPO_ROOT/tv7-axum-engine"
-SITE_REPO="$REPO_ROOT/tv7-astro-site"
-STUDIO_REPO="$REPO_ROOT/tv7-flutter-studio"
+BACKEND_REPO="$REPO_ROOT/tv7-backend"
+ENGINE_REPO="$REPO_ROOT/tv7-engine"
+SITE_REPO="$REPO_ROOT/tv7-site"
+STUDIO_REPO="$REPO_ROOT/tv7-studio"
 
 LOG_DIR="$DEV_STATE_DIR/logs"
 PID_DIR="$DEV_STATE_DIR/pids"
@@ -23,8 +23,8 @@ Environment:
   REPO_ROOT       Workspace root containing the TV7 repos. Default: $REPO_ROOT
   DEV_STATE_DIR  Runtime logs and pid files. Default: $DEV_STATE_DIR
   BACKEND_PORT   Backend API port. Default: $BACKEND_PORT
-  ENGINE_PORT    Axum engine port. Default: $ENGINE_PORT
-  SITE_PORT      Astro site port. Default: $SITE_PORT
+  ENGINE_PORT    Engine port. Default: $ENGINE_PORT
+  SITE_PORT      Site port. Default: $SITE_PORT
   FORCE          Set to 1 to stop unknown managed-port or Studio-like processes.
 EOF
 }
@@ -100,7 +100,7 @@ known_engine_pid() {
   local pid="$1"
   local args
   args="$(pid_command "$pid")"
-  [[ "$args" == *"tv7-axum-engine"* || "$args" == *"engine-service"* ]]
+  [[ "$args" == *"tv7-engine"* || "$args" == *"engine-service"* ]]
 }
 
 known_site_pid() {
@@ -108,7 +108,7 @@ known_site_pid() {
   local args cwd
   args="$(pid_command "$pid")"
   cwd="$(pid_cwd "$pid")"
-  [[ "$args" == *"tv7-astro-site"* || "$cwd" == "$SITE_REPO"* ]]
+  [[ "$args" == *"tv7-site"* || "$cwd" == "$SITE_REPO"* ]]
 }
 
 known_studio_pid() {

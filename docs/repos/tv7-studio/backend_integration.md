@@ -3,7 +3,7 @@
 Last updated: 2026-02-12
 
 System source of truth: `docs/architecture/tv7_high_architecture.md`.
-Contract artifact source of truth: `docs/contracts/openapi/tv7-fastapi-backend/openapi.json`.
+Contract artifact source of truth: `docs/contracts/openapi/tv7-backend/openapi.json`.
 
 ## Current OpenAPI Surface (What Exists Today)
 The checked-in spec currently exposes these Studio-relevant groups:
@@ -30,8 +30,8 @@ These are architecture-aligned expectations not yet complete in the current spec
 
 ## Change Protocol
 When backend contract changes are required:
-1. Update backend implementation in `tv7-fastapi-backend`.
-2. Export updated OpenAPI into `docs/contracts/openapi/tv7-fastapi-backend/openapi.json`.
+1. Update backend implementation in `tv7-backend`.
+2. Export updated OpenAPI into `docs/contracts/openapi/tv7-backend/openapi.json`.
 3. Regenerate Studio SDK (`make gen-api`) and patch handwritten consumers.
 4. Run Studio checks: `make check`.
 5. Link related backend/client PRs per `docs/repos/cross-repo-policy.md`.

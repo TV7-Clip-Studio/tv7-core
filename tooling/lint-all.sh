@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_ROOT="${REPO_ROOT:-..}"
-REPOS=${REPOS:-"tv7-axum-engine tv7-fastapi-backend tv7-flutter-studio tv7-astro-site"}
+REPOS=${REPOS:-"tv7-engine tv7-backend tv7-studio tv7-site"}
 
 for repo in $REPOS; do
   path="$REPO_ROOT/$repo"

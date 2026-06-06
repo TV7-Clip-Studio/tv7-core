@@ -17,7 +17,7 @@ Coordinate TV7 agent orchestration so Architect and per-repo agents load the rig
     - **NOTE**: Confirmed strategy is `.agent` symlinks across repos, hybrid MCP topology (global + per-repo), and no CI hard-gate yet.
 
 ## Phase 1: Filesystem and Context Loading
-- [X] [CO-B01-02-01] Standardize `.agent` symlink visibility for each repo (`tv7-fastapi-backend`, `tv7-flutter-studio`, `tv7-astro-site`, `tv7-axum-engine`).
+- [X] [CO-B01-02-01] Standardize `.agent` symlink visibility for each repo (`tv7-backend`, `tv7-studio`, `tv7-site`, `tv7-engine`).
     **COMPLETED** | Architect Agent | 2026-02-15 19:01
     - **NOTE**: Updated `tooling/bootstrap-repos.sh` so `make bootstrap`/`make sync` enforce `<repo>/.agent -> ../tv7-core/.agent` while preserving `TV7/.agent -> tv7-core/.agent`; if `.agent` exists as non-symlink it is auto-migrated to `.agent.backup-<timestamp>`.
 - [X] [CO-B01-02-02] Document role-based context loading contract (Architect loads workspace-level context; per-repo agent loads repo-local context + shared `.agent`).

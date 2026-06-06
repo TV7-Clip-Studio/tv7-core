@@ -8,10 +8,10 @@
   ./TV7/
     tv7-core/
     tv7-conductor/
-    tv7-fastapi-backend/
-    tv7-astro-site/
-    tv7-flutter-studio/
-    tv7-axum-engine/
+    tv7-backend/
+    tv7-site/
+    tv7-studio/
+    tv7-engine/
   ```
 - Supported environments: macOS, Linux, WSL2/Ubuntu. Native Windows is not supported for symlinks.
 
@@ -33,16 +33,16 @@ make dev
 Local prerequisites:
 - Docker Desktop or Docker Engine for backend Postgres/API containers.
 - `lsof` for local port/process ownership checks.
-- Rust/Cargo for the Axum engine.
-- Node/npm for the Astro site.
+- Rust/Cargo for the Engine.
+- Node/npm for the Site.
 - Flutter with macOS desktop support for Studio.
 
 `make dev` starts the product services that make sense as a background local stack:
-- FastAPI backend and Postgres through `tv7-fastapi-backend` Docker Compose.
-- Axum engine through `tv7-axum-engine`.
-- Astro site through `tv7-astro-site`.
+- Backend and Postgres through `tv7-backend` Docker Compose.
+- Engine through `tv7-engine`.
+- Site through `tv7-site`.
 
-Flutter Studio is a desktop app and stays explicit:
+Studio is a desktop app and stays explicit:
 
 ```
 make dev-studio
@@ -51,12 +51,12 @@ make dev-studio
 Default local URLs:
 - Backend health: `http://localhost:8000/health`
 - Engine health: `http://127.0.0.1:7070/health`
-- Astro site: `http://localhost:4321/`
+- Site: `http://localhost:4321/`
 
 Useful controls:
 - `make dev-backend` — run the backend foreground dev command in its repo.
 - `make dev-engine` — run the engine foreground dev command in its repo.
-- `make dev-site` — run the Astro foreground dev server in its repo.
+- `make dev-site` — run the Site foreground dev server in its repo.
 - `make dev-status` — check repo presence, background pids, and local health endpoints.
 - `make dev-logs` — show recent background stack logs from `docs/.tmp/dev-stack/logs`.
 - `make dev-stop` — stop background engine/site pids and backend Docker Compose.
@@ -70,7 +70,7 @@ The Conductor repo participates in `make sync` as a sibling repo, but it is not 
   - `Makefile.core -> ../tv7-core/tooling/Makefile.core`
   - `.agent -> ../tv7-core/.agent`
 - Bootstrap (`make bootstrap` or `make sync`) will ensure these symlinks exist if the repo is present.
-- Example (from inside a repo, e.g., `tv7-fastapi-backend`):
+- Example (from inside a repo, e.g., `tv7-backend`):
   ```
   ln -s ../tv7-core/docs docs/core
   ln -s ../tv7-core/docs/high-architecture docs/high-architecture
@@ -93,7 +93,7 @@ The Conductor repo participates in `make sync` as a sibling repo, but it is not 
 
 ## Layout (intended)
 - `architecture/` — system-level docs only (e.g., `tv7_high_architecture.md`, engine/backend control-plane overviews).
-- `repos/` — repo-scoped docs promoted to core (e.g., Flutter/FastAPI architecture, integration notes, runbooks).
+- `repos/` — repo-scoped docs promoted to core (e.g., Studio/Backend architecture, integration notes, runbooks).
 - `contracts/` — cross-repo interface artifacts (e.g., OpenAPI exports).
 - `tooling/` — cross-repo Make targets and scripts (lint-all, format-all, bootstrap).
 - `templates/` — shared scaffolds (Rust/FastAPI/Flutter/Astro starters, CI snippets).
@@ -141,8 +141,8 @@ See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 # Agent Bootstrap (human prompt)
 You are now the TV7 Agent.
 Determine your agent role based on the current working directory:
-- If the root contains ALL TV7 repos (core, conductor, backend, astro, flutter, axum, etc.), you are the **Architect** Agent.
-- If the root contains ONLY one repo (e.g., fastapi-backend, astro-site, flutter-studio, axum-engine), you are the (Backend, Site, Studio, or Engine) Agent.
+- If the root contains ALL TV7 repos (core, conductor, backend, site, studio, engine, etc.), you are the **Architect** Agent.
+- If the root contains ONLY one repo (e.g., backend, site, studio, engine), you are the (Backend, Site, Studio, or Engine) Agent.
 - You can also be a **Code Reviewer** Agent.
 - If uncertain, ask the human to clarify your role.
 

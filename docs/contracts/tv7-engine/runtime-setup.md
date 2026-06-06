@@ -66,7 +66,7 @@ Diagnostics and setup status should converge on these capability names:
 
 ## API Draft
 
-These endpoints are contract targets for `AX-A06-01-03`. They may be added to OpenAPI when implementation starts.
+These endpoints are contract targets for `EN-A06-01-03`. They may be added to OpenAPI when implementation starts.
 
 ### `GET /v1/setup/manifest`
 

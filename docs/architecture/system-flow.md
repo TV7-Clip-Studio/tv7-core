@@ -4,10 +4,10 @@
 Give every agent a concise system map so repo-local work stays within correct boundaries.
 
 ## Core Components
-1. **Studio (`tv7-flutter-studio`)**: user-facing workflow and local orchestration.
-2. **Engine (`tv7-axum-engine`)**: local compute sidecar for media-heavy operations.
-3. **Backend (`tv7-fastapi-backend`)**: cloud control plane for auth, billing, scheduling, posting.
-4. **Site (`tv7-astro-site`)**: marketing/docs/download surface.
+1. **Studio (`tv7-studio`)**: user-facing workflow and local orchestration.
+2. **Engine (`tv7-engine`)**: local compute sidecar for media-heavy operations.
+3. **Backend (`tv7-backend`)**: cloud control plane for auth, billing, scheduling, posting.
+4. **Site (`tv7-site`)**: marketing/docs/download surface.
 5. **Core (`tv7-core`)**: shared docs, contracts, guardrails, and roadmap governance.
 6. **Conductor (`tv7-conductor`)**: standalone orchestration runtime (plan/seed/expand/execute/review).
 

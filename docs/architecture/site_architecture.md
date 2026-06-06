@@ -1,4 +1,4 @@
-# TV7 Astro Site (Marketing / Downloads)
+# TV7 Site Architecture
 
 ## Responsibilities
 - Public landing pages: product, features, pricing.

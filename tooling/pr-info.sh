@@ -19,15 +19,28 @@ if ! gh auth status >/dev/null 2>&1; then
   exit 0
 fi
 
-json="$(
+query_prs_for_state() {
   gh pr list \
     --repo "$OWNER/$REPO" \
     --head "$BRANCH" \
-    --state all \
+    --state "$1" \
     --limit 1 \
-    --json number,url,state \
-    2>/dev/null || true
-)"
+    --json number,url,state
+}
+
+gh_supports_state_all() {
+  gh pr list --help 2>/dev/null | grep -Eq '(^|[^[:alnum:]_])all([^[:alnum:]_]|$)'
+}
+
+json=""
+if gh_supports_state_all; then
+  json="$(query_prs_for_state all 2>/dev/null || true)"
+else
+  json="$(query_prs_for_state open 2>/dev/null || true)"
+  if [[ -z "$json" || "$json" == "[]" ]]; then
+    json="$(query_prs_for_state closed 2>/dev/null || true)"
+  fi
+fi
 
 if [[ -z "$json" || "$json" == "[]" ]]; then
   printf "PR: none"

@@ -115,9 +115,10 @@ Status markers in checkbox position:
     **COMPLETED** | Architect Agent | 2026-06-04 00:00
     - **CROSS-AGENT-NOTES**: Applies to all repos consuming `tv7-core/.github/workflows/deepseek-review.yml`.
     - **NOTE**: Replaced raw previous-review prose injection with `tooling/deepseek_review_context.py`, which extracts only prior Findings into a structured checklist and attaches current source snippets for cited files. The reusable workflow now passes checklist/current-source context to DeepSeek, not prior Recommendations/Risks/final verdict prose. Added unit tests for Markdown/plain heading extraction, recommendation exclusion, finding splitting, and current snippet attachment. Validated with `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, workflow YAML parse, inline runner compile, `py_compile`, and `git diff --check`.
-
-
-
+- [X] [CO-M01-04-11] Address DeepSeek review findings for Core developer Git tooling.
+    **COMPLETED** | Architect Agent | 2026-06-07 22:18
+    - **CROSS-AGENT-NOTES**: Applies to `tv7-core` developer tooling that coordinates sibling repos and optionally calls `tv7-conductor`.
+    - **NOTE**: Added explicit Conductor availability checks and consistent Conductor wrappers in `tooling/git-dev.sh`, made stash-pop conflicts visible instead of swallowed, added an explicit Bash/POSIX-mode guard, removed `declare -a` call sites, and added `tooling/pr-info.sh` fallback behavior for GitHub CLI versions without `--state all`. Validated with `bash -n tooling/git-dev.sh tooling/pr-info.sh`, `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, `git diff --check`, and `sh tooling/git-dev.sh` guard smoke test.
 
 
 

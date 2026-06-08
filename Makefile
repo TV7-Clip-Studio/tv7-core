@@ -79,11 +79,11 @@ bootstrap:
 
 sync update:
 	@REPO_ROOT="$(REPO_ROOT)" QUIET=1 bash "$(TOOLING_DIR)/bootstrap-repos.sh"
-	@GREEN=$$'\033[0;32m'; \
-	RED=$$'\033[0;31m'; \
-	YELLOW=$$'\033[0;33m'; \
-	CYAN=$$'\033[0;36m'; \
-	RESET=$$'\033[0m'; \
+	@GREEN="$$(printf '\033[0;32m')"; \
+	RED="$$(printf '\033[0;31m')"; \
+	YELLOW="$$(printf '\033[0;33m')"; \
+	CYAN="$$(printf '\033[0;36m')"; \
+	RESET="$$(printf '\033[0m')"; \
 	status_ok="$${GREEN}[✓]$${RESET}"; \
 	status_err="$${RED}[X]$${RESET}"; \
 	for repo in $(REPOS); do \

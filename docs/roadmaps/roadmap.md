@@ -119,7 +119,9 @@ Status markers in checkbox position:
     **COMPLETED** | Architect Agent | 2026-06-07 22:18
     - **CROSS-AGENT-NOTES**: Applies to `tv7-core` developer tooling that coordinates sibling repos and optionally calls `tv7-conductor`.
     - **NOTE**: Added explicit Conductor availability checks and consistent Conductor wrappers in `tooling/git-dev.sh`, made stash-pop conflicts visible instead of swallowed, added an explicit Bash/POSIX-mode guard, removed `declare -a` call sites, and added `tooling/pr-info.sh` fallback behavior for GitHub CLI versions without `--state all`. Validated with `bash -n tooling/git-dev.sh tooling/pr-info.sh`, `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, `git diff --check`, and `sh tooling/git-dev.sh` guard smoke test.
-
-
+- [X] [CO-M01-04-12] Address DeepSeek follow-up recommendations for Core developer Git tooling.
+    **COMPLETED** | Architect Agent | 2026-06-08 00:00
+    - **CROSS-AGENT-NOTES**: Applies to `tv7-core` developer tooling that coordinates sibling repos.
+    - **NOTE**: Added `--non-interactive`, `GIT_DEV_NON_INTERACTIVE`, `CI`, and no-TTY guards to `tooling/git-dev.sh` so automated contexts skip cleanly instead of blocking on prompts. Replaced Bash-only ANSI `$'...'` assignments in the `Makefile` sync target with POSIX-compatible `printf` assignments. Validated with `bash -n tooling/git-dev.sh tooling/pr-info.sh`, `CI=true bash tooling/git-dev.sh`, `bash tooling/git-dev.sh --non-interactive`, `make -n sync`, `/bin/sh` color-assignment smoke test, `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, and `git diff --check`.
 
 

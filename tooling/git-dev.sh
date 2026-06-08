@@ -11,6 +11,28 @@ fi
 
 set -euo pipefail
 
+NON_INTERACTIVE="${GIT_DEV_NON_INTERACTIVE:-0}"
+for arg in "$@"; do
+  case "$arg" in
+    --non-interactive)
+      NON_INTERACTIVE=1
+      ;;
+    -h|--help)
+      printf 'Usage: %s [--non-interactive]\n' "$0"
+      exit 0
+      ;;
+    *)
+      printf 'Unknown option: %s\nUsage: %s [--non-interactive]\n' "$arg" "$0" >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [ "$NON_INTERACTIVE" = "1" ] || [ "${CI:-}" = "true" ] || [ "${CI:-}" = "1" ] || ! [ -t 0 ]; then
+  printf 'git-dev.sh is an interactive assistant; skipping because no interactive terminal is available.\n' >&2
+  exit 0
+fi
+
 # ANSI color codes
 GREEN='\033[0;32m'
 RED='\033[0;31m'

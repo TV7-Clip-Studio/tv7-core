@@ -23,7 +23,7 @@ json="$(
   gh pr list \
     --repo "$OWNER/$REPO" \
     --head "$BRANCH" \
-    --state open \
+    --state all \
     --limit 1 \
     --json number,url,state \
     2>/dev/null || true
@@ -51,7 +51,18 @@ else:
     number = pr.get("number", "?")
     state = str(pr.get("state", "OPEN")).upper()
     url = pr.get("url", "")
-    print(f"PR: #{number} {state} {url}", end="")
+    GREEN = "\033[0;32m"
+    RED = "\033[0;31m"
+    PURPLE = "\033[0;35m"
+    RESET = "\033[0m"
+    state_colored = state
+    if state == "OPEN":
+        state_colored = f"{GREEN}OPEN{RESET}"
+    elif state == "MERGED":
+        state_colored = f"{PURPLE}MERGED{RESET}"
+    elif state == "CLOSED":
+        state_colored = f"{RED}CLOSED{RESET}"
+    print(f"PR: #{number} {state_colored} {url}", end="")
 ' <<<"$json"
 else
   if command -v jq >/dev/null 2>&1; then
@@ -59,7 +70,19 @@ else
     state="$(echo "$json" | jq -r '.[0].state // "OPEN"' | tr '[:lower:]' '[:upper:]')"
     url="$(echo "$json" | jq -r '.[0].url // empty')"
     if [[ -n "$number" ]]; then
-      printf "PR: #%s %s %s" "$number" "$state" "$url"
+      GREEN=$'\033[0;32m'
+      RED=$'\033[0;31m'
+      PURPLE=$'\033[0;35m'
+      RESET=$'\033[0m'
+      state_colored="$state"
+      if [[ "$state" == "OPEN" ]]; then
+        state_colored="${GREEN}OPEN${RESET}"
+      elif [[ "$state" == "MERGED" ]]; then
+        state_colored="${PURPLE}MERGED${RESET}"
+      elif [[ "$state" == "CLOSED" ]]; then
+        state_colored="${RED}CLOSED${RESET}"
+      fi
+      printf "PR: #%s %s %s" "$number" "$state_colored" "$url"
     else
       printf "PR: none"
     fi
@@ -69,7 +92,19 @@ else
     state="$(echo "$json" | grep -o '"state":"[^"]*"' | head -n1 | cut -d: -f2 | tr -d '"' | tr '[:lower:]' '[:upper:]')"
     url="$(echo "$json" | grep -o '"url":"[^"]*"' | head -n1 | cut -d: -f2- | tr -d '"')"
     if [[ -n "$number" ]]; then
-      printf "PR: #%s %s %s" "$number" "$state" "$url"
+      GREEN=$'\033[0;32m'
+      RED=$'\033[0;31m'
+      PURPLE=$'\033[0;35m'
+      RESET=$'\033[0m'
+      state_colored="$state"
+      if [[ "$state" == "OPEN" ]]; then
+        state_colored="${GREEN}OPEN${RESET}"
+      elif [[ "$state" == "MERGED" ]]; then
+        state_colored="${PURPLE}MERGED${RESET}"
+      elif [[ "$state" == "CLOSED" ]]; then
+        state_colored="${RED}CLOSED${RESET}"
+      fi
+      printf "PR: #%s %s %s" "$number" "$state_colored" "$url"
     else
       printf "PR: none"
     fi

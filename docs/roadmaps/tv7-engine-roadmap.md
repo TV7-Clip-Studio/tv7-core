@@ -23,8 +23,9 @@ Last updated: 2026-06-03
 - [ ] [EN-A01-02-04] Introduce trait-driven boundaries in core so service and future FFI integrations share logic.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
     - **NOTE**: Use explicit traits for probe, thumbnail, render, diagnostics, ingest, and transcript operations.
-- [ ] [EN-A01-02-05] Add basic test coverage and command-level verification (`cargo check`, `cargo test`, `cargo clippy`).
-    **BACKLOG** | Engine Agent | 2026-05-21 00:00
+- [X] [EN-A01-02-05] Add basic test coverage and command-level verification (`cargo check`, `cargo test`, `cargo clippy`).
+    **COMPLETED** | Engine Agent | 2026-06-07 00:00
+    - **NOTE**: Added pre-commit-enforced Rust quality gates for format, compile, tests, clippy, cargo-audit advisories, cargo-deny license/source policy, and file hygiene. Added focused service config and job cancellation coverage. Validated with `make precommit` and `pre-commit run --all-files`.
 
 ## Epic EN-A02: Mandatory Studio Sidecar Adoption
 - [X] [EN-A02-01-01] Define the first Studio-facing Engine API contract for probe, thumbnail, render, diagnostics, and health.

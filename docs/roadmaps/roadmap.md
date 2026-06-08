@@ -118,10 +118,13 @@ Status markers in checkbox position:
 - [X] [CO-M01-04-11] Address DeepSeek review findings for Core developer Git tooling.
     **COMPLETED** | Architect Agent | 2026-06-07 22:18
     - **CROSS-AGENT-NOTES**: Applies to `tv7-core` developer tooling that coordinates sibling repos and optionally calls `tv7-conductor`.
-    - **NOTE**: Added explicit Conductor availability checks and consistent Conductor wrappers in `tooling/git-dev.sh`, made stash-pop conflicts visible instead of swallowed, added an explicit Bash/POSIX-mode guard, removed `declare -a` call sites, and added `tooling/pr-info.sh` fallback behavior for GitHub CLI versions without `--state all`. Validated with `bash -n tooling/git-dev.sh tooling/pr-info.sh`, `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, `git diff --check`, and `sh tooling/git-dev.sh` guard smoke test.
+    - **NOTE**: Added explicit Conductor availability checks and consistent Conductor wrappers in `tooling/git-dev.sh`, made stash-pop conflicts visible instead of swallowed, added an explicit Bash/POSIX-mode guard, kept Bash array usage behind that guard, and added `tooling/pr-info.sh` fallback behavior for GitHub CLI versions without `--state all`. Validated with `bash -n tooling/git-dev.sh tooling/pr-info.sh`, `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, `git diff --check`, and `sh tooling/git-dev.sh` guard smoke test.
 - [X] [CO-M01-04-12] Address DeepSeek follow-up recommendations for Core developer Git tooling.
     **COMPLETED** | Architect Agent | 2026-06-08 00:00
     - **CROSS-AGENT-NOTES**: Applies to `tv7-core` developer tooling that coordinates sibling repos.
     - **NOTE**: Added `--non-interactive`, `GIT_DEV_NON_INTERACTIVE`, `CI`, and no-TTY guards to `tooling/git-dev.sh` so automated contexts skip cleanly instead of blocking on prompts. Replaced Bash-only ANSI `$'...'` assignments in the `Makefile` sync target with POSIX-compatible `printf` assignments. Validated with `bash -n tooling/git-dev.sh tooling/pr-info.sh`, `CI=true bash tooling/git-dev.sh`, `bash tooling/git-dev.sh --non-interactive`, `make -n sync`, `/bin/sh` color-assignment smoke test, `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, and `git diff --check`.
-
-
+- [X] [CO-M01-04-13] Address DeepSeek review findings for PR info compatibility.
+    **COMPLETED** | Architect Agent | 2026-06-07 22:40
+    - **CROSS-AGENT-NOTES**: Applies to `tv7-core` developer tooling that reports PR state across sibling repos.
+    - **CODE-REVIEW-NOTES**: DeepSeek flagged Bash ANSI assignments and newline handling in `tooling/pr-info.sh`, plus an inaccurate roadmap note about `git-dev.sh` array usage.
+    - **NOTE**: Added a POSIX-safe Bash re-exec guard to `tooling/pr-info.sh`, replaced Bash `$'...'` ANSI assignments with `printf` assignments, restored newline-terminated PR info output, and corrected the prior roadmap note to state that `git-dev.sh` keeps Bash array usage behind its Bash guard. Validated with `bash -n tooling/git-dev.sh tooling/pr-info.sh`, `sh tooling/pr-info.sh tv7-core main`, a fake-`gh` Python-branch newline smoke test, `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, and `git diff --check`.

@@ -81,6 +81,73 @@ capture_optional_conductor() {
   python3 "$CONDUCTOR_SCRIPT" "$@" 2>/dev/null
 }
 
+get_roadmap_context() {
+  local repo="$1"
+  local paths=()
+  case "$repo" in
+    "tv7-core")
+      paths=(
+        "$REPO_ROOT/tv7-core/docs/roadmaps/tv7-core-roadmap.md"
+        "$REPO_ROOT/tv7-core/docs/roadmaps/core/agent-orchestration-roadmap.md"
+        "$REPO_ROOT/tv7-core/docs/roadmaps/core/project-conductor-roadmap.md"
+        "$REPO_ROOT/tv7-core/docs/roadmaps/roadmap.md"
+      )
+      ;;
+    "tv7-conductor")
+      paths=("$REPO_ROOT/tv7-conductor/docs/roadmaps/tv7-conductor-roadmap.md")
+      ;;
+    "tv7-backend")
+      paths=(
+        "$REPO_ROOT/tv7-core/docs/roadmaps/tv7-backend-roadmap.md"
+        "$REPO_ROOT/tv7-core/docs/roadmaps/tv7-backend-off-roadmap.md"
+      )
+      ;;
+    "tv7-studio")
+      paths=("$REPO_ROOT/tv7-core/docs/roadmaps/tv7-studio-roadmap.md")
+      ;;
+    "tv7-site")
+      paths=("$REPO_ROOT/tv7-core/docs/roadmaps/tv7-site-roadmap.md")
+      ;;
+    "tv7-engine")
+      paths=("$REPO_ROOT/tv7-core/docs/roadmaps/tv7-engine-roadmap.md")
+      ;;
+    *)
+      paths=("$REPO_ROOT/tv7-core/docs/roadmaps/roadmap.md")
+      ;;
+  esac
+
+  local context=""
+  for p in "${paths[@]}"; do
+    if [ -f "$p" ]; then
+      local match
+      match="$(grep -B 1 -A 2 -i "IN-PROGRESS" "$p" | head -n 10 || true)"
+      if [ -n "$match" ]; then
+        context="$match"
+        break
+      fi
+    fi
+  done
+
+  if [ -z "$context" ]; then
+    for p in "${paths[@]}"; do
+      if [ -f "$p" ]; then
+        local match
+        match="$(grep -B 1 -A 2 -E "\-\s+\[[ pP]\]" "$p" | head -n 10 || true)"
+        if [ -n "$match" ]; then
+          context="$match"
+          break
+        fi
+      fi
+    done
+  fi
+
+  if [ -z "$context" ]; then
+    echo "No active ticket context found"
+  else
+    echo "$context"
+  fi
+}
+
 check_and_resolve_conflicts() {
   if git diff --name-only --diff-filter=U | grep -q .; then
     echo -e "${RED}\nMerge conflicts detected in the following files:${RESET}"
@@ -99,43 +166,87 @@ check_and_resolve_conflicts() {
   fi
 }
 
-create_and_resolve_pr() {
-  echo -ne "\nWould you like to automatically create a Pull Request? [Y/n]: "
-  read -r pr_choice
-  pr_choice="${pr_choice:-y}"
-  if [[ "$pr_choice" =~ ^[Yy]$ ]]; then
-    echo -e "${CYAN}Creating Pull Request via Conductor...${RESET}"
-    if ! run_conductor create-pr --repo "$SELECTED_REPO"; then
-      echo -e "${YELLOW}Conductor PR creation did not run. Create the PR manually or restore Conductor and retry.${RESET}"
+open_pr_review_flow() {
+  echo -ne "\nWould you like to open the gated PR review flow? [Y/n]: "
+  read -r review_choice
+  review_choice="${review_choice:-y}"
+  if [[ "$review_choice" =~ ^[Yy]$ ]]; then
+    echo -e "${CYAN}Opening gated PR review flow via Conductor...${RESET}"
+    if ! run_conductor resolve-pr-review --repo "$SELECTED_REPO"; then
+      echo -e "${YELLOW}Conductor PR review flow did not run. Review findings manually or restore Conductor and retry.${RESET}"
       return 1
-    fi
-
-    echo -ne "\nWould you like to wait for the DeepSeek review and automatically resolve findings? [Y/n]: "
-    read -r review_choice
-    review_choice="${review_choice:-y}"
-    if [[ "$review_choice" =~ ^[Yy]$ ]]; then
-      echo -e "${CYAN}Waiting for DeepSeek review and resolving findings via Conductor...${RESET}"
-      if ! run_conductor resolve-pr-review --repo "$SELECTED_REPO"; then
-        echo -e "${YELLOW}Conductor review resolver did not run. Resolve review findings manually or restore Conductor and retry.${RESET}"
-      fi
     fi
   fi
 }
 
-pop_stashed_changes() {
-  echo "Popping stashed changes..."
-  if git stash pop; then
+post_push_pr_flow() {
+  local branch
+  branch="$(git rev-parse --abbrev-ref HEAD)"
+  local pr_info
+  pr_info="$(OWNER="$OWNER" bash "$TOOLING_DIR/pr-info.sh" "$SELECTED_REPO" "$branch" 2>/dev/null || true)"
+
+  if [[ "$pr_info" == *"OPEN"* ]]; then
+    echo -e "${GREEN}Pushed branch. Existing PR found:${RESET} $pr_info"
+    open_pr_review_flow
+    return $?
+  fi
+
+  if [[ "$pr_info" == *"MERGED"* ]]; then
+    echo -e "${YELLOW}Pushed branch, but its PR is already merged: $pr_info${RESET}"
+    echo -e "${YELLOW}Run make git-dev again to start a fresh branch from origin/main.${RESET}"
+    return 0
+  fi
+
+  echo -ne "\nNo open PR found for this branch. Create one automatically? [Y/n]: "
+  read -r pr_choice
+  pr_choice="${pr_choice:-y}"
+  if ! [[ "$pr_choice" =~ ^[Yy]$ ]]; then
+    return 0
+  fi
+
+  echo -e "${CYAN}Creating Pull Request via Conductor...${RESET}"
+  if ! run_conductor create-pr --repo "$SELECTED_REPO"; then
+    echo -e "${YELLOW}Conductor PR creation did not run. Create the PR manually or restore Conductor and retry.${RESET}"
+    return 1
+  fi
+
+  open_pr_review_flow
+}
+
+apply_stashed_changes() {
+  local stash_ref="$1"
+
+  echo "Applying stashed changes..."
+  if git stash apply "$stash_ref"; then
+    git stash drop "$stash_ref" >/dev/null
     check_and_resolve_conflicts
     return 0
   fi
 
-  echo -e "${RED}Stash pop failed. Your working tree may contain conflicts, and the stash was likely kept.${RESET}"
+  echo -e "${RED}Stash apply failed. Your working tree may contain conflicts; the stash was kept at $stash_ref.${RESET}"
   if git diff --name-only --diff-filter=U | grep -q .; then
     check_and_resolve_conflicts
   else
     echo -e "${YELLOW}Review 'git status' and 'git stash list' before continuing.${RESET}"
   fi
   return 1
+}
+
+push_current_branch() {
+  local branch
+  branch="$(git rev-parse --abbrev-ref HEAD)"
+  local upstream_ref=""
+  upstream_ref="$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null || true)"
+
+  if [ "$upstream_ref" != "origin/$branch" ]; then
+    if [ -n "$upstream_ref" ]; then
+      echo -e "${YELLOW}Current upstream is $upstream_ref; pushing to origin/$branch instead.${RESET}"
+    fi
+    TV7_ALLOW_PUSH=1 git push -u origin "HEAD:$branch"
+    return $?
+  fi
+
+  TV7_ALLOW_PUSH=1 git push
 }
 
 select_repo() {
@@ -189,7 +300,7 @@ check_and_resolve_conflicts
 # Menu selection for flow
 echo -e "\nWhat would you like to do?"
 echo -e "  ${GREEN}1)${RESET} Continue standard development flow (commit, push, create PR)"
-echo -e "  ${GREEN}2)${RESET} Check and resolve open PRs"
+echo -e "  ${GREEN}2)${RESET} Review or merge open PRs"
 echo -ne "\nSelect option [1-2, default: 1]: "
 read -r flow_choice
 flow_choice="${flow_choice:-1}"
@@ -230,9 +341,9 @@ if [[ "$flow_choice" == "2" ]]; then
   echo -e "\nChecking out branch ${CYAN}$TARGET_BRANCH${RESET} for PR #$TARGET_PR_NUM..."
   git checkout "$TARGET_BRANCH"
 
-  echo -e "${CYAN}Launching Conductor review resolver...${RESET}"
+  echo -e "${CYAN}Opening gated PR review flow...${RESET}"
   if ! run_conductor resolve-pr-review --repo "$SELECTED_REPO"; then
-    echo -e "${YELLOW}Conductor review resolver did not run. Resolve review findings manually or restore Conductor and retry.${RESET}"
+    echo -e "${YELLOW}Conductor PR review flow did not run. Review findings manually or restore Conductor and retry.${RESET}"
   fi
   exit 0
 fi
@@ -253,25 +364,26 @@ if [ "$IS_MERGED" -eq 1 ]; then
   read -r sync_choice
   sync_choice="${sync_choice:-y}"
   if [[ "$sync_choice" =~ ^[Yy]$ ]]; then
-    # Check for uncommitted changes
     changes="$(git status --porcelain | wc -l | tr -d ' ')"
     stashed=0
+    stash_ref=""
     if [ "$changes" -gt 0 ]; then
       echo -e "${YELLOW}Autostashing $changes uncommitted changes...${RESET}"
-      git stash
+      stash_msg="git-dev:$SELECTED_REPO:$CURRENT_BRANCH:$(date +%Y%m%d%H%M%S)"
+      git stash push -u -m "$stash_msg"
       stashed=1
+      stash_ref="stash@{0}"
     fi
 
-    echo "Switching to main and pulling..."
-    git checkout main
-    git pull origin main
-
-    # Try to scan active ticket from roadmap
-    ROADMAP_PATH="$REPO_ROOT/tv7-core/docs/roadmaps/roadmap.md"
-    ROADMAP_CONTEXT="No active ticket context found"
-    if [ -f "$ROADMAP_PATH" ]; then
-      ROADMAP_CONTEXT="$(grep -B 1 -A 2 -i "IN-PROGRESS" "$ROADMAP_PATH" | head -n 10 || true)"
+    echo "Fetching latest origin/main..."
+    git fetch origin main
+    if git show-ref --verify --quiet refs/heads/main; then
+      if ! git merge-base --is-ancestor main "$SYNC_BASE" && ! git merge-base --is-ancestor "$SYNC_BASE" main; then
+        echo -e "${YELLOW}Local main has diverged from $SYNC_BASE; leaving local main untouched and using $SYNC_BASE as the new branch base.${RESET}"
+      fi
     fi
+
+    ROADMAP_CONTEXT="$(get_roadmap_context "$SELECTED_REPO")"
 
     echo -e "\nQuerying Gemini via Conductor for branch name suggestions..."
     LLM_SUGGESTIONS="$(capture_optional_conductor suggest-branch --repo "$SELECTED_REPO" --context "$ROADMAP_CONTEXT" || true)"
@@ -286,7 +398,7 @@ if [ "$IS_MERGED" -eq 1 ]; then
     idx=1
     if [ -n "$LLM_SUGGESTIONS" ]; then
       while IFS= read -r line; do
-        if [ -n "$line" ]; then
+        if [ -n "$line" ] && [[ "$line" != *"[gemini metrics:"* ]]; then
           SUGGESTED_BRANCHES+=("$line")
           echo -e "  ${GREEN}$idx)${RESET} $line"
           idx=$((idx+1))
@@ -307,16 +419,32 @@ if [ "$IS_MERGED" -eq 1 ]; then
       read -r NEW_BRANCH
     fi
 
+    if [ -n "$NEW_BRANCH" ] && ! git check-ref-format --branch "$NEW_BRANCH" >/dev/null 2>&1; then
+      echo -e "${RED}Invalid branch name: $NEW_BRANCH${RESET}"
+      NEW_BRANCH=""
+    fi
+
     if [ -n "$NEW_BRANCH" ]; then
-      echo "Creating and checking out branch $NEW_BRANCH..."
-      git checkout -b "$NEW_BRANCH"
+      if git show-ref --verify --quiet "refs/heads/$NEW_BRANCH"; then
+        echo -e "${RED}Branch already exists: $NEW_BRANCH${RESET}"
+        if [ "$stashed" -eq 1 ]; then
+          echo -e "${YELLOW}Your changes are still saved at $stash_ref.${RESET}"
+        fi
+        exit 1
+      fi
+      echo "Creating and checking out branch $NEW_BRANCH from $SYNC_BASE..."
+      git checkout -b "$NEW_BRANCH" "$SYNC_BASE"
       CURRENT_BRANCH="$NEW_BRANCH"
     else
-      echo "No branch name provided; staying on main."
+      echo -e "${RED}No branch name provided; aborting branch refresh.${RESET}"
+      if [ "$stashed" -eq 1 ]; then
+        echo -e "${YELLOW}Your changes are still saved at $stash_ref.${RESET}"
+      fi
+      exit 1
     fi
 
     if [ "$stashed" -eq 1 ]; then
-      pop_stashed_changes
+      apply_stashed_changes "$stash_ref"
     fi
   fi
 fi
@@ -334,12 +462,7 @@ if [ "$changes" -gt 0 ]; then
   read -r branch_choice
   branch_choice="${branch_choice:-n}"
   if [[ "$branch_choice" =~ ^[Yy]$ ]]; then
-    # Try to scan active ticket from roadmap
-    ROADMAP_PATH="$REPO_ROOT/tv7-core/docs/roadmaps/roadmap.md"
-    ROADMAP_CONTEXT="No active ticket context found"
-    if [ -f "$ROADMAP_PATH" ]; then
-      ROADMAP_CONTEXT="$(grep -B 1 -A 2 -i "IN-PROGRESS" "$ROADMAP_PATH" | head -n 10 || true)"
-    fi
+    ROADMAP_CONTEXT="$(get_roadmap_context "$SELECTED_REPO")"
 
     echo -e "\nQuerying Gemini via Conductor for branch name suggestions..."
     LLM_SUGGESTIONS="$(capture_optional_conductor suggest-branch --repo "$SELECTED_REPO" --context "$ROADMAP_CONTEXT" || true)"
@@ -354,7 +477,7 @@ if [ "$changes" -gt 0 ]; then
     idx=1
     if [ -n "$LLM_SUGGESTIONS" ]; then
       while IFS= read -r line; do
-        if [ -n "$line" ]; then
+        if [ -n "$line" ] && [[ "$line" != *"[gemini metrics:"* ]]; then
           SUGGESTED_BRANCHES+=("$line")
           echo -e "  ${GREEN}$idx)${RESET} $line"
           idx=$((idx+1))
@@ -417,8 +540,8 @@ if [ "$changes" -gt 0 ]; then
       push_choice="${push_choice:-y}"
       if [[ "$push_choice" =~ ^[Yy]$ ]]; then
         echo "Pushing changes..."
-        if TV7_ALLOW_PUSH=1 git push -u origin "$CURRENT_BRANCH"; then
-          create_and_resolve_pr
+        if push_current_branch; then
+          post_push_pr_flow
         else
           echo -e "${RED}Push failed. Skipping PR creation.${RESET}"
         fi
@@ -434,8 +557,8 @@ if [ "$changes" -gt 0 ]; then
       push_choice="${push_choice:-y}"
       if [[ "$push_choice" =~ ^[Yy]$ ]]; then
         echo "Pushing changes..."
-        if TV7_ALLOW_PUSH=1 git push -u origin "$CURRENT_BRANCH"; then
-          create_and_resolve_pr
+        if push_current_branch; then
+          post_push_pr_flow
         else
           echo -e "${RED}Push failed. Skipping PR creation.${RESET}"
         fi
@@ -454,8 +577,8 @@ else
     push_choice="${push_choice:-y}"
     if [[ "$push_choice" =~ ^[Yy]$ ]]; then
       echo "Pushing changes..."
-      if TV7_ALLOW_PUSH=1 git push; then
-        create_and_resolve_pr
+      if push_current_branch; then
+        post_push_pr_flow
       else
         echo -e "${RED}Push failed. Skipping PR creation.${RESET}"
       fi

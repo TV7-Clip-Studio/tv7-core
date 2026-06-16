@@ -49,6 +49,44 @@
         }
       }
     },
+    "/v1/setup/manifest": {
+      "get": {
+        "summary": "Inspect Engine-known runtime setup options",
+        "operationId": "getSetupManifest",
+        "description": "Returns setup modes, AI provider resolution order, and installable/importable local runtime assets. Engine prefers user-installed local AI first, TV7-managed local AI second, and TV7 cloud AI third.",
+        "responses": {
+          "200": {
+            "description": "Setup manifest payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupManifest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/setup/status": {
+      "get": {
+        "summary": "Inspect current local runtime setup status",
+        "operationId": "getSetupStatus",
+        "description": "Reports detected user-installed runtimes and models, TV7-managed installable fallbacks, and capability readiness. Missing assets require explicit Studio/user action before Engine downloads or installs anything.",
+        "responses": {
+          "200": {
+            "description": "Setup status payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/media/probe": {
       "post": {
         "summary": "Probe local media metadata",
@@ -116,7 +154,7 @@
                   "value": {
                     "source_path": "/absolute/path/to/video.mp4",
                     "output_path": "/absolute/path/to/video.mp4.thumb.jpg",
-                    "timestamp_seconds": 1.0
+                    "timestamp_seconds": 1
                   }
                 }
               }
@@ -375,6 +413,152 @@
           }
         }
       }
+    },
+    "/v1/ai/cloud-token": {
+      "post": {
+        "summary": "Store delegated TV7 cloud AI token in memory",
+        "operationId": "setCloudAiToken",
+        "description": "Studio passes a short-lived Backend-issued engine:cloud_ai bearer token to Engine over loopback. Engine stores it in memory only and never returns the token value.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloudAiTokenRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "token": "backend-issued-delegated-token",
+                    "token_type": "bearer",
+                    "scope": "engine:cloud_ai",
+                    "expires_in_seconds": 900,
+                    "credits_remaining": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delegated token metadata stored in memory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAiTokenStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Clear delegated TV7 cloud AI token",
+        "operationId": "clearCloudAiToken",
+        "description": "Clears the in-memory delegated cloud AI token during logout, license refresh, or revocation.",
+        "responses": {
+          "200": {
+            "description": "Delegated token cleared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAiTokenStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ai/cloud-debug": {
+      "post": {
+        "summary": "Check TV7 cloud AI readiness through Engine",
+        "operationId": "debugCloudAi",
+        "description": "Engine validates local delegated-token state and, when present, calls Backend cloud AI execution with an Engine-shaped minimal health prompt. Studio should use this instead of calling Backend AI debug endpoints directly.",
+        "responses": {
+          "200": {
+            "description": "Cloud AI readiness payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAiDebugResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ai/transcript-intelligence": {
+      "post": {
+        "summary": "Generate transcript intelligence clip suggestions",
+        "operationId": "generateTranscriptIntelligence",
+        "description": "Studio-facing AI endpoint for Quick Clip-style transcript analysis. Engine owns prompt/context shaping and provider dispatch. The first executable provider path is TV7 cloud AI via Backend using an in-memory delegated token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptIntelligenceRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "transcript": [
+                      {
+                        "start_seconds": 1,
+                        "end_seconds": 5,
+                        "text": "This is a useful hook."
+                      }
+                    ],
+                    "clip_duration": "medium",
+                    "timeline_target": "entire_video",
+                    "existing_clips": [],
+                    "max_suggestions": 3
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transcript intelligence result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptIntelligenceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "402": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "413": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "502": {
+            "$ref": "#/components/responses/OutputInvalid"
+          },
+          "503": {
+            "$ref": "#/components/responses/InternalFailure"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -580,6 +764,332 @@
           }
         }
       },
+      "ProviderSource": {
+        "type": "string",
+        "enum": [
+          "user_path",
+          "tv7_managed",
+          "bundled",
+          "ollama",
+          "tv7_cloud",
+          "unconfigured"
+        ]
+      },
+      "RuntimeAssetKind": {
+        "type": "string",
+        "enum": [
+          "media_tool",
+          "transcription_runtime",
+          "transcription_model",
+          "llm_runtime",
+          "llm_model"
+        ]
+      },
+      "SetupItemStatus": {
+        "type": "string",
+        "enum": [
+          "available",
+          "missing",
+          "installable",
+          "unsupported"
+        ]
+      },
+      "ProviderCandidateStatus": {
+        "type": "string",
+        "enum": [
+          "ready",
+          "missing_assets",
+          "installable",
+          "unavailable"
+        ]
+      },
+      "SetupCapabilityState": {
+        "type": "string",
+        "enum": [
+          "ready",
+          "not_ready"
+        ]
+      },
+      "SetupManifest": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "platform",
+          "setup_modes",
+          "ai_provider_order",
+          "assets"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "integer"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "setup_modes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ai_provider_order": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderSource"
+            }
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetupManifestAsset"
+            }
+          }
+        }
+      },
+      "SetupManifestAsset": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "required_for",
+          "installable",
+          "bundled",
+          "source",
+          "version",
+          "download"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RuntimeAssetKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "required_for": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "installable": {
+            "type": "boolean"
+          },
+          "bundled": {
+            "type": "boolean"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ProviderSource"
+          },
+          "version": {
+            "type": "string",
+            "nullable": true
+          },
+          "download": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SetupDownload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "SetupDownload": {
+        "type": "object",
+        "required": [
+          "url",
+          "sha256",
+          "size_bytes"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "SetupStatus": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "setup_complete",
+          "active_ai_provider",
+          "assets",
+          "ai_providers",
+          "capabilities"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "integer"
+          },
+          "setup_complete": {
+            "type": "boolean"
+          },
+          "active_ai_provider": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProviderSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetupAssetStatus"
+            }
+          },
+          "ai_providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiProviderCandidate"
+            }
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetupCapabilityStatus"
+            }
+          }
+        }
+      },
+      "SetupAssetStatus": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "status",
+          "source",
+          "path",
+          "version",
+          "error"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RuntimeAssetKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SetupItemStatus"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ProviderSource"
+          },
+          "path": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "AiProviderCandidate": {
+        "type": "object",
+        "required": [
+          "source",
+          "status",
+          "required_assets",
+          "requires_internet",
+          "requires_user_confirmation",
+          "cost_policy",
+          "action"
+        ],
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/ProviderSource"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProviderCandidateStatus"
+          },
+          "required_assets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requires_internet": {
+            "type": "boolean"
+          },
+          "requires_user_confirmation": {
+            "type": "boolean"
+          },
+          "cost_policy": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "SetupCapabilityStatus": {
+        "type": "object",
+        "required": [
+          "name",
+          "status",
+          "provider",
+          "missing",
+          "installable",
+          "user_action_required"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SetupCapabilityState"
+          },
+          "provider": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProviderSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "installable": {
+            "type": "boolean"
+          },
+          "user_action_required": {
+            "type": "boolean"
+          }
+        }
+      },
       "ProbeRequest": {
         "type": "object",
         "required": [
@@ -656,7 +1166,7 @@
           "timestamp_seconds": {
             "type": "number",
             "nullable": true,
-            "default": 1.0,
+            "default": 1,
             "minimum": 0
           }
         }
@@ -925,6 +1435,319 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "CloudAiTokenRequest": {
+        "type": "object",
+        "required": [
+          "token",
+          "expires_in_seconds"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Backend-issued delegated token. Never returned by Engine responses."
+          },
+          "token_type": {
+            "type": "string",
+            "default": "bearer"
+          },
+          "scope": {
+            "type": "string",
+            "default": "engine:cloud_ai"
+          },
+          "expires_in_seconds": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "credits_remaining": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "CloudAiTokenStatusResponse": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/CloudAiTokenStatus"
+          }
+        }
+      },
+      "CloudAiTokenStatus": {
+        "type": "object",
+        "required": [
+          "state",
+          "scope",
+          "token_type",
+          "expires_in_seconds",
+          "credits_remaining"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/CloudAiTokenState"
+          },
+          "scope": {
+            "type": "string",
+            "nullable": true
+          },
+          "token_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "expires_in_seconds": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "credits_remaining": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "CloudAiTokenState": {
+        "type": "string",
+        "enum": [
+          "configured",
+          "missing",
+          "expired"
+        ]
+      },
+      "CloudAiDebugResponse": {
+        "type": "object",
+        "required": [
+          "provider",
+          "status",
+          "error",
+          "token"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "const": "tv7_cloud"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CloudAiDebugState"
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "AI_AUTH_REQUIRED",
+              "AI_LICENSE_REQUIRED",
+              "AI_QUOTA_EXCEEDED",
+              "AI_PROVIDER_UNAVAILABLE",
+              "AI_NETWORK_UNAVAILABLE",
+              "AI_CONTEXT_TOO_LARGE",
+              null
+            ]
+          },
+          "token": {
+            "$ref": "#/components/schemas/CloudAiTokenStatus"
+          }
+        }
+      },
+      "CloudAiDebugState": {
+        "type": "string",
+        "enum": [
+          "ready",
+          "not_ready"
+        ]
+      },
+      "TranscriptIntelligenceRequest": {
+        "type": "object",
+        "required": [
+          "transcript",
+          "clip_duration",
+          "timeline_target"
+        ],
+        "properties": {
+          "transcript": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/TranscriptCue"
+            }
+          },
+          "clip_duration": {
+            "$ref": "#/components/schemas/ClipDurationPreset"
+          },
+          "timeline_target": {
+            "$ref": "#/components/schemas/TimelineTarget"
+          },
+          "existing_clips": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/ExistingClip"
+            }
+          },
+          "max_suggestions": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 12
+          }
+        }
+      },
+      "TranscriptCue": {
+        "type": "object",
+        "required": [
+          "start_seconds",
+          "end_seconds",
+          "text"
+        ],
+        "properties": {
+          "start_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "end_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "ExistingClip": {
+        "type": "object",
+        "required": [
+          "start_seconds",
+          "end_seconds"
+        ],
+        "properties": {
+          "start_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "end_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      },
+      "ClipDurationPreset": {
+        "type": "string",
+        "enum": [
+          "short",
+          "medium",
+          "long"
+        ]
+      },
+      "TimelineTarget": {
+        "type": "string",
+        "enum": [
+          "unclipped_gaps_only",
+          "entire_video"
+        ]
+      },
+      "ProviderExecutionSource": {
+        "type": "string",
+        "enum": [
+          "ollama",
+          "tv7_managed",
+          "tv7_cloud"
+        ]
+      },
+      "TranscriptIntelligenceResponse": {
+        "type": "object",
+        "required": [
+          "provider",
+          "model",
+          "clips",
+          "usage"
+        ],
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/ProviderExecutionSource"
+          },
+          "model": {
+            "type": "string"
+          },
+          "clips": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiClipSuggestion"
+            }
+          },
+          "usage": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CloudAiUsage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AiClipSuggestion": {
+        "type": "object",
+        "required": [
+          "title",
+          "start_seconds",
+          "end_seconds",
+          "reason",
+          "score"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "start_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "end_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "reason": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "CloudAiUsage": {
+        "type": "object",
+        "required": [
+          "credits_charged",
+          "credits_remaining"
+        ],
+        "properties": {
+          "credits_charged": {
+            "type": "integer"
+          },
+          "credits_remaining": {
+            "type": "integer"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "nullable": true
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "nullable": true
+          },
+          "total_tokens": {
+            "type": "integer",
+            "nullable": true
+          },
+          "latency_ms": {
+            "type": "integer",
+            "nullable": true
           }
         }
       }

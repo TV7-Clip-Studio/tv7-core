@@ -3,7 +3,7 @@
 Roadmap Code: ST
 Batch Code: A01
 
-Last updated: 2026-06-03
+Last updated: 2026-06-10
 
 ## Done
 - [X] [ST-A01-01-01] Scaffolded Flutter client foundation with flavor entrypoints (`dev`, `stage`, `prod`).
@@ -13,6 +13,9 @@ Last updated: 2026-06-03
 
 ## Needs To Be Done
 - [ ] [ST-A01-02-01] Regenerate and adopt OpenAPI client against the current FastAPI contract.
+- [X] [ST-A01-02-06] Harden runtime diagnostics and secret-safe Studio logging.
+    **COMPLETED** | Studio Agent | 2026-06-09 00:00
+    - **NOTE**: Added secret-safe Dio logging for generated DTOs, JSON strings, headers, and token responses; Studio now attaches to an already healthy Engine instead of starting a conflicting second process; transcript download accepts legacy `source_url`/`sourceUrl` metadata while rejecting local-only sources with a clearer message; license diagnostics now label backend 404s as endpoint-unavailable compatibility warnings. Hardened Quick Clip preflight so local imports without transcripts or remote caption metadata are blocked with an inline user-facing message, persisted card-level issue, and DiagnosticsLog entry instead of failing silently after Generate Clips. Engine contract gap remains: local imports need a future Engine-owned local transcription job/capability contract. Verified with focused Flutter tests and `make check`.
 - [X] [ST-A01-02-02] Wire clip suggestion/highlight APIs into production auto-clip flows with robust error UX.
     **COMPLETED** | Studio Agent | 2026-05-29 16:15
     - **NOTE**: Fully resolved the backend highlights 404 bad response by transitioning to a 100% local, offline intelligence pipeline. Integrated a custom high-performance VTT subtitle parser, a timeline gap detection algorithm (targeting unclipped content strictly), duration segmenting (Short: 10-15s, Medium: 30-45s, Long: 60-90s Presets) aligned to cues and sentence boundaries, and a rule-based smart social post copywriting generator. Designed a premium glassmorphic Quick Clip Config Bottom Sheet (ChoiceChips, ListTiles) and an M3 status card progress overlay featuring a linear progress bar. Completely integrated and verified with the local Rust Media Engine sidecar. All tests pass green.
@@ -78,22 +81,25 @@ Last updated: 2026-06-03
     **BACKLOG** | Studio Agent | 2026-06-03 00:00
     - **CROSS-AGENT-NOTES**: Depends on Engine `EN-A06-01-01` and `EN-A06-01-02`. Development builds may keep sibling-repo Engine resolution; release builds must resolve bundled app resources.
     - **NOTE**: Pass configured paths for Engine, `ffmpeg`, `ffprobe`, and `yt-dlp` into the Engine process. Fresh installs must not depend on developer repos or Homebrew paths.
-- [ ] [ST-A04-01-02] Add first-run setup for AI provider selection.
-    **BACKLOG** | Studio Agent | 2026-06-03 00:00
-    - **CROSS-AGENT-NOTES**: Studio owns setup UX, provider choice, and secrets entry. Engine owns AI execution, prompts, context packing, local model use, and cloud provider request shaping.
-    - **NOTE**: Offer `local`, `openai`, `deepseek`, and `later/disabled`. Explain privacy, offline behavior, disk usage, internet requirements, and expected quality tradeoffs before confirmation.
+- [ ] [ST-A04-01-02] Add first-run setup for unified Engine AI readiness.
+    **BACKLOG** | Studio Agent | 2026-06-10 00:00
+    - **CROSS-AGENT-NOTES**: Studio owns setup UX and user confirmation. Studio should call Engine for AI work regardless of provider. Engine owns provider dispatch, prompt/context policy, local model use, and Backend cloud AI request shaping. Backend owns TV7 cloud AI credentials, authorization, billing, quota, and metering.
+    - **NOTE**: Consume Engine `setup_modes`, `ai_provider_order`, `active_ai_provider`, `ai_providers`, and capability readiness for `ai` and `offline_creation`. Present one user-facing AI capability backed by user local AI, TV7-managed local AI, or TV7 cloud AI. Do not ask users for DeepSeek/OpenAI keys.
 - [ ] [ST-A04-01-03] Wire first-run setup to Engine setup/download jobs.
     **BACKLOG** | Studio Agent | 2026-06-03 00:00
     - **CROSS-AGENT-NOTES**: Depends on Engine `EN-A06-01-03`. Studio should call Engine setup APIs after explicit user confirmation and surface progress, retry, failure, disk-space, and setup-complete states.
     - **NOTE**: TV7 uses a small installer. Offline creation becomes available after required local assets are installed or imported; no silent downloads at app startup.
-- [ ] [ST-A04-01-04] Add secure cloud provider key configuration.
-    **BACKLOG** | Studio Agent | 2026-06-03 00:00
-    - **CROSS-AGENT-NOTES**: Depends on Engine `EN-A05-01-02`. Studio stores or supplies user-provided OpenAI/DeepSeek keys; Engine receives configured execution context without persisting secrets unless explicitly designed later.
-    - **NOTE**: Cloud AI is opt-in and requires internet. Local media creation/export should remain usable without cloud keys.
-- [ ] [ST-A04-01-05] Expand Diagnostics to show capability readiness.
-    **BACKLOG** | Studio Agent | 2026-06-03 00:00
-    - **CROSS-AGENT-NOTES**: Depends on Engine `EN-A06-01-04`. Diagnostics should show Engine health separately from `media_core`, `url_ingest`, `transcription`, `local_llm`, `cloud_llm`, `rendering`, and `offline_creation` readiness.
-    - **NOTE**: Missing models, missing API keys, or cloud provider offline states should be repair/setup prompts, not generic Engine failures.
+- [ ] [ST-A04-01-04] Pass Backend-issued Engine cloud AI delegation context.
+    **BACKLOG** | Studio Agent | 2026-06-10 00:00
+    - **CROSS-AGENT-NOTES**: Depends on Engine `EN-A05-01-02` and Backend cloud AI delegation tasks. Studio uses the normal authenticated user session/license flow to obtain a short-lived Engine delegation token from Backend, then passes it to Engine over loopback. Studio must not persist provider keys or call Backend cloud AI execution/debug endpoints directly.
+    - **NOTE**: Cloud AI can make `ai` ready when internet and license/quota are available, but it does not make `offline_creation` ready. AI diagnostics/debug should route Studio -> Engine -> Backend so Studio has one AI integration surface.
+- [x] [ST-A04-01-05] Expand Diagnostics to show capability readiness.
+    **COMPLETED** | Studio Agent | 2026-06-09 00:00
+    - **CROSS-AGENT-NOTES**: Depends on Engine `EN-A06-01-04`. Diagnostics should show Engine health separately from `media_core`, `url_ingest`, `transcription`, `ai`, `rendering`, and `offline_creation` readiness.
+    - **NOTE**: Missing models, missing license/delegation context, quota exhaustion, or cloud provider offline states should be repair/setup prompts, not generic Engine failures.
+    - **NOTE**: Added Studio Engine setup client models/calls for `/v1/setup/manifest` and `/v1/setup/status`, Diagnostics setup readiness, explicit-confirmation copy for installable TV7-managed assets, and Quick Clip transcript-blocked messaging that uses setup status while still waiting for Engine `POST /v1/transcripts/generate`.
+    - **NOTE**: Contract follow-up replaced Studio-facing `local_llm`/`cloud_llm` readiness with the unified Engine `ai` capability and provider candidates from `docs/core/contracts/tv7-engine/ai-provider-handoff.md`.
+    - **NOTE**: Phase 1 follow-up migrated Studio setup parsing and Diagnostics display to unified Engine `ai` readiness and `ai_providers`, while preserving compatibility with older setup payload fields. Diagnostics now surfaces `/v1/setup/manifest` availability separately from `/v1/setup/status`, and cloud AI readiness does not imply `offline_creation` readiness.
 - [ ] [ST-A04-01-06] Add fresh-install offline readiness release verification.
     **BACKLOG** | Studio Agent | 2026-06-03 00:00
     - **CROSS-AGENT-NOTES**: Coordinate with Engine `EN-A06` and Core contract docs. Validate packaged Studio on a clean profile with no developer repos and no Homebrew dependency assumptions.
@@ -106,3 +112,9 @@ Last updated: 2026-06-03
 - [ ] [ST-A01-03-02] Complete Pro scheduler UX: publish scheduling, polling, and failure visibility.
 - [ ] [ST-A01-03-03] Implement licensing/config enforcement and plan-aware feature gating.
 - [ ] [ST-A01-03-04] Improve packaging/release UX outside first-run Engine setup (desktop artifacts, updater flow, telemetry opt-in).
+
+## Cross-Repo Milestone: Unified Engine AI + Cloud Delegation
+- **Active handoff**: `docs/handoffs/active/studio.md`
+- **Studio route**: Own user-facing AI setup and diagnostics: request Backend delegation tokens with the normal session, pass tokens to Engine, call Engine for AI execution/debug, and display setup/license/quota/readiness states.
+- **Primary roadmap items**: `ST-A04-01-02`, `ST-A04-01-04`, `ST-A04-01-05`, `ST-A01-02-01`.
+- **Boundary**: Studio must not collect provider keys, call Backend cloud AI execution/debug endpoints from feature flows, or treat missing cloud delegation as an Engine startup failure.

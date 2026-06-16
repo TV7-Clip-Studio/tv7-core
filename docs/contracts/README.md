@@ -9,6 +9,7 @@ Cross-repo interface contracts are stored here as canonical artifacts.
 ## Engine Handoffs
 - `tv7-engine/studio-sidecar-migration.md` - Engine-to-Studio migration contract for mandatory sidecar adoption.
 - `tv7-engine/runtime-setup.md` - Engine-managed runtime asset manifest and first-run setup contract.
+- `tv7-engine/ai-provider-handoff.md` - Studio/Engine/Backend responsibilities for unified AI provider dispatch and TV7 cloud AI delegation.
 
 ## Ownership
 - Each producing repo exports and maintains its contract artifact here.

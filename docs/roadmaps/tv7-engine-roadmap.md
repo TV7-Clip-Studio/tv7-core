@@ -3,7 +3,7 @@
 Roadmap Code: EN
 Batch Code: A01
 
-Last updated: 2026-06-03
+Last updated: 2026-06-10
 
 ## Done
 - [X] [EN-A01-01-01] Created Rust workspace with `engine-core` and `engine-service` crates.
@@ -76,11 +76,14 @@ Last updated: 2026-06-03
     - **NOTE**: Keep cloud/business policy out of Engine; Engine executes configured local compute and reports exact model/runtime readiness to Studio.
 - [ ] [EN-A05-01-02] Add AI provider configuration and runtime dispatch.
     **BACKLOG** | Engine Agent | 2026-06-03 00:00
-    - **CROSS-AGENT-NOTES**: Studio owns setup UX and user secrets entry. Engine owns provider selection at execution time, prompt/context policy, local model execution, and cloud provider request shaping for configured providers.
-    - **NOTE**: Support provider modes `local`, `openai`, `deepseek`, and `disabled`. Cloud providers are opt-in and require internet; local provider is the privacy-first/offline path after setup.
-- [ ] [EN-A05-01-03] Add transcript intelligence APIs for local/cloud LLM providers.
+    - **CROSS-AGENT-NOTES**: Studio should call Engine for AI work regardless of local/cloud provider. Engine owns provider selection at execution time, local model execution, prompt/context policy, and cloud request shaping. Backend owns TV7 cloud AI credentials, authorization, billing, and metering.
+    - **NOTE**: Support one user-facing `ai` capability resolved through provider candidates in order: user local provider such as Ollama, TV7-managed local model, then TV7 cloud AI via Backend. Studio must not collect user DeepSeek credentials.
+    - **NOTE**: For TV7 cloud AI, accept short-lived Backend-issued delegation context from Studio, keep it in memory only, and call Backend with Engine-scoped auth. Normalize auth/license/quota/network/provider errors for Studio.
+    - **NOTE**: First plumbing added `POST /v1/ai/cloud-token`, `DELETE /v1/ai/cloud-token`, in-memory delegated token storage, Backend `/api/v1/cloud-ai/engine/execute` client boundary, cloud debug error normalization, and first provider-agnostic execution dispatch via `POST /v1/ai/transcript-intelligence`. Follow-up remains: local provider execution dispatch for Ollama/TV7-managed local AI.
+- [ ] [EN-A05-01-03] Add transcript intelligence APIs for unified Engine AI providers.
     **BACKLOG** | Engine Agent | 2026-06-03 00:00
-    - **NOTE**: Engine should own transcript chunking, summarization, clip suggestion scoring, prompt templates, model-specific request shaping, and structured outputs consumed by Studio.
+    - **NOTE**: Engine should own transcript chunking, summarization, clip suggestion scoring, prompt templates, model-specific request shaping, and structured outputs consumed by Studio. Studio-facing API shape should stay the same whether the provider is local, TV7-managed local, or TV7 cloud AI.
+    - **NOTE**: Added initial `POST /v1/ai/transcript-intelligence` contract and cloud-backed execution path returning structured clip suggestions. Follow-up remains: richer transcript chunking/scoring, local provider execution, and production prompt hardening.
 - [ ] [EN-A05-01-04] Add post copy generation APIs for selected clips.
     **BACKLOG** | Engine Agent | 2026-06-03 00:00
     - **NOTE**: Generate platform-aware titles, hooks, descriptions, captions, hashtags, and variants from selected clips/transcripts while reporting provider/model used.
@@ -94,16 +97,17 @@ Last updated: 2026-06-03
     - **CROSS-AGENT-NOTES**: Studio must launch Engine automatically at app startup so TV7 behaves as one app for users.
 - [X] [EN-A06-01-02] Define Engine-managed runtime asset manifest and setup contract.
     **COMPLETED** | Engine Agent | 2026-06-03 00:00
-    - **CROSS-AGENT-NOTES**: Studio first-run setup chooses `local`, `openai`, `deepseek`, or `later`, then calls Engine setup APIs. Engine installs/verifies approved local runtime assets and reports progress/readiness.
+    - **CROSS-AGENT-NOTES**: Studio first-run setup calls Engine setup APIs and displays one AI capability backed by provider candidates. Engine installs/verifies approved local runtime assets and reports progress/readiness.
     - **NOTE**: Track Engine binary version, media tools (`ffmpeg`, `ffprobe`, `yt-dlp`), Whisper runtime/model assets, local LLM runtime/model assets, checksums, disk requirements, and install locations. No silent startup downloads.
-    - **NOTE**: Added `docs/contracts/tv7-engine/runtime-setup.md` defining provider modes, runtime asset categories, capability readiness groups, setup endpoint drafts, download/verification rules, fresh-install expectations, and privacy constraints. Linked it from the Core contracts index.
+    - **NOTE**: Added `docs/contracts/tv7-engine/runtime-setup.md` defining AI provider candidates, runtime asset categories, capability readiness groups, setup endpoint drafts, download/verification rules, fresh-install expectations, and privacy constraints. Linked it from the Core contracts index.
 - [ ] [EN-A06-01-03] Add Engine setup/download job APIs for first-run local asset installation.
     **BACKLOG** | Engine Agent | 2026-06-03 00:00
     - **NOTE**: Support explicit user-confirmed downloads, progress/logs, retry/resume where practical, checksum validation, disk-space failures, partial download cleanup, and setup-complete status.
-- [ ] [EN-A06-01-04] Extend diagnostics with capability readiness groups.
-    **BACKLOG** | Engine Agent | 2026-06-03 00:00
-    - **CROSS-AGENT-NOTES**: Studio diagnostics should distinguish app/Engine health from capability readiness. Missing local LLM, missing Whisper model, or unconfigured cloud key should be shown as feature setup states, not Engine startup failure.
-    - **NOTE**: Report `media_core`, `url_ingest`, `transcription`, `local_llm`, `cloud_llm`, `rendering`, and `offline_creation` readiness with exact missing assets/configuration.
+- [P] [EN-A06-01-04] Extend diagnostics with capability readiness groups.
+    **IN-PROGRESS** | Engine Agent | 2026-06-09 00:00
+    - **CROSS-AGENT-NOTES**: Studio diagnostics should distinguish app/Engine health from capability readiness. Missing local LLM, missing Whisper model, missing cloud delegation/license, quota exhaustion, or cloud provider offline states should be shown as feature setup states, not Engine startup failure.
+    - **NOTE**: Report `media_core`, `url_ingest`, `transcription`, `ai`, `rendering`, and `offline_creation` readiness with exact missing assets/configuration.
+    - **NOTE**: Added first setup readiness resolver and `/v1/setup/{manifest,status}` endpoints. Engine now reports one `ai` capability with provider candidates in order: Ollama/user local, TV7-managed local model, then TV7 cloud AI via Backend. Cloud AI can make `ai` ready only when a valid delegated Engine token is present, but must not make `offline_creation` ready. Added `POST /v1/ai/cloud-debug` for the Studio -> Engine -> Backend cloud AI debug path. Follow-up: fold all capability groups into `/v1/diagnostics` and add mutating setup/download jobs.
 - [ ] [EN-A06-01-05] Add benchmark harness for probe/transcode/transcription/LLM hot paths.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
 - [ ] [EN-A06-01-06] Add `engine-ffi` crate stub for Flutter/mobile interoperability planning.
@@ -112,3 +116,9 @@ Last updated: 2026-06-03
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
 - [ ] [EN-A06-01-08] Publish a compatibility matrix for supported codecs, formats, AI runtimes, and platform constraints.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
+
+## Cross-Repo Milestone: Unified Engine AI + Cloud Delegation
+- **Active handoff**: `docs/handoffs/active/engine.md`
+- **Engine route**: Own the unified Studio-facing AI boundary: provider dispatch, in-memory cloud delegation token handling, Backend cloud request shaping, AI diagnostics, capability readiness, and transcript intelligence.
+- **Primary roadmap items**: `EN-A05-01-02`, `EN-A05-01-03`, `EN-A06-01-04`, `EN-A04-01-02`.
+- **Boundary**: Engine must not own Backend credentials, billing, quota policy, long-lived user auth storage, or Studio setup UX.

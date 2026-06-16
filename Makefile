@@ -12,6 +12,12 @@ SYNC_BASE ?= origin/main
 SKIP_DEPS ?= 0
 SKIP_IDE ?= 0
 PYTHON ?= python3
+SYNC_GEMINI ?= 1
+SYNC_INTERACTIVE ?= 1
+SYNC_MODE ?=
+HANDOFF_REPO ?=
+HANDOFF_VERBOSE ?= 0
+REPO ?=
 TMP_DIR ?= $(CURDIR)/docs/.tmp
 DEV_STATE_DIR ?= $(TMP_DIR)/dev-stack
 BACKEND_PORT ?= 8000
@@ -62,7 +68,7 @@ CONDUCTOR_GRAPH_BATCH_CODE ?= C01
 CONDUCTOR_GRAPH_DEFAULT_EPIC ?= 01
 CONDUCTOR_GRAPH_HANDOFF ?= 1
 
-.PHONY: status pull-all bootstrap sync update git-dev set-secret update-secrets install-guardrails dev dev-up dev-backend dev-engine dev-site dev-studio dev-status dev-stop dev-logs reviews reviews-json batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status deepseek-followup deepseek-fix conductor-init conductor-plan conductor-graph-plan conductor-graph-plan-apply conductor-profiles conductor-tickets conductor-tickets-apply conductor-tickets-gemini conductor-tickets-gemini-apply conductor-tickets-codex conductor-tickets-codex-apply conductor-expand conductor-expand-apply conductor-expand-label-check conductor-expand-label-check-apply conductor-execute conductor-execute-apply conductor-review conductor-review-apply conductor-tickets-reset conductor-tickets-reset-apply conductor-tickets-reset-scan conductor-tickets-reset-scan-apply conductor-run conductor-run-once conductor-status conductor-ops-status conductor-events conductor-shim-check orchestrator-init orchestrator-plan orchestrator-profiles orchestrator-tickets orchestrator-tickets-apply orchestrator-tickets-gemini orchestrator-tickets-gemini-apply orchestrator-tickets-codex orchestrator-tickets-codex-apply orchestrator-tickets-reset orchestrator-tickets-reset-apply orchestrator-tickets-reset-scan orchestrator-tickets-reset-scan-apply orchestrator-run-once orchestrator-status orchestrator-ops-status orchestrator-events
+.PHONY: status pull-all bootstrap sync update inspect handoff handoff-check precommit-context git-dev set-secret update-secrets install-guardrails dev dev-up dev-backend dev-engine dev-site dev-studio dev-status dev-stop dev-logs reviews reviews-json batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status deepseek-followup deepseek-fix conductor-init conductor-plan conductor-graph-plan conductor-graph-plan-apply conductor-profiles conductor-tickets conductor-tickets-apply conductor-tickets-gemini conductor-tickets-gemini-apply conductor-tickets-codex conductor-tickets-codex-apply conductor-expand conductor-expand-apply conductor-expand-label-check conductor-expand-label-check-apply conductor-execute conductor-execute-apply conductor-review conductor-review-apply conductor-tickets-reset conductor-tickets-reset-apply conductor-tickets-reset-scan conductor-tickets-reset-scan-apply conductor-run conductor-run-once conductor-status conductor-ops-status conductor-events conductor-shim-check orchestrator-init orchestrator-plan orchestrator-profiles orchestrator-tickets orchestrator-tickets-apply orchestrator-tickets-gemini orchestrator-tickets-gemini-apply orchestrator-tickets-codex orchestrator-tickets-codex-apply orchestrator-tickets-reset orchestrator-tickets-reset-apply orchestrator-tickets-reset-scan orchestrator-tickets-reset-scan-apply orchestrator-run-once orchestrator-status orchestrator-ops-status orchestrator-events
 
 status:
 	@bash "$(TOOLING_DIR)/status.sh"
@@ -79,103 +85,25 @@ bootstrap:
 
 sync update:
 	@REPO_ROOT="$(REPO_ROOT)" QUIET=1 bash "$(TOOLING_DIR)/bootstrap-repos.sh"
-	@GREEN="$$(printf '\033[0;32m')"; \
-	RED="$$(printf '\033[0;31m')"; \
-	YELLOW="$$(printf '\033[0;33m')"; \
-	CYAN="$$(printf '\033[0;36m')"; \
-	RESET="$$(printf '\033[0m')"; \
-	status_ok="$${GREEN}[✓]$${RESET}"; \
-	status_err="$${RED}[X]$${RESET}"; \
-	for repo in $(REPOS); do \
-		path="$(REPO_ROOT)/$$repo"; \
-		status="$$status_ok"; note=""; \
-		if [ ! -d "$$path/.git" ]; then \
-			status="$$status_err"; note="missing at $$path"; \
-			echo "$$status $$repo - $$note"; \
-			continue; \
-		fi; \
-		branch="$$(git -C "$$path" rev-parse --abbrev-ref HEAD)"; \
-		git -C "$$path" fetch --quiet --prune >/dev/null 2>&1 || true; \
-		upstream="$$(git -C "$$path" rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null || true)"; \
-		if [ -z "$$upstream" ] && git -C "$$path" ls-remote --exit-code --heads origin "$$branch" >/dev/null 2>&1; then \
-			git -C "$$path" branch --set-upstream-to="origin/$$branch" "$$branch" >/dev/null 2>&1 && upstream="origin/$$branch"; \
-		else \
-			:; \
-		fi; \
-		if [ -z "$$upstream" ]; then \
-			if git -C "$$path" rev-parse --verify --quiet "$(SYNC_BASE)^{commit}" >/dev/null 2>&1; then \
-				rebase_output="$$(git -C "$$path" rebase --autostash "$(SYNC_BASE)" 2>&1)"; \
-				rc=$$?; \
-				if [ $$rc -eq 0 ]; then \
-					changes="$$(git -C "$$path" status --porcelain | wc -l | tr -d ' ')"; \
-					ahead="$$(git -C "$$path" rev-list --count "$(SYNC_BASE)..HEAD" 2>/dev/null || echo 0)"; \
-					if [ "$$changes" -gt 0 ] && [ "$$ahead" -gt 0 ]; then \
-						note="local branch (rebased onto $(SYNC_BASE), $${YELLOW}$$changes pending$${RESET}, $${CYAN}$$ahead ahead$${RESET})"; \
-					elif [ "$$changes" -gt 0 ]; then \
-						note="local branch (rebased onto $(SYNC_BASE), $${YELLOW}$$changes pending$${RESET})"; \
-					elif [ "$$ahead" -gt 0 ]; then \
-						note="local branch (rebased onto $(SYNC_BASE), $${CYAN}$$ahead ahead$${RESET})"; \
-					else \
-						note="local branch (rebased onto $(SYNC_BASE), clean)"; \
-					fi; \
-				else \
-					status="$$status_err"; \
-					conflicts="$$(git -C "$$path" diff --name-only --diff-filter=U | tr '\n' ' ' | sed 's/[[:space:]]$$//')"; \
-					if [ -z "$$conflicts" ]; then \
-						conflicts="see git status"; \
-					else \
-						conflicts="conflicts: $$conflicts"; \
-					fi; \
-					note="$${RED}rebase failed onto $(SYNC_BASE); $$conflicts$${RESET}"; \
-				fi; \
-			else \
-				changes="$$(git -C "$$path" status --porcelain | wc -l | tr -d ' ')"; \
-				if [ "$$changes" = "0" ]; then \
-					note="local branch (no upstream, clean)"; \
-				else \
-					note="local branch (no upstream, $${YELLOW}$$changes pending$${RESET})"; \
-				fi; \
-			fi; \
-		else \
-			pull_output="$$(git -C "$$path" pull --rebase --autostash 2>&1)"; \
-			rc=$$?; \
-			if [ $$rc -eq 0 ]; then \
-				changes="$$(git -C "$$path" status --porcelain | wc -l | tr -d ' ')"; \
-				ahead="$$(git -C "$$path" rev-list --count "@{u}..HEAD" 2>/dev/null || echo 0)"; \
-				if [ "$$changes" -gt 0 ] && [ "$$ahead" -gt 0 ]; then \
-					note="$${YELLOW}$$changes pending$${RESET}, $${CYAN}$$ahead ahead$${RESET}"; \
-				elif [ "$$changes" -gt 0 ]; then \
-					note="$${YELLOW}$$changes pending$${RESET}"; \
-				elif [ "$$ahead" -gt 0 ]; then \
-					note="$${CYAN}$$ahead ahead$${RESET}"; \
-				else \
-					note="clean"; \
-				fi; \
-			else \
-				status="$$status_err"; \
-				conflicts="$$(git -C "$$path" diff --name-only --diff-filter=U | tr '\n' ' ' | sed 's/[[:space:]]$$//')"; \
-				if [ -z "$$conflicts" ]; then \
-					conflicts="see git status"; \
-				else \
-					conflicts="conflicts: $$conflicts"; \
-				fi; \
-				note="$${RED}rebase failed onto $$upstream; $$conflicts$${RESET}"; \
-			fi; \
-		fi; \
-		pr_note="$$(OWNER="$(OWNER)" bash "$(TOOLING_DIR)/pr-info.sh" "$$repo" "$$branch" 2>/dev/null || true)"; \
-		if [ -n "$$note" ] && [ -n "$$pr_note" ]; then \
-			echo "$$status $$repo ($${CYAN}$$branch$${RESET}) - $$note - $$pr_note"; \
-		elif [ -n "$$note" ]; then \
-			echo "$$status $$repo ($${CYAN}$$branch$${RESET}) - $$note"; \
-		elif [ -n "$$pr_note" ]; then \
-			echo "$$status $$repo ($$branch) - $$pr_note"; \
-		else \
-			echo "$$status $$repo ($${CYAN}$$branch$${RESET})"; \
-		fi; \
-	done
+	@REPO_ROOT="$(REPO_ROOT)" OWNER="$(OWNER)" REPOS="$(REPOS)" SYNC_BASE="$(SYNC_BASE)" SYNC_GEMINI="$(SYNC_GEMINI)" SYNC_INTERACTIVE="$(SYNC_INTERACTIVE)" SYNC_MODE="$(SYNC_MODE)" "$(PYTHON)" "$(TOOLING_DIR)/sync.py"
+
+inspect:
+	@REPO_ROOT="$(REPO_ROOT)" REPO="$(REPO)" "$(PYTHON)" "$(TOOLING_DIR)/inspect_repo.py"
+
+handoff:
+	@REPO_ROOT="$(REPO_ROOT)" HANDOFF_REPO="$(HANDOFF_REPO)" HANDOFF_VERBOSE="$(HANDOFF_VERBOSE)" "$(PYTHON)" "$(TOOLING_DIR)/handoff.py"
+
+handoff-check:
+	@REPO_ROOT="$(REPO_ROOT)" HANDOFF_REPO="$(HANDOFF_REPO)" HANDOFF_CHECK_ONLY=1 "$(PYTHON)" "$(TOOLING_DIR)/handoff.py"
+
+precommit-context:
+	@"$(PYTHON)" -m py_compile "$(TOOLING_DIR)/sync.py" "$(TOOLING_DIR)/handoff.py" "$(TOOLING_DIR)/inspect_repo.py"
+	@git diff --check
+	@$(MAKE) handoff-check
 
 git-dev:
-	@bash "$(TOOLING_DIR)/git-dev.sh"
+	@echo "[deprecated] make git-dev now runs make sync SYNC_MODE=operate" >&2
+	@$(MAKE) sync SYNC_MODE=operate
 
 set-secret:
 	@SECRET_NAME=$(SECRET_NAME) SECRET_VALUE=$(SECRET_VALUE) REPOS="$(REPOS)" ALL=$(ALL) ORG=$(ORG) bash "$(CURDIR)/tooling/set-secret.sh"

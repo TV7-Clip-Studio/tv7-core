@@ -1145,6 +1145,7 @@ def execute_repo_action(
                 "REVIEW_AUTO_ROUND=1",
                 "REVIEW_HUMAN_DECISION=1",
                 "REVIEW_AUTOMERGE=0",
+                "REVIEW_POLL_SECONDS=600",
             ],
             cwd=str(core_dir),
             env=os.environ.copy(),
@@ -1176,10 +1177,11 @@ def execute_repo_action(
         return 0
 
     if action["state"] == "clean-needs-agent-work":
-        print(f"Starting work for {state.repo} on {state.focus.item_id}...")
-        rc = subprocess.run(action["command"], shell=True, cwd=str(core_dir)).returncode
+        item_id = state.focus.item_id if state.focus else "the next roadmap item"
+        print(f"{state.repo} is clean and ready for agent work on {item_id}.")
+        print("Start the implementation agent manually, then return to make sync.")
         input("\nPress Enter to return to cockpit...")
-        return REFRESH_COCKPIT if rc == 0 else rc
+        return REFRESH_COCKPIT
 
     if state.queue_status == "passed":
         print("The current worktree already has a passing human validation result.")

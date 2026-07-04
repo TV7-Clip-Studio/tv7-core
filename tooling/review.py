@@ -733,7 +733,7 @@ def main() -> int:
     conductor_repo = Path(os.environ.get("CONDUCTOR_REPO", str(repo_root / "tv7-conductor"))).resolve()
     max_rounds = max(1, min(2, int(os.environ.get("REVIEW_MAX_ROUNDS", "1"))))
     automerge_threshold = max(0, min(100, int(os.environ.get("REVIEW_AUTOMERGE_THRESHOLD", "90"))))
-    poll_seconds = max(1, int(os.environ.get("REVIEW_POLL_SECONDS", "300")))
+    poll_seconds = max(1, int(os.environ.get("REVIEW_POLL_SECONDS", "600")))
     poll_interval = max(1, int(os.environ.get("REVIEW_POLL_INTERVAL", "15")))
 
     cfg = load_repo_config(config_file, repo)

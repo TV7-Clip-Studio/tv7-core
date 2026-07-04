@@ -116,13 +116,27 @@ See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 - `make bootstrap` — clone/fix remotes and ensure sibling repos exist.
 - `make sync` (`make update`) — bootstrap, pull with rebase; outputs per-repo status plus open PR number and URL for the local branch when `gh` is authenticated.
 - `make install-guardrails` — install the local no-push Git hook across TV7 repos. Humans can override with `TV7_ALLOW_PUSH=1 git push`.
+- `make ready REPO=tv7-engine` — validate and summarize one dirty repo before the human commits it; prints changed-file groups, recent commits, and the next command.
 - `make dev` (`make dev-up`) — start backend/Postgres, engine, and site for localhost development.
 - `make dev-status` — check localhost repo/process/health status.
 - `make dev-stop` — stop the background localhost stack.
 - `make dev-logs` — show recent localhost stack logs.
 - `make dev-backend`, `make dev-engine`, `make dev-site`, `make dev-studio` — refresh one service from core, then stream its logs in the current terminal.
+- `make review REPO=tv7-engine` — after a local commit, validate one repo, push/create a ready PR, and collect the DeepSeek review into `docs/code-reviews/<repo>/pr-<number>/`.
 - `make reviews` — collect all open PR review data across TV7 repos into `docs/code-reviews/<repo>/`.
 - `make set-secret` — set a GitHub Actions secret across repos via `tooling/set-secret.sh` (pass `SECRET_NAME`, `SECRET_VALUE`, and `REPOS` or `ALL`; optional `ORG`).
+
+### Architect validation queue
+
+`make sync` owns the resumable human validation/review queue. Select `Process validation/review queue` to process one repo at a time:
+
+```text
+make ready -> human test pass/fail -> confirmed commit -> roadmap branch -> ready PR -> DeepSeek -> resolve/merge/exit
+```
+
+When the validated commit starts on `main`, `make sync` passes its primary roadmap item to `make review`. The generated branch follows `<roadmap-item>-<slice>`, with a numeric suffix only when that name already exists. After DeepSeek responds, Conductor opens the gated resolution flow; it does not merge or apply findings without the operator's choice.
+
+Human test instructions are generated into `docs/handoffs/active/`. Pass/fail state and optional failure notes stay local in `docs/.tmp/sync-review-queue.json`. A result is invalidated when the selected repo's HEAD or worktree content changes. Choosing `Exit and resume later` has no timeout; the next `make sync` resumes the same queue entry.
 
 ## Agent context loading contract
 - **Architect Agent** (workspace root with all repos):

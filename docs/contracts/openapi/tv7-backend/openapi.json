@@ -35,6 +35,24 @@
         "title": "AssetUploadResponse",
         "type": "object"
       },
+      "Body_grant_cloud_ai_credits_admin_cloud_ai_credits_post": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "amount"
+        ],
+        "title": "Body_grant_cloud_ai_credits_admin_cloud_ai_credits_post",
+        "type": "object"
+      },
       "Body_login_submit_admin_login_post": {
         "properties": {
           "password": {
@@ -820,27 +838,34 @@
       "LicenseReadinessResponse": {
         "properties": {
           "account_active": {
+            "description": "Whether the authenticated TV7 account is active.",
             "title": "Account Active",
             "type": "boolean"
           },
           "can_request_engine_cloud_ai_token": {
+            "description": "Whether Studio may request a short-lived delegated Engine token.",
             "title": "Can Request Engine Cloud Ai Token",
             "type": "boolean"
           },
           "cloud_ai_available": {
+            "description": "Whether TV7 cloud AI is currently available to this account.",
             "title": "Cloud Ai Available",
             "type": "boolean"
           },
           "cloud_ai_credits_remaining": {
+            "description": "Perpetual cloud AI credits remaining; purchased credits do not expire.",
+            "minimum": 0.0,
             "title": "Cloud Ai Credits Remaining",
             "type": "integer"
           },
           "engine_cloud_ai_scope": {
             "default": "engine:cloud_ai",
+            "description": "Required scope for delegated Engine cloud AI execution.",
             "title": "Engine Cloud Ai Scope",
             "type": "string"
           },
           "license_status": {
+            "description": "Account-level cloud AI entitlement readiness.",
             "enum": [
               "active",
               "required"
@@ -849,6 +874,7 @@
             "type": "string"
           },
           "reason_code": {
+            "description": "Stable readiness reason for Studio diagnostics and account UX.",
             "enum": [
               "READY",
               "AI_LICENSE_REQUIRED",
@@ -1557,6 +1583,47 @@
           }
         },
         "summary": "View Cloud Ai",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/cloud-ai/credits": {
+      "post": {
+        "operationId": "grant_cloud_ai_credits_admin_cloud_ai_credits_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_grant_cloud_ai_credits_admin_cloud_ai_credits_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Grant Cloud Ai Credits",
         "tags": [
           "admin"
         ]

@@ -3,7 +3,7 @@
 Roadmap Code: ST
 Batch Code: A01
 
-Last updated: 2026-06-10
+Last updated: 2026-06-17
 
 ## Done
 - [X] [ST-A01-01-01] Scaffolded Flutter client foundation with flavor entrypoints (`dev`, `stage`, `prod`).
@@ -15,7 +15,7 @@ Last updated: 2026-06-10
 - [ ] [ST-A01-02-01] Regenerate and adopt OpenAPI client against the current FastAPI contract.
 - [X] [ST-A01-02-06] Harden runtime diagnostics and secret-safe Studio logging.
     **COMPLETED** | Studio Agent | 2026-06-09 00:00
-    - **NOTE**: Added secret-safe Dio logging for generated DTOs, JSON strings, headers, and token responses; Studio now attaches to an already healthy Engine instead of starting a conflicting second process; transcript download accepts legacy `source_url`/`sourceUrl` metadata while rejecting local-only sources with a clearer message; license diagnostics now label backend 404s as endpoint-unavailable compatibility warnings. Hardened Quick Clip preflight so local imports without transcripts or remote caption metadata are blocked with an inline user-facing message, persisted card-level issue, and DiagnosticsLog entry instead of failing silently after Generate Clips. Engine contract gap remains: local imports need a future Engine-owned local transcription job/capability contract. Verified with focused Flutter tests and `make check`.
+    - **NOTE**: Added secret-safe Dio logging for generated DTOs, JSON strings, headers, and token responses; Studio now attaches to an already healthy Engine instead of starting a conflicting second process; transcript download accepts legacy `source_url`/`sourceUrl` metadata while rejecting local-only sources with a clearer message; license diagnostics now label backend 404s as endpoint-unavailable compatibility warnings. Hardened Quick Clip preflight so local imports without transcripts or remote caption metadata are blocked with an inline user-facing message, persisted card-level issue, and DiagnosticsLog entry instead of failing silently after Generate Clips. Follow-up added Engine-owned local transcript generation for local imports. Verified with focused Flutter tests and `make check`.
 - [X] [ST-A01-02-02] Wire clip suggestion/highlight APIs into production auto-clip flows with robust error UX.
     **COMPLETED** | Studio Agent | 2026-05-29 16:15
     - **NOTE**: Fully resolved the backend highlights 404 bad response by transitioning to a 100% local, offline intelligence pipeline. Integrated a custom high-performance VTT subtitle parser, a timeline gap detection algorithm (targeting unclipped content strictly), duration segmenting (Short: 10-15s, Medium: 30-45s, Long: 60-90s Presets) aligned to cues and sentence boundaries, and a rule-based smart social post copywriting generator. Designed a premium glassmorphic Quick Clip Config Bottom Sheet (ChoiceChips, ListTiles) and an M3 status card progress overlay featuring a linear progress bar. Completely integrated and verified with the local Rust Media Engine sidecar. All tests pass green.
@@ -100,15 +100,17 @@ Last updated: 2026-06-10
     - **NOTE**: Added Studio Engine setup client models/calls for `/v1/setup/manifest` and `/v1/setup/status`, Diagnostics setup readiness, explicit-confirmation copy for installable TV7-managed assets, and Quick Clip transcript-blocked messaging that uses setup status while still waiting for Engine `POST /v1/transcripts/generate`.
     - **NOTE**: Contract follow-up replaced Studio-facing `local_llm`/`cloud_llm` readiness with the unified Engine `ai` capability and provider candidates from `docs/core/contracts/tv7-engine/ai-provider-handoff.md`.
     - **NOTE**: Phase 1 follow-up migrated Studio setup parsing and Diagnostics display to unified Engine `ai` readiness and `ai_providers`, while preserving compatibility with older setup payload fields. Diagnostics now surfaces `/v1/setup/manifest` availability separately from `/v1/setup/status`, and cloud AI readiness does not imply `offline_creation` readiness.
+    - **NOTE**: Backend readiness follow-up replaced legacy Diagnostics parsing of `plan`/`expires_at` with `LicenseReadinessResponse`. Diagnostics now shows active/required account state, TV7 cloud AI readiness, formatted perpetual credit balance, and non-expiring credit policy. Full generated Backend client regeneration remains tracked by `ST-A01-02-01`.
 - [ ] [ST-A04-01-06] Add fresh-install offline readiness release verification.
     **BACKLOG** | Studio Agent | 2026-06-03 00:00
     - **CROSS-AGENT-NOTES**: Coordinate with Engine `EN-A06` and Core contract docs. Validate packaged Studio on a clean profile with no developer repos and no Homebrew dependency assumptions.
     - **NOTE**: Verify local media import, probe, transcription when local assets exist, AI transcript analysis when local LLM is configured, render, and local export without internet. URL ingest and social publishing may require internet.
 
 ## Nice To Have
-- [ ] [ST-A01-03-01] Add local transcription path through Engine.
-    **BACKLOG** | Studio Agent | 2026-05-21 00:00
+- [X] [ST-A01-03-01] Add local transcription path through Engine.
+    **COMPLETED** | Studio Agent | 2026-06-17 00:00
     - **NOTE**: Local media compute is mandatory through Engine after sidecar adoption; do not add direct Flutter `whisper.cpp` shell integration.
+    - **NOTE**: Wired Studio to Engine `POST /v1/transcripts/generate` for local imports without sidecar transcripts or remote subtitle metadata. Studio polls the returned `transcript_generate` job, stores/uses the sidecar `.vtt`, refreshes Quick Clip state, and preserves setup-required UX for Engine `TRANSCRIPTION_SETUP_REQUIRED` responses without downloading Whisper/model assets directly.
 - [ ] [ST-A01-03-02] Complete Pro scheduler UX: publish scheduling, polling, and failure visibility.
 - [ ] [ST-A01-03-03] Implement licensing/config enforcement and plan-aware feature gating.
 - [ ] [ST-A01-03-04] Improve packaging/release UX outside first-run Engine setup (desktop artifacts, updater flow, telemetry opt-in).

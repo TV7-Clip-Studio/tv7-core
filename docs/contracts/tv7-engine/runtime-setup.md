@@ -96,7 +96,7 @@ Diagnostics and setup status should converge on these capability names:
 
 ## API Draft
 
-`GET /v1/setup/manifest`, `GET /v1/setup/status`, `POST /v1/ai/cloud-token`, `DELETE /v1/ai/cloud-token`, `POST /v1/ai/cloud-debug`, and `POST /v1/ai/transcript-intelligence` are implemented. Mutating local setup/download endpoints remain contract targets for `EN-A06-01-03`.
+`GET /v1/setup/manifest`, `GET /v1/setup/status`, `POST /v1/transcripts/generate`, `POST /v1/ai/cloud-token`, `DELETE /v1/ai/cloud-token`, `POST /v1/ai/cloud-debug`, and `POST /v1/ai/transcript-intelligence` are implemented. Mutating local setup/download endpoints remain contract targets for `EN-A06-01-03`.
 
 ### `GET /v1/setup/manifest`
 
@@ -253,6 +253,60 @@ Stores or applies the selected AI provider after setup.
 ```
 
 Studio should not collect or forward raw DeepSeek API keys. For `tv7_cloud`, Engine calls Backend and Backend owns provider credentials, authorization, billing, and metering.
+
+### `POST /v1/transcripts/generate`
+
+Starts job-backed local transcript generation for an imported local media file. Studio should call this when a local import has no adjacent or known transcript and Quick Clip needs one.
+
+Engine queues a job only when the `transcription` setup capability is ready. Transcription readiness currently requires an explicit user-configured Whisper-compatible runtime and model through Engine setup state. Engine must not auto-download models from this endpoint.
+
+```json
+{
+  "media_path": "/absolute/path/to/video.mp4",
+  "output_path": "/absolute/path/to/video.vtt",
+  "language": "en"
+}
+```
+
+Accepted response:
+
+```json
+{
+  "job": {
+    "id": "job_42",
+    "kind": "transcript_generate",
+    "status": "queued",
+    "progress": 0.0,
+    "logs": ["queued"],
+    "result": null,
+    "error": null,
+    "cancel_requested": false
+  }
+}
+```
+
+If setup is missing, Engine returns HTTP `409` and does not create a job:
+
+```json
+{
+  "error": "TRANSCRIPTION_SETUP_REQUIRED",
+  "message": "Local transcription requires a configured runtime and model.",
+  "missing": ["transcription_runtime", "transcription_model"],
+  "setup_capability": "transcription"
+}
+```
+
+Successful job result:
+
+```json
+{
+  "transcript_path": "/absolute/path/to/video.vtt",
+  "format": "vtt",
+  "language": "en"
+}
+```
+
+Developer builds use `TV7_ENGINE_WHISPER_BIN` for the Whisper-compatible runtime and `TV7_ENGINE_WHISPER_MODEL` for the model path. Studio should poll `GET /v1/jobs/{id}` until the job reaches `succeeded`, then attach/use `result.transcript_path`.
 
 ### `POST /v1/ai/cloud-token`
 

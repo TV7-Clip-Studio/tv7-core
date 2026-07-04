@@ -9,10 +9,11 @@ Finish the Backend cloud AI control plane for Engine delegation.
 
 ## Current State
 - Branch: `main`
-- Git status: 20 pending
+- Git status: clean
 - Pull request: none
 - Focus: BE-A01-02-01: Finalize and document clip sync contract for Flutter desktop clients. (next, tv7-core/docs/roadmaps/tv7-backend-roadmap.md)
-- Resolved Focus: Working on `Finalize and document clip sync contract for Flutter desktop clients.` (next BE-A01-02-01); 20 pending changes including 6 untracked files
+- Resolved Focus: Slice   : Clean/Idle
+    Roadmap : Finalize and document clip sync contract for Flutter desktop clients. (BE-A01-02-01)
 - Roadmap counts: 12 completed, 5 required open, 9 other open.
 
 ## Roadmap Items
@@ -36,31 +37,14 @@ Detected state:
 - Studio license readiness endpoint exists.
 
 Dirty files:
--  M src/app/admin/routes.py
--  M src/app/api/v1/auth.py
--  M src/app/api/v1/routes.py
--  M src/app/core/config.py
--  M src/app/core/errors.py
--  M src/app/core/jwt.py
--  M src/app/db/models.py
--  M src/app/deps/db.py
--  M src/app/schemas.py
--  M src/app/templates/admin/base.html
--  M src/app/templates/admin/dashboard.html
--  M tests/test_admin_routes_new.py
--  M tests/test_auth_api.py
--  M tests/test_errors.py
-- ?? alembic/versions/4f9d0c6b8a21_add_cloud_ai_credit_metering.py
-- ?? src/app/api/v1/cloud_ai.py
-- ?? src/app/repositories/cloud_ai.py
-- ?? src/app/services/cloud_ai.py
-- ?? src/app/templates/admin/cloud_ai.html
-- ?? tests/test_cloud_ai_api.py
+- None.
 
 Recent commits:
+- b542c13 tv7-backend: backend cloud AI control plane (#63)
 - 4c0b23f Merge pull request #62 from TV7-Clip-Studio/naming-change-1
 - 797141a naming-change-1:   [gemini metrics: model: gemini-2.5-flash, tokens: 9,197, time: 13.3s] Refactor debug and configuration handling
 - 5a0a8a1 changes in naming
+- 25062ea Merge pull request #33 from TV7-Clip-Studio/codex/batch-tv7-fastapi-backend-20260215-211329
 
 ## Tasks
 - Preserve the pending cloud AI implementation; do not duplicate or rebuild it from scratch.
@@ -83,17 +67,36 @@ Recent commits:
 - make test
 - make testcov
 
+## Human Validation
+Queue status: pending
+
+- Where: Studio login/license diagnostics and Backend /admin/cloud-ai
+- Preconditions:
+  1. Start Backend and Postgres.
+  2. Use an active development user.
+- Steps:
+  1. Log in through Studio and confirm /api/v1/auth/license responds without a server error.
+  2. Inspect cloud AI readiness with zero and positive credit balances.
+  3. Request an Engine delegation token and verify normal user tokens cannot call Engine execution.
+  4. Inspect /admin/cloud-ai for balances, request status, latency, and provider errors.
+- Expected:
+  1. No provider secret or prompt body appears in logs or responses.
+  2. License, quota, and inactive-account states are stable and consistent across endpoints.
+  3. Cloud AI metering records success and failure outcomes correctly.
+- Known limitations:
+  - None.
+
 ## Deliverables
 - Backend endpoints and schemas are stable for Studio -> Backend token minting and Engine -> Backend execution.
 - Credit and usage accounting are covered by tests and visible to admins.
 - OpenAPI contract is updated in tv7-core.
 
 ## Completion Notes
-- 2026-06-15: `GET /api/v1/auth/license` is detected as the Studio account/license/cloud-AI readiness endpoint.
-- 2026-06-15: `/api/v1/cloud-ai/engine-token` is detected for Backend-issued Engine delegation.
-- 2026-06-15: `/api/v1/cloud-ai/engine/execute` is detected as the Engine-only cloud AI execution endpoint.
-- 2026-06-15: Cloud AI API tests are detected in `tests/test_cloud_ai_api.py`.
-- 2026-06-15: Cloud AI credit/metering migration is detected.
+- 2026-07-02: `GET /api/v1/auth/license` is detected as the Studio account/license/cloud-AI readiness endpoint.
+- 2026-07-02: `/api/v1/cloud-ai/engine-token` is detected for Backend-issued Engine delegation.
+- 2026-07-02: `/api/v1/cloud-ai/engine/execute` is detected as the Engine-only cloud AI execution endpoint.
+- 2026-07-02: Cloud AI API tests are detected in `tests/test_cloud_ai_api.py`.
+- 2026-07-02: Cloud AI credit/metering migration is detected.
 - Follow-up: Studio should call `/api/v1/auth/license` for readiness and request `/api/v1/cloud-ai/engine-token` only when it needs a delegated token for Engine.
 - Follow-up: Engine remains the only caller of `/api/v1/cloud-ai/engine/execute`.
 

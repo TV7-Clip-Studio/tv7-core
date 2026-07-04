@@ -128,3 +128,8 @@ Status markers in checkbox position:
     - **CROSS-AGENT-NOTES**: Applies to `tv7-core` developer tooling that reports PR state across sibling repos.
     - **CODE-REVIEW-NOTES**: DeepSeek flagged Bash ANSI assignments and newline handling in `tooling/pr-info.sh`, plus an inaccurate roadmap note about `git-dev.sh` array usage.
     - **NOTE**: Added a POSIX-safe Bash re-exec guard to `tooling/pr-info.sh`, replaced Bash `$'...'` ANSI assignments with `printf` assignments, restored newline-terminated PR info output, and corrected the prior roadmap note to state that `git-dev.sh` keeps Bash array usage behind its Bash guard. Validated with `bash -n tooling/git-dev.sh tooling/pr-info.sh`, `sh tooling/pr-info.sh tv7-core main`, a fake-`gh` Python-branch newline smoke test, `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, and `git diff --check`.
+- [X] [CO-M01-04-14] Resolve valid DeepSeek findings for sync and review tooling.
+    **COMPLETED** | Architect Agent | 2026-07-04 00:00
+    - **CROSS-AGENT-NOTES**: Applies to `tv7-core` developer tooling only.
+    - **CODE-REVIEW-NOTES**: Only the contract-shaped review test fixture and bounded untracked-file fingerprinting findings were classified as valid.
+    - **NOTE**: Added bounded/binary-safe untracked file fingerprinting in `tooling/sync.py` and replaced fragile `object()` test placeholders with contract-shaped fixtures in `tooling/tests/test_review.py`. Validated with `PYTHONPATH=tooling python3 -m unittest tooling/tests/test_review.py`, `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, and `python3 -m py_compile tooling/sync.py tooling/review.py tooling/tests/test_review.py`.

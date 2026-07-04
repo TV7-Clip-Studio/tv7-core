@@ -13,6 +13,8 @@ import subprocess
 import sys
 from typing import Any
 
+from test_plans import build_test_plan, markdown_test_plan
+
 
 HANDOFFS: dict[str, dict[str, Any]] = {
     "tv7-backend": {
@@ -146,6 +148,28 @@ class SyncRow:
     dirty_file_count: int = 0
     dirty_status_hash: str = ""
     sync_generated_at: str = ""
+    test_plan: dict[str, Any] | None = None
+    queue_status: str = ""
+
+
+def format_resolved_focus(value: Any) -> str:
+    if not isinstance(value, dict):
+        return str(value or "")
+    labels = (
+        ("slice", "Slice"),
+        ("next_roadmap", "Roadmap"),
+        ("pending_changes", "Changes"),
+        ("signals", "Signals"),
+        ("next_action", "Next"),
+    )
+    lines = []
+    for key, label in labels:
+        item = value.get(key)
+        if isinstance(item, dict):
+            item = ": ".join(str(item.get(part, "")).strip() for part in ("id", "title") if item.get(part))
+        if item:
+            lines.append(f"{label}: {item}")
+    return "\n".join(lines)
 
 
 def run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -176,12 +200,14 @@ def load_sync_rows(core_dir: Path) -> dict[str, SyncRow]:
             open_required_count=int(item.get("open_required_count", 0) or 0),
             open_other_count=int(item.get("open_other_count", 0) or 0),
             completed_count=int(item.get("completed_count", 0) or 0),
-            resolved_focus=str(item.get("resolved_focus", "")),
+            resolved_focus=format_resolved_focus(item.get("resolved_focus", "")),
             signals=item.get("signals") if isinstance(item.get("signals"), dict) else None,
             head_sha=str(item.get("head_sha", "")),
             dirty_file_count=int(item.get("dirty_file_count", 0) or 0),
             dirty_status_hash=str(item.get("dirty_status_hash", "")),
             sync_generated_at=str(item.get("sync_generated_at", "")),
+            test_plan=item.get("test_plan") if isinstance(item.get("test_plan"), dict) else None,
+            queue_status=str(item.get("queue_status", "")),
         )
     return rows
 
@@ -347,6 +373,8 @@ def render_handoff(repo: str, row: SyncRow, config: dict[str, Any]) -> str:
         "as your operating contract. Do not push. Implement only the assigned roadmap scope, "
         "keep contracts updated, and run the listed validation commands."
     )
+    slice_name = str((row.test_plan or {}).get("title") or row.resolved_focus or config["mission"])
+    test_plan = row.test_plan or build_test_plan(repo, slice_name, row.focus)
     return f"""# {agent} Handoff
 
 Milestone: Unified Engine AI + Cloud Delegation
@@ -388,6 +416,11 @@ Recent commits:
 
 ## Validation
 {bullet_list(config["validation"])}
+
+## Human Validation
+Queue status: {row.queue_status or "pending"}
+
+{markdown_test_plan(test_plan)}
 
 ## Deliverables
 {bullet_list(config["deliverables"])}

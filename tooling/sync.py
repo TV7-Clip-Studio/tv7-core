@@ -24,6 +24,8 @@ YELLOW = "\033[0;33m"
 CYAN = "\033[0;36m"
 RESET = "\033[0m"
 REFRESH_COCKPIT = 20
+UNTRACKED_FINGERPRINT_MAX_BYTES = 1024 * 1024
+UNTRACKED_FINGERPRINT_SNIFF_BYTES = 1024
 
 
 def init_colors() -> None:
@@ -406,12 +408,19 @@ def worktree_fingerprint(state: RepoState) -> str:
     for line in state.dirty_files:
         if not line.strip().startswith("??"):
             continue
-        path = state.path / clean_status_path(line)
+        clean_path = clean_status_path(line)
+        path = state.path / clean_path
         if path.is_file():
             try:
+                size = path.stat().st_size
+                with path.open("rb") as handle:
+                    chunk = handle.read(UNTRACKED_FINGERPRINT_SNIFF_BYTES)
+                if size > UNTRACKED_FINGERPRINT_MAX_BYTES or b"\x00" in chunk:
+                    payload.append(f"{clean_path}:{size}:{hashlib.sha256(chunk).hexdigest()}")
+                    continue
                 payload.append(path.read_text(encoding="utf-8", errors="ignore"))
             except OSError:
-                payload.append(str(path.stat().st_size))
+                payload.append(clean_path)
     return hashlib.sha256("\n".join(payload).encode("utf-8")).hexdigest()
 
 

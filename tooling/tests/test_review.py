@@ -5,9 +5,11 @@ from unittest.mock import patch
 from datetime import datetime, timezone
 from contextlib import redirect_stdout
 from io import StringIO
+from pathlib import Path
 
 from review import (
     REVIEW_DECISION_ANOTHER_ROUND,
+    RepoConfig,
     ask_after_review_round,
     confidence_value,
     review_is_approved,
@@ -66,8 +68,13 @@ class ReviewBranchNameTest(unittest.TestCase):
         with redirect_stdout(StringIO()):
             decision = ask_after_review_round(
                 "TV7-Clip-Studio",
-                object(),
-                object(),
+                Path("/tmp/tv7-studio"),
+                RepoConfig(
+                    repo="tv7-studio",
+                    base="main",
+                    check_command="",
+                    docs_only_allowed=False,
+                ),
                 "tv7-studio",
                 26,
                 "feature",

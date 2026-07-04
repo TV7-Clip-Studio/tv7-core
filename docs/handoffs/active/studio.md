@@ -8,12 +8,16 @@ Generated from: `make handoff`
 Finish user-facing AI setup, diagnostics, and Engine-only AI calls.
 
 ## Current State
-- Branch: `clip-editor-flow-1`
-- Git status: local branch (rebased onto origin/main, 24 pending)
+- Branch: `main`
+- Git status: clean
 - Pull request: none
 - Focus: ST-A01-02-01: Regenerate and adopt OpenAPI client against the current FastAPI contract. (next, tv7-core/docs/roadmaps/tv7-studio-roadmap.md)
-- Resolved Focus: Working on `Regenerate and adopt OpenAPI client against the current FastAPI contract.` (next ST-A01-02-01); 24 pending changes including 3 untracked files
-- Roadmap counts: 20 completed, 2 required open, 9 other open.
+- Resolved Focus: Slice: Regenerate and adopt OpenAPI client against the current FastAPI contract.
+Roadmap: ST-A01-02-01: Regenerate and adopt OpenAPI client against the current FastAPI contract.
+Changes: No pending changes (repository is clean).
+Signals: Quick Clip flow and diagnostics integration already exist; preserve and validate them.
+Next: Preserve the existing Quick Clip flow while regenerating the OpenAPI client and adapting it to match the FastAPI contract.
+- Roadmap counts: 21 completed, 2 required open, 8 other open.
 
 ## Roadmap Items
 - ST-A04-01-02
@@ -33,35 +37,14 @@ Detected state:
 - No semantic detector output for this repo.
 
 Dirty files:
--  M AGENTS.md
--  M README.md
--  M forgotten_client/lib/app.dart
--  M forgotten_client/lib/bootstrap.dart
--  M forgotten_client/lib/data/api/api_client.dart
--  M forgotten_client/lib/data/local/engine_client.dart
--  M forgotten_client/lib/data/local/engine_job_poller.dart
--  M forgotten_client/lib/data/local/engine_process_manager.dart
--  M forgotten_client/lib/data/local/local_video_repository.dart
--  M forgotten_client/lib/data/local/media_service.dart
--  M forgotten_client/lib/data/local/studio_diagnostics_service.dart
--  M forgotten_client/lib/features/dashboard/dashboard_page.dart
--  M forgotten_client/lib/features/diagnostics/diagnostics_page.dart
--  M forgotten_client/lib/features/ingest/ingest_page.dart
--  M forgotten_client/test/data/api/api_client_test.dart
--  M forgotten_client/test/data/local/engine_client_test.dart
--  M forgotten_client/test/data/local/engine_job_poller_test.dart
--  M forgotten_client/test/data/local/engine_process_manager_test.dart
--  M forgotten_client/test/data/local/local_video_repository_test.dart
--  M forgotten_client/test/data/local/media_service_test.dart
--  M forgotten_client/test/data/local/studio_diagnostics_service_test.dart
-- ?? forgotten_client/lib/data/api/safe_log_interceptor.dart
-- ?? forgotten_client/lib/features/dashboard/quick_clip_preflight.dart
-- ?? forgotten_client/test/features/dashboard/
+- None.
 
 Recent commits:
+- a07e47c tv7-studio: studio Quick Clip and diagnostics integration (#26)
+- f8a4717 Merge pull request #25 from TV7-Clip-Studio/clip-editor-flow-1
+- 2917857 chore: resolve DeepSeek review findings
+- de64024 tv7-studio: studio Quick Clip and diagnostics integration
 - 674793f Merge pull request #24 from TV7-Clip-Studio/clip-editor-update
-- 4d627d3 code review changes
-- 3622de9 code review changes III
 
 ## Tasks
 - Use normal Backend auth/session flow to request an Engine cloud AI delegation token.
@@ -80,6 +63,25 @@ Recent commits:
 - make analyze
 - make test
 - make check
+
+## Human Validation
+Queue status: pending
+
+- Where: Studio > Videos > Quick Clip and Studio > Diagnostics
+- Preconditions:
+  1. Start Backend, Engine, and Studio from tv7-core.
+  2. Use a local imported video without a transcript.
+- Steps:
+  1. Open Quick Clip for the local video.
+  2. Verify the setup-required message and its Diagnostics/setup action.
+  3. With Engine transcription configured, start generation and observe job progress.
+  4. Confirm the generated transcript is attached and Quick Clip becomes available.
+- Expected:
+  1. Studio never runs transcription tools directly.
+  2. Setup-required, progress, success, and failure states are actionable and do not crash the app.
+  3. Diagnostics agrees with the Quick Clip readiness state.
+- Known limitations:
+  1. Without configured Whisper assets, only the setup-required path can pass.
 
 ## Deliverables
 - Studio has one AI feature integration surface: Engine.

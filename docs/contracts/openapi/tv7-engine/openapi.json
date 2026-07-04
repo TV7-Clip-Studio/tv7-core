@@ -320,6 +320,50 @@
         }
       }
     },
+    "/v1/transcripts/generate": {
+      "post": {
+        "summary": "Start a job-backed local transcript generation",
+        "operationId": "startTranscriptGenerate",
+        "description": "Starts local Whisper transcript generation for an imported local media file. Engine queues a job only when local transcription setup is ready. Engine never auto-downloads transcription runtimes or models from this endpoint; missing setup returns TRANSCRIPTION_SETUP_REQUIRED.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptGenerateRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "media_path": "/absolute/path/to/video.mp4",
+                    "output_path": "/absolute/path/to/video.vtt",
+                    "language": "en"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Transcript generation job accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/TranscriptionSetupRequired"
+          }
+        }
+      }
+    },
     "/v1/jobs/{id}": {
       "get": {
         "summary": "Fetch local Engine job state",
@@ -589,6 +633,16 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "TranscriptionSetupRequired": {
+        "description": "Local transcription runtime/model setup is required before transcript generation can start",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SetupRequiredResponse"
             }
           }
         }
@@ -1328,6 +1382,49 @@
           }
         }
       },
+      "TranscriptGenerateRequest": {
+        "type": "object",
+        "required": [
+          "media_path",
+          "output_path"
+        ],
+        "properties": {
+          "media_path": {
+            "type": "string",
+            "description": "Absolute local media path to transcribe."
+          },
+          "output_path": {
+            "type": "string",
+            "description": "Absolute local .vtt output path requested by Studio. The parent directory must exist before calling Engine."
+          },
+          "language": {
+            "type": "string",
+            "default": "en"
+          }
+        }
+      },
+      "TranscriptGenerateResult": {
+        "type": "object",
+        "required": [
+          "transcript_path",
+          "format",
+          "language"
+        ],
+        "properties": {
+          "transcript_path": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "vtt"
+            ]
+          },
+          "language": {
+            "type": "string"
+          }
+        }
+      },
       "JobCreateResponse": {
         "type": "object",
         "required": [
@@ -1375,7 +1472,8 @@
             "type": "string",
             "enum": [
               "url_ingest",
-              "transcript_download"
+              "transcript_download",
+              "transcript_generate"
             ]
           },
           "status": {
@@ -1408,6 +1506,9 @@
                 "$ref": "#/components/schemas/TranscriptDownloadResult"
               },
               {
+                "$ref": "#/components/schemas/TranscriptGenerateResult"
+              },
+              {
                 "type": "null"
               }
             ]
@@ -1435,6 +1536,38 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "SetupRequiredResponse": {
+        "type": "object",
+        "required": [
+          "error",
+          "message",
+          "missing",
+          "setup_capability"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "TRANSCRIPTION_SETUP_REQUIRED"
+          },
+          "message": {
+            "type": "string"
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "transcription_runtime",
+                "transcription_model"
+              ]
+            }
+          },
+          "setup_capability": {
+            "type": "string",
+            "const": "transcription"
           }
         }
       },

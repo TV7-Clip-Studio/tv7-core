@@ -71,9 +71,10 @@ Last updated: 2026-06-10
     - **NOTE**: Added a hard in-memory job cap in Engine service so terminal TTL cleanup is not the only protection against sustained job growth. Full child-process termination for in-flight `yt-dlp`/`ffmpeg` remains pending in EN-A04.
 
 ## Epic EN-A05: Local AI, Transcription, And Clip Intelligence
-- [ ] [EN-A05-01-01] Add local transcription backend abstraction and model configuration.
-    **BACKLOG** | Engine Agent | 2026-05-21 00:00
+- [P] [EN-A05-01-01] Add local transcription backend abstraction and model configuration.
+    **IN-PROGRESS** | Engine Agent | 2026-06-17 00:00
     - **NOTE**: Keep cloud/business policy out of Engine; Engine executes configured local compute and reports exact model/runtime readiness to Studio.
+    - **NOTE**: Added minimal job-backed `POST /v1/transcripts/generate` for local imports. The endpoint starts a `transcript_generate` job only when explicit local transcription setup is ready; otherwise it returns `TRANSCRIPTION_SETUP_REQUIRED` with missing `transcription_runtime`/`transcription_model` and performs no download.
 - [ ] [EN-A05-01-02] Add AI provider configuration and runtime dispatch.
     **BACKLOG** | Engine Agent | 2026-06-03 00:00
     - **CROSS-AGENT-NOTES**: Studio should call Engine for AI work regardless of local/cloud provider. Engine owns provider selection at execution time, local model execution, prompt/context policy, and cloud request shaping. Backend owns TV7 cloud AI credentials, authorization, billing, and metering.

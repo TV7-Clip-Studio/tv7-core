@@ -28,7 +28,7 @@ Last updated: 2026-06-10
 - [X] [BE-A01-02-07] Add cloud AI usage metering and admin visibility.
     **COMPLETED** | Backend Agent | 2026-06-10 00:00
     - **CROSS-AGENT-NOTES**: Meter TV7 cloud AI usage per user/request and expose operator diagnostics for perpetual purchased credits, remaining balance, cost, provider latency, and provider failure analysis. Admin/test users may receive a very large initial credit grant for development. Keep request bodies and secrets out of logs unless an explicit redacted debug artifact is designed.
-    - **NOTE**: Added perpetual credit ledger and request metering tables, large testing admin grant support, `/admin/cloud-ai` balance/request visibility, and regenerated the backend OpenAPI contract.
+    - **NOTE**: Added perpetual credit ledger and request metering tables, large testing admin grant support, an admin-only per-user credit grant workflow, `/admin/cloud-ai` balance/request/latency visibility, and regenerated the backend OpenAPI contract.
 
 ## Nice To Have
 - [ ] [BE-A01-03-01] Add migration cleanup for legacy `local_path` artifacts where no longer relevant.

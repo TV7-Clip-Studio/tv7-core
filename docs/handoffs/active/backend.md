@@ -92,11 +92,11 @@ Queue status: pending
 - OpenAPI contract is updated in tv7-core.
 
 ## Completion Notes
-- 2026-07-02: `GET /api/v1/auth/license` is detected as the Studio account/license/cloud-AI readiness endpoint.
-- 2026-07-02: `/api/v1/cloud-ai/engine-token` is detected for Backend-issued Engine delegation.
-- 2026-07-02: `/api/v1/cloud-ai/engine/execute` is detected as the Engine-only cloud AI execution endpoint.
-- 2026-07-02: Cloud AI API tests are detected in `tests/test_cloud_ai_api.py`.
-- 2026-07-02: Cloud AI credit/metering migration is detected.
+- 2026-07-04: `GET /api/v1/auth/license` is detected as the Studio account/license/cloud-AI readiness endpoint.
+- 2026-07-04: `/api/v1/cloud-ai/engine-token` is detected for Backend-issued Engine delegation.
+- 2026-07-04: `/api/v1/cloud-ai/engine/execute` is detected as the Engine-only cloud AI execution endpoint.
+- 2026-07-04: Cloud AI API tests are detected in `tests/test_cloud_ai_api.py`.
+- 2026-07-04: Cloud AI credit/metering migration is detected.
 - Follow-up: Studio should call `/api/v1/auth/license` for readiness and request `/api/v1/cloud-ai/engine-token` only when it needs a delegated token for Engine.
 - Follow-up: Engine remains the only caller of `/api/v1/cloud-ai/engine/execute`.
 

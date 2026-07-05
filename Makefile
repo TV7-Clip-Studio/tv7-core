@@ -79,7 +79,7 @@ CONDUCTOR_GRAPH_BATCH_CODE ?= C01
 CONDUCTOR_GRAPH_DEFAULT_EPIC ?= 01
 CONDUCTOR_GRAPH_HANDOFF ?= 1
 
-.PHONY: status pull-all bootstrap sync update inspect handoff handoff-check precommit-context git-dev ready review set-secret update-secrets install-guardrails dev dev-up dev-backend dev-engine dev-site dev-studio dev-status dev-stop dev-logs reviews reviews-json batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status deepseek-followup deepseek-fix conductor-init conductor-plan conductor-graph-plan conductor-graph-plan-apply conductor-profiles conductor-tickets conductor-tickets-apply conductor-tickets-gemini conductor-tickets-gemini-apply conductor-tickets-codex conductor-tickets-codex-apply conductor-expand conductor-expand-apply conductor-expand-label-check conductor-expand-label-check-apply conductor-execute conductor-execute-apply conductor-review conductor-review-apply conductor-tickets-reset conductor-tickets-reset-apply conductor-tickets-reset-scan conductor-tickets-reset-scan-apply conductor-run conductor-run-once conductor-status conductor-ops-status conductor-events conductor-shim-check orchestrator-init orchestrator-plan orchestrator-profiles orchestrator-tickets orchestrator-tickets-apply orchestrator-tickets-gemini orchestrator-tickets-gemini-apply orchestrator-tickets-codex orchestrator-tickets-codex-apply orchestrator-tickets-reset orchestrator-tickets-reset-apply orchestrator-tickets-reset-scan orchestrator-tickets-reset-scan-apply orchestrator-run-once orchestrator-status orchestrator-ops-status orchestrator-events
+.PHONY: status pull-all bootstrap sync update cockpit cockpit-deps inspect handoff handoff-check precommit-context git-dev ready review set-secret update-secrets install-guardrails dev dev-up dev-core dev-backend dev-engine dev-site dev-studio dev-status dev-stop dev-logs reviews reviews-json batch-pr batch-pr-dry-run batch-pr-report batch-pr-open repo-status deepseek-followup deepseek-fix conductor-init conductor-plan conductor-graph-plan conductor-graph-plan-apply conductor-profiles conductor-tickets conductor-tickets-apply conductor-tickets-gemini conductor-tickets-gemini-apply conductor-tickets-codex conductor-tickets-codex-apply conductor-expand conductor-expand-apply conductor-expand-label-check conductor-expand-label-check-apply conductor-execute conductor-execute-apply conductor-review conductor-review-apply conductor-tickets-reset conductor-tickets-reset-apply conductor-tickets-reset-scan conductor-tickets-reset-scan-apply conductor-run conductor-run-once conductor-status conductor-ops-status conductor-events conductor-shim-check orchestrator-init orchestrator-plan orchestrator-profiles orchestrator-tickets orchestrator-tickets-apply orchestrator-tickets-gemini orchestrator-tickets-gemini-apply orchestrator-tickets-codex orchestrator-tickets-codex-apply orchestrator-tickets-reset orchestrator-tickets-reset-apply orchestrator-tickets-reset-scan orchestrator-tickets-reset-scan-apply orchestrator-run-once orchestrator-status orchestrator-ops-status orchestrator-events
 
 status:
 	@bash "$(TOOLING_DIR)/status.sh"
@@ -98,6 +98,17 @@ sync update:
 	@REPO_ROOT="$(REPO_ROOT)" QUIET=1 bash "$(TOOLING_DIR)/bootstrap-repos.sh"
 	@REPO_ROOT="$(REPO_ROOT)" OWNER="$(OWNER)" REPOS="$(REPOS)" SYNC_BASE="$(SYNC_BASE)" SYNC_GEMINI="$(SYNC_GEMINI)" SYNC_INTERACTIVE="$(SYNC_INTERACTIVE)" SYNC_MODE="$(SYNC_MODE)" "$(PYTHON)" "$(TOOLING_DIR)/sync.py"
 
+cockpit-deps:
+	@if [ ! -x "$(CURDIR)/.venv-cockpit/bin/uvicorn" ]; then \
+		"$(PYTHON)" -m venv "$(CURDIR)/.venv-cockpit"; \
+		"$(CURDIR)/.venv-cockpit/bin/pip" install -q -r "$(TOOLING_DIR)/cockpit-requirements.txt"; \
+	fi
+	@if [ ! -d "$(TOOLING_DIR)/cockpit-ui/node_modules" ]; then npm --prefix "$(TOOLING_DIR)/cockpit-ui" install; fi
+	@npm --prefix "$(TOOLING_DIR)/cockpit-ui" run build
+
+cockpit: cockpit-deps
+	@REPO_ROOT="$(REPO_ROOT)" "$(CURDIR)/.venv-cockpit/bin/uvicorn" tooling.cockpit_api:app --host 127.0.0.1 --port "$${COCKPIT_PORT:-7979}"
+
 inspect:
 	@REPO_ROOT="$(REPO_ROOT)" REPO="$(REPO)" "$(PYTHON)" "$(TOOLING_DIR)/inspect_repo.py"
 
@@ -108,7 +119,7 @@ handoff-check:
 	@REPO_ROOT="$(REPO_ROOT)" HANDOFF_REPO="$(HANDOFF_REPO)" HANDOFF_CHECK_ONLY=1 "$(PYTHON)" "$(TOOLING_DIR)/handoff.py"
 
 precommit-context:
-	@"$(PYTHON)" -m py_compile "$(TOOLING_DIR)/sync.py" "$(TOOLING_DIR)/handoff.py" "$(TOOLING_DIR)/inspect_repo.py" "$(TOOLING_DIR)/ready.py" "$(TOOLING_DIR)/review.py" "$(TOOLING_DIR)/test_plans.py"
+	@"$(PYTHON)" -m py_compile "$(TOOLING_DIR)/sync.py" "$(TOOLING_DIR)/handoff.py" "$(TOOLING_DIR)/inspect_repo.py" "$(TOOLING_DIR)/ready.py" "$(TOOLING_DIR)/review.py" "$(TOOLING_DIR)/test_plans.py" "$(TOOLING_DIR)/deepseek_review_context.py" "$(TOOLING_DIR)/deepseek_review_normalize.py" "$(TOOLING_DIR)/ai_agent.py" "$(TOOLING_DIR)/cockpit_api.py" "$(TOOLING_DIR)/cockpit_commit.py" "$(TOOLING_DIR)/cockpit_common.py" "$(TOOLING_DIR)/cockpit_jobs.py"
 	@PYTHONPATH="$(TOOLING_DIR):$${PYTHONPATH:-}" "$(PYTHON)" -m unittest discover -s "$(TOOLING_DIR)/tests" -p "test_*.py"
 	@git diff --check
 	@$(MAKE) handoff-check
@@ -161,6 +172,8 @@ install-guardrails:
 
 dev dev-up:
 	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" up
+
+dev-core: cockpit
 
 dev-backend:
 	@REPO_ROOT="$(REPO_ROOT)" DEV_STATE_DIR="$(DEV_STATE_DIR)" BACKEND_PORT="$(BACKEND_PORT)" ENGINE_PORT="$(ENGINE_PORT)" SITE_PORT="$(SITE_PORT)" bash "$(TOOLING_DIR)/dev-stack.sh" backend

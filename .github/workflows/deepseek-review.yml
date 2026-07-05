@@ -84,6 +84,7 @@ jobs:
           sparse-checkout: |
             docs
             tooling/deepseek_review_context.py
+            tooling/deepseek_review_normalize.py
           fetch-depth: 1
           token: ${{ steps.app-token.outputs.token }}
 
@@ -145,7 +146,7 @@ jobs:
         run: |
           echo "Skipping DeepSeek review: ${{ steps.guard.outputs.reason }}"
 
-      - name: Collect PR diff (unified=0, non-deleted files only)
+      - name: Collect PR diff (contextual, non-deleted files only)
         if: steps.guard.outputs.should-run == 'true'
         id: diff
         shell: bash
@@ -155,7 +156,7 @@ jobs:
         run: |
           set -eo pipefail
           # Exclude deleted-file hunks from model input to reduce payload size.
-          git diff --unified=0 --no-color --diff-filter=ACMRTUXB "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_diff.txt
+          git diff --unified=3 --no-color --diff-filter=ACMRTUXB "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_diff.txt
           git diff --name-only --diff-filter=ACMRTUXB "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_changed_files.txt
           bytes=$(wc -c < /tmp/pr_diff.txt | tr -d ' ')
           echo "diff-bytes=$bytes" >> "$GITHUB_OUTPUT"
@@ -402,6 +403,7 @@ jobs:
           CORE_DOC_LIST: ${{ inputs.core_doc_list }}
           DOC_FILE_CAP_BYTES: 18000
           DOCS_TOTAL_CAP_BYTES: 60000
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -eo pipefail
           if [ ! -s "$DIFF_PATH" ]; then
@@ -617,6 +619,9 @@ jobs:
               "3. NIT vs CRITICAL THRESHOLD: '### Findings' must be reserved strictly for critical issues (logic bugs, security vulnerabilities, API contract violations, and immediate runtime failures). Stylistic preferences, optional enhancements, or minor nits must NEVER be placed in Findings or affect the final verdict; place them solely in '### Recommendations'.",
               "4. FOLLOW-UP VERIFICATION: Prior checklist items are not automatically current findings. Before repeating any prior item, compare it against the current diff, incremental diff, and current source context. If the cited code now contains the requested fix, mark the prior item resolved under Follow-up and do not repeat it under Findings.",
               "5. PRIOR TEXT IS NOT EVIDENCE: Do not quote, paraphrase, or promote old Recommendations/Risks/final verdicts as current Findings. Findings require current code evidence from the supplied diff or source context.",
+              "6. SELF-CONTRADICTION BAN: Never report a finding when your own evidence shows the import exists, arguments match, a guard makes the access safe, the code path is unreachable, or the claimed defect is otherwise false. Record it only as a resolved verification check.",
+              "7. CURRENT-HEAD EVIDENCE: Every valid finding must include severity, exact current-head path and line, an observable failure mode, and why existing guards/tests do not handle it. If you cannot prove those elements, put the concern under Unverifiable Concerns or Recommendations.",
+              "8. CONFIDENCE SEMANTICS: Confidence measures certainty in your review verdict, not code quality. Do not reject or lower merge eligibility merely because confidence is below 90.",
               "",
               "## CONTEXT REQUEST CAPABILITY",
               "If you see an unfamiliar symbol, custom class definition, or need to inspect another local codebase file to verify if a finding is a false positive, you can request its contents from the environment.",
@@ -634,22 +639,25 @@ jobs:
               system_prompt_parts.append("  ### Follow-up on Previous Review")
 
           system_prompt_parts.extend([
-              "  ### Findings",
+              "  ### Valid Findings",
+              "  ### Unverifiable Concerns",
               "  ### Risks",
               "  ### Recommendations",
-              "- Under ### Findings, explain each issue with: problem, impact, and evidence (`path[:line]`).",
-              "- If no meaningful findings exist, say so explicitly under ### Findings.",
+              "- Under ### Valid Findings, explain each issue with: severity, problem, observable impact, evidence (`path:line`), and why current guards/tests do not prevent it.",
+              "- If no meaningful findings exist, say so explicitly under ### Valid Findings.",
+              "- Unverifiable concerns and recommendations must not affect the verdict.",
           ])
 
           if prior_checklist and "No prior Findings checklist items" not in prior_checklist:
-              system_prompt_parts.append("- Under ### Follow-up on Previous Review, explicitly list each checklist item and state whether it is resolved, still_failing, or unverifiable_from_current_context. Only move a checklist item into ### Findings when current evidence proves it remains valid.")
+              system_prompt_parts.append("- Under ### Follow-up on Previous Review, explicitly list each checklist item and state whether it is resolved, still_failing, or unverifiable_from_current_context. Only move a checklist item into ### Valid Findings when current evidence proves it remains valid.")
 
           system_prompt_parts.extend([
               "At the end of your review, add one final line in this format:",
               "## FINAL_VERDICT: ✅ APPROVED (NN%) or ## FINAL_VERDICT: ❌ REJECTED (NN%)",
+              "Then add exactly one line: MERGE_RECOMMENDATION: MERGE, MERGE_WITH_WARNING, or DO_NOT_MERGE.",
               "Use APPROVED when remaining issues are minor or non-blocking. ",
               "Use REJECTED when you see blocking or high-risk issues that should be addressed before merge. ",
-              "Choose NN as an integer from 0 to 100 reflecting your overall confidence/quality score.",
+              "Choose NN as an integer from 0 to 100 reflecting confidence in the verdict only.",
           ])
 
           system_prompt = "\n".join(system_prompt_parts)
@@ -660,14 +668,15 @@ jobs:
 
           user_content = [
               f"Repository summary:\n{summary_block}",
-              f"Review this PR diff (unified=0):\n\n{diff}"
+              f"Current PR HEAD SHA: {os.environ.get('HEAD_SHA', '')}\nReview only this current HEAD.",
+              f"Review this PR diff (unified=3):\n\n{diff}"
           ]
           if incremental_diff:
               user_content.append(f"## Incremental Changes (Since Last Reviewed Commit):\n\n{incremental_diff}")
 
           messages.append({"role": "user", "content": "\n\n".join(user_content)})
 
-          max_turns = 2
+          max_turns = 3
           turn = 0
           final_content = ""
 
@@ -763,90 +772,29 @@ jobs:
         env:
           CONTENT: ${{ steps.deepseek.outputs.content }}
           CHANGED_FILES_PATH: ${{ steps.diff.outputs.changed-files-path }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -eo pipefail
           content_file=/tmp/deepseek_content.txt
           output_json=/tmp/deepseek_normalized_review.json
           printf "%s" "$CONTENT" > "$content_file"
           
-          python - <<'PY'
-          import json
-          import re
-          import sys
-          from pathlib import Path
-
-          RE_VERDICT = re.compile(r"FINAL_VERDICT:\s*(?:[✅❌]\s*)?(APPROVED|REJECTED)", re.IGNORECASE)
-          RE_CONFIDENCE = re.compile(r"\((\d{1,3})%\)")
-
-          def _extract_verdict(raw: str) -> tuple[str, str, str]:
-              event = "COMMENT"
-              verdict_label = "COMMENT"
-              confidence = "unknown"
-              for line in str(raw or "").splitlines():
-                  if "final_verdict" not in line.lower():
-                      continue
-                  match = RE_VERDICT.search(line)
-                  if not match:
-                      continue
-                  verdict = match.group(1).strip().upper()
-                  verdict_label = verdict
-                  event = "APPROVE" if verdict == "APPROVED" else "REQUEST_CHANGES"
-                  conf = RE_CONFIDENCE.search(line)
-                  if conf:
-                      confidence = f"{min(100, max(0, int(conf.group(1))))}%"
-                  break
-              return event, verdict_label, confidence
-
-          def _normalize_model_body(raw: str) -> str:
-              text = str(raw or "").strip()
-              if not text:
-                  return "No model narrative was returned."
-              lines = [line.rstrip() for line in text.splitlines()]
-              if lines and lines[0].strip().lower() in {"deepseek review", "### deepseek review"}:
-                  lines = lines[1:]
-              return "\n".join(lines).strip() or "No model narrative was returned."
-
-          def normalize_review_comment(content: str) -> dict[str, object]:
-              event, verdict_label, confidence = _extract_verdict(content)
-              narrative = _normalize_model_body(content)
-
-              lines = [
-                  "### DeepSeek review",
-                  f"- Confidence: {confidence}",
-                  f"- Final verdict: {verdict_label}",
-                  "",
-                  narrative,
-              ]
-              if event == "COMMENT":
-                  lines.extend([
-                      "",
-                      "_Parser note: verdict not detected; posted as informational comment._",
-                  ])
-
-              body = "\n".join(lines).strip()
-              return {
-                  "event": event,
-                  "verdict": verdict_label,
-                  "confidence": confidence,
-                  "findings": [],
-                  "finding_code_refs": [],
-                  "body": body,
-              }
-
-          content_path = Path("/tmp/deepseek_content.txt")
-          content = content_path.read_text(encoding="utf-8", errors="ignore") if content_path.is_file() else ""
-          normalized = normalize_review_comment(content)
-          Path("/tmp/deepseek_normalized_review.json").write_text(json.dumps(normalized, indent=2) + "\n", encoding="utf-8")
-          PY
+          normalizer="temp-tv7-core-docs/tooling/deepseek_review_normalize.py"
+          if [ ! -f "$normalizer" ] && [ -f "tooling/deepseek_review_normalize.py" ]; then
+            normalizer="tooling/deepseek_review_normalize.py"
+          fi
+          python3 "$normalizer" --content "$content_file" --output "$output_json" --head-sha "$HEAD_SHA"
 
           event=$(jq -r '.event // "COMMENT"' "$output_json")
           confidence=$(jq -r '.confidence // "unknown"' "$output_json")
           verdict=$(jq -r '.verdict // "COMMENT"' "$output_json")
+          merge_recommendation=$(jq -r '.merge_recommendation // "DO_NOT_MERGE"' "$output_json")
           body=$(jq -r '.body // ""' "$output_json")
 
           echo "event=$event" >> "$GITHUB_OUTPUT"
           echo "confidence=$confidence" >> "$GITHUB_OUTPUT"
           echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+          echo "merge-recommendation=$merge_recommendation" >> "$GITHUB_OUTPUT"
           echo "body<<EOF" >> "$GITHUB_OUTPUT"
           echo "$body" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
@@ -860,6 +808,7 @@ jobs:
           NORMALIZED_EVENT: ${{ steps.normalize.outputs.event }}
           NORMALIZED_CONFIDENCE: ${{ steps.normalize.outputs.confidence }}
           NORMALIZED_VERDICT: ${{ steps.normalize.outputs.verdict }}
+          NORMALIZED_MERGE_RECOMMENDATION: ${{ steps.normalize.outputs['merge-recommendation'] }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -868,6 +817,7 @@ jobs:
             const event = (process.env.NORMALIZED_EVENT || 'COMMENT').trim();
             const confidence = (process.env.NORMALIZED_CONFIDENCE || 'unknown').trim();
             const verdict = (process.env.NORMALIZED_VERDICT || 'COMMENT').trim();
+            const mergeRecommendation = (process.env.NORMALIZED_MERGE_RECOMMENDATION || 'DO_NOT_MERGE').trim();
             if (!body) {
               throw new Error('Missing normalized DeepSeek review body.');
             }
@@ -915,6 +865,6 @@ jobs:
             if (summaryPath) {
               fs.appendFileSync(
                 summaryPath,
-                `DeepSeek review submitted (${finalEvent}) to PR #${prNumber}: ${url} (verdict=${verdict}, confidence=${confidence})\n`
+                `DeepSeek review submitted (${finalEvent}) to PR #${prNumber}: ${url} (verdict=${verdict}, confidence=${confidence}, merge=${mergeRecommendation})\n`
               );
             }

@@ -344,6 +344,10 @@ def ensure_pr(owner: str, repo_path: Path, cfg: RepoConfig, branch: str) -> dict
 DEEPSEEK_RE = re.compile(r"(deepseek review|final_verdict|final verdict)", re.IGNORECASE)
 VERDICT_RE = re.compile(r"(?:FINAL_VERDICT|Final verdict):\s*(?:[✅❌]\s*)?(APPROVED|REJECTED)", re.IGNORECASE)
 CONFIDENCE_RE = re.compile(r"Confidence:\s*(\d{1,3})%", re.IGNORECASE)
+MERGE_RECOMMENDATION_RE = re.compile(
+    r"(?:Merge recommendation|MERGE_RECOMMENDATION):\s*(MERGE_WITH_WARNING|DO_NOT_MERGE|MERGE)\b",
+    re.IGNORECASE,
+)
 
 
 def collect_pr_threads(owner: str, repo: str, number: int) -> list[dict[str, Any]]:
@@ -384,6 +388,7 @@ def review_matches_head(entry: dict[str, Any], head_sha: str, head_time: datetim
 def summarize_deepseek(body: str) -> dict[str, str | list[str]]:
     verdict_match = VERDICT_RE.search(body)
     confidence_match = CONFIDENCE_RE.search(body)
+    merge_match = MERGE_RECOMMENDATION_RE.search(body)
     highlights: list[str] = []
     capture = False
     for raw in body.splitlines():
@@ -408,6 +413,7 @@ def summarize_deepseek(body: str) -> dict[str, str | list[str]]:
     return {
         "verdict": verdict_match.group(1).upper() if verdict_match else "UNKNOWN",
         "confidence": f"{confidence_match.group(1)}%" if confidence_match else "unknown",
+        "merge_recommendation": merge_match.group(1).upper() if merge_match else "UNKNOWN",
         "highlights": highlights,
     }
 
@@ -451,29 +457,30 @@ def ask_after_review_round(
 ) -> int:
     print_full_review(review)
     strong_approval = review_is_approved(review, threshold)
+    verdict = str(review.get("verdict") or "UNKNOWN").upper()
+    recommendation = str(review.get("merge_recommendation") or "UNKNOWN").upper()
     if strong_approval:
         print(f"\nDeepSeek approved at {review.get('confidence')}; merge is available after human confirmation.")
     else:
         print(
-            f"\nDeepSeek did not meet the merge threshold "
-            f"({review.get('verdict')} {review.get('confidence')}; required APPROVED {threshold}%+)."
+            f"\n{YELLOW}Merge warning:{RESET} DeepSeek returned {verdict} at {review.get('confidence')} "
+            f"(recommendation: {recommendation}; normal-confidence threshold: {threshold}%+)."
         )
     print("\nNext action:")
-    if strong_approval:
-        print("  1) Merge Pull Request and delete branch")
-        print("  2) Run another Codex round (fresh DeepSeek review only if the PR head changes)")
-        print("  3) Keep PR open and return to sync")
-        choice = input("Select option [1-3, default: 3]: ").strip() or "3"
-        if choice == "1":
-            return merge_pr(owner, repo_path, cfg, number, branch)
-        if choice == "2":
-            print("Starting another Codex review-resolution round in this PR flow.")
-            return REVIEW_DECISION_ANOTHER_ROUND
-        return REVIEW_DECISION_PAUSE
-    print("  1) Run another Codex round (fresh DeepSeek review only if the PR head changes)")
-    print("  2) Keep PR open and return to sync")
-    choice = input("Select option [1-2, default: 2]: ").strip() or "2"
+    print("  1) Merge Pull Request and delete branch")
+    print("  2) Run another Codex round (fresh DeepSeek review only if the PR head changes)")
+    print("  3) Keep PR open and return to sync")
+    choice = input("Select option [1-3, default: 3]: ").strip() or "3"
     if choice == "1":
+        if not strong_approval:
+            confirmation = input(
+                "Review is below the normal merge threshold or recommends caution. Type MERGE to continue: "
+            ).strip()
+            if confirmation != "MERGE":
+                print("Merge cancelled; PR remains open.")
+                return REVIEW_DECISION_PAUSE
+        return merge_pr(owner, repo_path, cfg, number, branch)
+    if choice == "2":
         print("Starting another Codex review-resolution round in this PR flow.")
         return REVIEW_DECISION_ANOTHER_ROUND
     return REVIEW_DECISION_PAUSE
@@ -610,7 +617,7 @@ def pr_mergeable(owner: str, repo: str, number: int) -> tuple[bool, str]:
         "--repo",
         f"{owner}/{repo}",
         "--json",
-        "mergeStateStatus,state,isDraft,reviewDecision",
+        "mergeStateStatus,state,isDraft,reviewDecision,statusCheckRollup",
     ])
     if not isinstance(pr, dict):
         return False, "PR details unavailable"
@@ -621,6 +628,14 @@ def pr_mergeable(owner: str, repo: str, number: int) -> tuple[bool, str]:
     merge_state = str(pr.get("mergeStateStatus") or "UNKNOWN")
     if merge_state not in {"CLEAN", "HAS_HOOKS", "UNKNOWN"}:
         return False, f"merge state is {merge_state}"
+    checks = pr.get("statusCheckRollup") or []
+    for check in checks:
+        status = str(check.get("status") or "").upper()
+        conclusion = str(check.get("conclusion") or "").upper()
+        if status and status != "COMPLETED":
+            return False, f"check {check.get('name', 'unknown')} is {status.lower()}"
+        if conclusion and conclusion not in {"SUCCESS", "SKIPPED", "NEUTRAL"}:
+            return False, f"check {check.get('name', 'unknown')} concluded {conclusion.lower()}"
     return True, merge_state
 
 

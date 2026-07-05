@@ -133,3 +133,6 @@ Status markers in checkbox position:
     - **CROSS-AGENT-NOTES**: Applies to `tv7-core` developer tooling only.
     - **CODE-REVIEW-NOTES**: Only the contract-shaped review test fixture and bounded untracked-file fingerprinting findings were classified as valid.
     - **NOTE**: Added bounded/binary-safe untracked file fingerprinting in `tooling/sync.py` and replaced fragile `object()` test placeholders with contract-shaped fixtures in `tooling/tests/test_review.py`. Validated with `PYTHONPATH=tooling python3 -m unittest tooling/tests/test_review.py`, `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests -p 'test_*.py'`, and `python3 -m py_compile tooling/sync.py tooling/review.py tooling/tests/test_review.py`.
+- [P] [CO-M01-04-15] Add an optional DeepSeek reasoning profile for Codex.
+    **IN-PROGRESS** | Architect Agent | 2026-07-04 00:00
+    - **CROSS-AGENT-NOTES**: Applies only to optional `tv7-core` developer tooling and user-level Codex configuration; the existing OpenAI default and GitHub DeepSeek reviewer remain unchanged.

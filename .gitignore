@@ -13,3 +13,6 @@ docs/.conductor/
 docs/code-reviews/
 tooling/__pycache__/
 tooling/orchestrator/__pycache__/
+.venv-cockpit/
+tooling/cockpit-ui/node_modules/
+tooling/cockpit-ui/dist/

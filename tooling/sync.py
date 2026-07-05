@@ -915,6 +915,14 @@ def action_profile(state: RepoState) -> dict[str, Any]:
                 "command": "commit validated slice from make sync",
                 "priority": 70,
             }
+        if state.queue_status == "ready":
+            return {
+                "state": "awaiting-human-validation",
+                "label": "Run human validation",
+                "why": "Machine checks passed; complete the generated human test contract before commit.",
+                "command": "record pass or fail in the cockpit",
+                "priority": 75,
+            }
         if state.queue_status == "failed":
             return {
                 "state": "validation-failed",
@@ -1620,6 +1628,10 @@ def interactive_actions(
     print(f"  {menu_idx}) Print agent prompts               (runs: make handoff HANDOFF_PROMPTS_ONLY=1)")
     menu_idx += 1
 
+    cockpit_idx = menu_idx
+    print(f"  {menu_idx}) Start Web Cockpit UI              (runs: make cockpit)")
+    menu_idx += 1
+
     exit_idx = menu_idx
     print(f"  {menu_idx}) Exit")
 
@@ -1629,6 +1641,10 @@ def interactive_actions(
         return execute_repo_action(core_dir, priority_candidate, queue)
     if choice == str(queue_idx):
         return process_validation_queue(core_dir, states, queue)
+    if choice == str(cockpit_idx):
+        print("Starting Web Cockpit on http://127.0.0.1:7979...")
+        subprocess.run(["make", "cockpit"], cwd=str(core_dir))
+        return REFRESH_COCKPIT
     if choice == str(conductor_idx):
         print(f"\n{CYAN}=== Conductor Control Center ==={RESET}")
         print("  1) Check Conductor status            (runs: make conductor-status)")

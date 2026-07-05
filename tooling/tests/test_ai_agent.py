@@ -29,6 +29,7 @@ class AiAgentTest(unittest.TestCase):
 
     def test_sync_action_state_maps_to_operation(self) -> None:
         self.assertEqual(normalize_action("dirty-needs-ready"), "ready")
+        self.assertEqual(normalize_action("dirty-pr-needs-ready"), "ready")
         self.assertEqual(normalize_action("clean-needs-agent-work"), "start")
         self.assertEqual(normalize_action("validated-needs-commit"), "commit")
 

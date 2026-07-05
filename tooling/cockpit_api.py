@@ -126,6 +126,30 @@ def refresh() -> dict:
 @app.post("/api/actions", status_code=202)
 def start_action(request: ActionRequest) -> dict:
     validate_repo(request.repo)
+    if request.action_type == "merge-pr":
+        state = next((row for row in workspace_state() if row.get("repo") == request.repo), {})
+        if int(state.get("dirty_file_count") or 0) > 0 or int(state.get("ahead") or 0) > 0:
+            raise HTTPException(409, "Local changes must be committed, pushed, and reviewed before merge")
+        pr = state.get("pr") or {}
+        number = pr.get("number")
+        if not number:
+            raise HTTPException(400, "No open pull request is available to merge")
+        reviews = pr.get("reviews") or []
+        reviewed_heads = [
+            str((review.get("commit") or {}).get("oid") or "")
+            for review in reviews
+            if "DeepSeek review" in str(review.get("body") or "")
+        ]
+        if not reviewed_heads or reviewed_heads[-1] != str(state.get("head_sha") or ""):
+            raise HTTPException(409, "The latest DeepSeek review does not match the current HEAD")
+        owner = os.environ.get("OWNER", "TV7-Clip-Studio")
+        return JOBS.create(
+            repo=request.repo,
+            kind="merge-pr",
+            command=["gh", "pr", "merge", str(number), "--repo", f"{owner}/{request.repo}", "--merge", "--delete-branch"],
+            cwd=CORE_DIR.parent / request.repo,
+            after=refresh_workspace,
+        )
     try:
         operation = normalize_action(request.action_type)
         command, cwd = action_command(request.repo, operation, request.command)

@@ -865,6 +865,22 @@ def action_profile(state: RepoState) -> dict[str, Any]:
             "command": "resolve sync/rebase failure",
             "priority": 20,
         }
+    if state.pr and "note" not in state.pr and state.changes:
+        return {
+            "state": "dirty-pr-needs-ready",
+            "label": "Ready PR follow-up",
+            "why": f"PR #{state.pr.get('number')} is open, but {state.changes} local change(s) are not committed or reviewed.",
+            "command": f"make ready REPO={state.repo}",
+            "priority": 25,
+        }
+    if state.pr and "note" not in state.pr and state.ahead:
+        return {
+            "state": "pr-updates-need-review",
+            "label": "Push and review PR updates",
+            "why": f"PR #{state.pr.get('number')} has {state.ahead} local commit(s) not yet reviewed remotely.",
+            "command": f"make review REPO={state.repo}",
+            "priority": 28,
+        }
     if state.pr and "note" not in state.pr:
         decision = str(state.pr.get("reviewDecision") or "").upper()
         ds_review = get_latest_deepseek_review(state.pr)

@@ -171,8 +171,8 @@ function RepositoryCard({ state, busy, runJob, refreshState }) {
   };
   const action = state.action || {};
   const executable = [
-    "dirty-needs-ready", "ahead-needs-review", "pr-changes-requested",
-    "pr-awaiting-review", "pr-ready", "clean-needs-agent-work", "validated-needs-commit",
+    "dirty-needs-ready", "dirty-pr-needs-ready", "ahead-needs-review", "pr-updates-need-review",
+    "pr-changes-requested", "pr-awaiting-review", "clean-needs-agent-work", "validated-needs-commit",
   ].includes(action.state);
   return (
     <article id={state.repo} className={`repo-panel ${expanded ? "expanded" : ""}`}>
@@ -192,10 +192,13 @@ function RepositoryCard({ state, busy, runJob, refreshState }) {
           <div><span>Head</span><code>{state.head_sha?.slice(0, 12)}</code></div>
         </div>
         <div className="next-action">
-          <div><strong>{action.label || "Inspect repository"}</strong><p>{action.why || state.next_action}</p></div>
-          {executable && <button className="primary" disabled={!!busy} onClick={() => runJob(action.label || "Action", "/api/actions", { repo: state.repo, action_type: action.state, command: action.command || "" })}>
-            {busy ? <LoaderCircle size={16} className="spin" /> : <Play size={16} />} {busy ? "Running" : action.label}
-          </button>}
+          <div><strong>{action.label || "Inspect repository"}</strong><p>{action.why || state.next_action}</p>{state.pr?.url && <a className="pr-link" href={state.pr.url} target="_blank" rel="noreferrer">PR #{state.pr.number}</a>}</div>
+          <div className="next-action-buttons">
+            {executable && <button className="primary" disabled={!!busy} onClick={() => runJob(action.label || "Action", "/api/actions", { repo: state.repo, action_type: action.state, command: action.command || "" })}>
+              {busy ? <LoaderCircle size={16} className="spin" /> : <Play size={16} />} {busy ? "Running" : action.label}
+            </button>}
+            {action.state === "pr-ready" && <button className="primary" disabled={!!busy} onClick={() => runJob("Merge pull request", "/api/actions", { repo: state.repo, action_type: "merge-pr" })}>Merge PR</button>}
+          </div>
         </div>
         <ReviewPanel repo={state.repo} busy={busy} runJob={runJob} />
         {state.test_plan && <ValidationPanel state={state} refreshState={refreshState} />}

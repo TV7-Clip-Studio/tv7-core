@@ -33,7 +33,9 @@ def focus_display(value) -> str:
 def normalize_action(action_type: str) -> str:
     mapping = {
         "dirty-needs-ready": "ready",
+        "dirty-pr-needs-ready": "ready",
         "ahead-needs-review": "review",
+        "pr-updates-need-review": "review",
         "pr-changes-requested": "review",
         "pr-awaiting-review": "review",
         "pr-ready": "review",

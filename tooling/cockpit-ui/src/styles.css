@@ -50,6 +50,8 @@ button.primary { background: var(--blue); border-color: var(--blue); color: #071
 .context-grid strong, .context-grid code { overflow-wrap: anywhere; }
 .next-action { display: flex; justify-content: space-between; align-items: center; gap: 16px; background: #121b29; border-left: 3px solid var(--blue); padding: 14px 16px; }
 .next-action p, .validation p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+.next-action-buttons { display: flex; align-items: center; gap: 8px; }
+.pr-link { display: inline-block; margin-top: 6px; color: var(--blue); font-size: 12px; text-decoration: none; }
 .assessment, .validation { border-top: 1px solid var(--border); padding-top: 16px; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .agent-actions { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; }

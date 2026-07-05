@@ -121,6 +121,18 @@ class SyncCachingTest(unittest.TestCase):
         self.assertEqual(action["state"], "dirty-needs-ready")
         self.assertEqual(action["command"], "make ready REPO=tv7-test")
 
+    def test_action_profile_dirty_open_pr_requires_followup_ready(self) -> None:
+        self.state.pr = {"number": 52, "state": "OPEN", "reviewDecision": "APPROVED"}
+        self.state.changes = 3
+        action = action_profile(self.state)
+        self.assertEqual(action["state"], "dirty-pr-needs-ready")
+
+    def test_action_profile_ahead_open_pr_requires_updated_review(self) -> None:
+        self.state.pr = {"number": 52, "state": "OPEN", "reviewDecision": "APPROVED"}
+        self.state.ahead = 1
+        action = action_profile(self.state)
+        self.assertEqual(action["state"], "pr-updates-need-review")
+
     def test_action_profile_validated_repo_needs_commit(self) -> None:
         self.state.changes = 2
         self.state.queue_status = "passed"

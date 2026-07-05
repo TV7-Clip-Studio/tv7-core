@@ -92,6 +92,7 @@ class JobStore:
                 process = subprocess.Popen(
                     command,
                     cwd=str(cwd),
+                    stdin=subprocess.DEVNULL,
                     stdout=log,
                     stderr=subprocess.STDOUT,
                     text=True,
@@ -114,8 +115,10 @@ class JobStore:
 
     def _write(self, job: dict) -> None:
         path = self.root / f"{job['id']}.json"
+        temporary = self.root / f".{job['id']}.json.tmp"
         with self._lock:
-            path.write_text(json.dumps(job, indent=2) + "\n", encoding="utf-8")
+            temporary.write_text(json.dumps(job, indent=2) + "\n", encoding="utf-8")
+            temporary.replace(path)
 
     @staticmethod
     def _now() -> str:

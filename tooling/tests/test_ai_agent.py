@@ -33,12 +33,12 @@ class AiAgentTest(unittest.TestCase):
         self.assertEqual(normalize_action("clean-needs-agent-work"), "start")
         self.assertEqual(normalize_action("validated-needs-commit"), "commit")
 
-    def test_deepseek_command_uses_profile_and_read_only_sandbox(self) -> None:
+    def test_deepseek_command_uses_profile_and_danger_full_access(self) -> None:
         with tempfile.TemporaryDirectory() as temp, patch("ai_agent.deepseek_ready"):
             command, output = ai_agent.codex_command("deepseek", Path(temp), "review", write=False)
             try:
                 self.assertIn("deepseek", command)
-                self.assertIn("read-only", command)
+                self.assertIn("danger-full-access", command)
                 self.assertIn('plugins."github@openai-curated".enabled=false', command)
             finally:
                 output.unlink(missing_ok=True)
@@ -57,6 +57,21 @@ class AiAgentTest(unittest.TestCase):
             root = Path(temp)
             (root / "index.json").write_text(json.dumps({"runs": [{"id": "run-1"}]}), encoding="utf-8")
             self.assertEqual(ai_agent.load_runs(root), [{"id": "run-1"}])
+
+    def test_roadmap_prompt_uses_planning_not_code_review_language(self) -> None:
+        prompt = ai_agent.review_prompt(
+            "tv7-engine", "main", '{"roadmap_focus":"EN-A01-02-01"}', [], "roadmap"
+        )
+        self.assertIn("technical planner", prompt)
+        self.assertIn("ACTIVE ROADMAP SLICE", prompt)
+        self.assertIn("Do not edit files", prompt)
+
+    def test_roadmap_resolution_becomes_implementation(self) -> None:
+        prompt = ai_agent.resolve_prompt(
+            "tv7-engine", {"id": "plan-1", "provider": "gemini", "scope": "roadmap", "issues": ["Implement probe"]}
+        )
+        self.assertIn("Implement the selected roadmap plan", prompt)
+        self.assertIn("Do not commit or push", prompt)
 
 
 if __name__ == "__main__":

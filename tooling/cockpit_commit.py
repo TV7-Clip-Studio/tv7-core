@@ -31,12 +31,16 @@ def commit_title(repo: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", required=True)
+    parser.add_argument("--message")
     args = parser.parse_args()
     if args.repo not in allowed_repos():
         raise SystemExit(f"Unknown repository: {args.repo}")
     repo_path = CORE_DIR.parent / args.repo
     run(["git", "add", "-A"], repo_path)
-    run(["git", "commit", "-m", commit_title(args.repo)], repo_path)
+    message = (args.message or commit_title(args.repo)).strip()
+    if not message or "\n" in message or len(message) > 120:
+        raise SystemExit("Commit message must be one non-empty line of at most 120 characters.")
+    run(["git", "commit", "-m", message], repo_path)
     print("Committed validated slice. No push was performed.")
 
 

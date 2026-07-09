@@ -866,9 +866,33 @@ def action_profile(state: RepoState) -> dict[str, Any]:
             "priority": 20,
         }
     if state.pr and "note" not in state.pr and state.changes:
+        if state.queue_status == "passed":
+            return {
+                "state": "validated-needs-commit",
+                "label": "Commit validated changes",
+                "why": "Human validation passed for local changes on this open PR branch.",
+                "command": "commit validated slice from make sync",
+                "priority": 25,
+            }
+        if state.queue_status == "ready":
+            return {
+                "state": "awaiting-human-validation",
+                "label": "Run human validation",
+                "why": "Machine checks passed for local changes on this open PR branch; complete the generated human test contract before commit.",
+                "command": "record pass or fail in the cockpit",
+                "priority": 25,
+            }
+        if state.queue_status == "failed":
+            return {
+                "state": "validation-failed",
+                "label": "Return failure to agent",
+                "why": "Human validation failed for local changes on this open PR branch.",
+                "command": "send failure context to the active agent, then rerun make sync",
+                "priority": 25,
+            }
         return {
             "state": "dirty-pr-needs-ready",
-            "label": "Ready PR follow-up",
+            "label": "Validate local changes",
             "why": f"PR #{state.pr.get('number')} is open, but {state.changes} local change(s) are not committed or reviewed.",
             "command": f"make ready REPO={state.repo}",
             "priority": 25,

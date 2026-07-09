@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -20,6 +21,7 @@ CORE_DIR = Path(__file__).resolve().parents[1]
 WORKSPACE = CORE_DIR.parent
 PROVIDERS = {"gemini", "codex", "deepseek"}
 MAX_DIFF_CHARS = 240_000
+PROVIDER_TIMEOUT = int(os.environ.get("TV7_AI_PROVIDER_TIMEOUT", "300"))
 
 
 def run(cmd: list[str], *, cwd: Path, timeout: int = 600) -> subprocess.CompletedProcess[str]:
@@ -72,6 +74,32 @@ def worktree_context(path: Path) -> tuple[str, str, str, str]:
     return branch, head, fingerprint, context
 
 
+def review_context(path: Path, scope: str) -> tuple[str, str, str, str]:
+    if scope == "roadmap":
+        branch = git(path, "rev-parse", "--abbrev-ref", "HEAD").strip()
+        head = git(path, "rev-parse", "HEAD").strip()
+        snapshot_path = CORE_DIR / "docs" / ".tmp" / "sync-roadmap-focus.json"
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8")) if snapshot_path.exists() else []
+        row = next((item for item in snapshot if item.get("repo") == path.name), {})
+        context = json.dumps({
+            "repo": path.name,
+            "active_slice": row.get("resolved_focus_display"),
+            "roadmap_focus": row.get("focus"),
+            "next_action": row.get("next_action"),
+            "signals": row.get("signals"),
+        }, indent=2, default=str)
+        fingerprint = hashlib.sha256(f"roadmap\n{head}\n{context}".encode()).hexdigest()
+        return branch, head, fingerprint, context
+    if scope != "pull_request":
+        return worktree_context(path)
+    branch = git(path, "rev-parse", "--abbrev-ref", "HEAD").strip()
+    head = git(path, "rev-parse", "HEAD").strip()
+    base = "origin/main"
+    context = git(path, "diff", "--no-ext-diff", "--unified=3", f"{base}...HEAD").strip()[:MAX_DIFF_CHARS]
+    fingerprint = hashlib.sha256(f"pull_request\n{head}\n{context}".encode()).hexdigest()
+    return branch, head, fingerprint, context
+
+
 def review_root(repo: str, fingerprint: str) -> Path:
     return CORE_DIR / "docs" / ".tmp" / "reviews" / repo / fingerprint
 
@@ -118,17 +146,28 @@ def deepseek_ready() -> None:
         raise RuntimeError("DeepSeek bridge is unavailable. Run: moonbridge-deepseek start")
 
 
+def provider_ready(provider: str, path: Path) -> None:
+    executable = "gemini" if provider == "gemini" else "codex"
+    if not shutil.which(executable):
+        raise RuntimeError(f"{executable} CLI is not installed or not available on PATH")
+    print(f"[ai-agent] provider={provider} phase=preflight", flush=True)
+    result = run([executable, "--version"], cwd=path, timeout=15)
+    if result.returncode != 0:
+        raise RuntimeError((result.stderr or result.stdout or f"{executable} preflight failed").strip())
+    if provider == "deepseek":
+        deepseek_ready()
+
+
 def codex_command(provider: str, path: Path, prompt: str, *, write: bool) -> tuple[list[str], Path]:
     output = Path(tempfile.mkstemp(prefix=f"tv7-{provider}-", suffix=".txt")[1])
     command = [
         "codex", "exec", "--ephemeral", "--color", "never",
-        "--sandbox", "workspace-write" if write else "read-only",
+        "--sandbox", "danger-full-access" if provider == "deepseek" else ("workspace-write" if write else "read-only"),
         "-C", str(path),
         "-c", 'plugins."github@openai-curated".enabled=false',
         "-o", str(output),
     ]
     if provider == "deepseek":
-        deepseek_ready()
         command.extend(["--profile", "deepseek"])
     command.append(prompt)
     return command, output
@@ -137,15 +176,18 @@ def codex_command(provider: str, path: Path, prompt: str, *, write: bool) -> tup
 def call_provider(provider: str, path: Path, prompt: str, *, write: bool) -> tuple[str, str]:
     if provider not in PROVIDERS:
         raise ValueError(f"unknown provider: {provider}")
+    provider_ready(provider, path)
     if provider == "gemini":
+        print(f"[ai-agent] provider=gemini phase=running timeout={PROVIDER_TIMEOUT}s", flush=True)
         command = ["gemini", "--skip-trust", "--approval-mode", "auto_edit" if write else "plan", "-p", prompt, "-o", "text"]
-        result = run(command, cwd=path)
+        result = run(command, cwd=path, timeout=PROVIDER_TIMEOUT)
         output = result.stdout.strip()
         model = "gemini-cli"
     else:
+        print(f"[ai-agent] provider={provider} phase=running timeout={PROVIDER_TIMEOUT}s", flush=True)
         command, output_path = codex_command(provider, path, prompt, write=write)
         try:
-            result = run(command, cwd=path)
+            result = run(command, cwd=path, timeout=PROVIDER_TIMEOUT)
             output = output_path.read_text(encoding="utf-8", errors="replace").strip() if output_path.exists() else result.stdout.strip()
         finally:
             output_path.unlink(missing_ok=True)
@@ -180,7 +222,7 @@ def rebuild_ledger(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return list(ledger.values())
 
 
-def save_review(repo: str, branch: str, head: str, fingerprint: str, provider: str, model: str, report: dict[str, Any], raw: str, parents: list[str]) -> dict[str, Any]:
+def save_review(repo: str, branch: str, head: str, fingerprint: str, provider: str, model: str, report: dict[str, Any], raw: str, parents: list[str], scope: str) -> dict[str, Any]:
     root = review_root(repo, fingerprint)
     runs_dir = root / "runs"
     runs_dir.mkdir(parents=True, exist_ok=True)
@@ -189,7 +231,8 @@ def save_review(repo: str, branch: str, head: str, fingerprint: str, provider: s
     issues = [str(item) for item in report.get("issues", []) if str(item).strip()]
     run_row = {
         "id": run_id, "provider": provider, "model": model, "timestamp": timestamp.isoformat(),
-        "repo": repo, "branch": branch, "head_sha": head, "fingerprint": fingerprint,
+        "repo": repo, "branch": branch, "head_sha": head, "fingerprint": fingerprint, "scope": scope,
+        "source": "local_agent",
         "summary": str(report.get("summary") or ""), "ready_to_commit": bool(report.get("ready_to_commit")),
         "issues": issues, "parent_run_ids": parents,
     }
@@ -203,14 +246,27 @@ def save_review(repo: str, branch: str, head: str, fingerprint: str, provider: s
     return {**payload, **run_row}
 
 
-def review_prompt(repo: str, branch: str, context: str, runs: list[dict[str, Any]]) -> str:
+def review_prompt(repo: str, branch: str, context: str, runs: list[dict[str, Any]], scope: str) -> str:
+    if scope == "roadmap":
+        return f"""You are the TV7 technical planner for repository {repo} on branch {branch}.
+Assess the active roadmap slice below. Do not edit files. Produce a focused implementation plan grounded in current repository state and prior assessments.
+
+ACTIVE ROADMAP SLICE:
+{context}
+
+PRIOR REPOSITORY ASSESSMENTS (use only as historical context):
+{history_context(runs)}
+
+Return only JSON:
+{{"summary":"2-3 sentence implementation approach","ready_to_commit":false,"issues":["ordered implementation action with affected paths and validation"]}}
+"""
     return f"""You are an independent TV7 code reviewer. Review repository {repo} on branch {branch}.
 Use previous reviews only as hypotheses. Produce your own assessment and classify earlier findings as corroborated, resolved, contradicted, or unverifiable. Do not edit files.
 
-CURRENT WORKTREE CHANGES:
+CURRENT {scope.upper().replace('_', ' ')} CHANGES:
 {context or '[clean worktree]'}
 
-PRIOR INDEPENDENT REVIEWS ON THIS EXACT FINGERPRINT:
+PRIOR REPOSITORY ASSESSMENTS (treat stale or different-scope findings only as hypotheses):
 {history_context(runs)}
 
 Return only JSON:
@@ -218,19 +274,27 @@ Return only JSON:
 """
 
 
-def run_review(repo: str, provider: str) -> None:
+def run_review(repo: str, provider: str, scope: str) -> None:
     path = repo_path(repo)
-    branch, head, fingerprint, context = worktree_context(path)
-    root = review_root(repo, fingerprint)
-    prior = load_runs(root)
-    raw, model = call_provider(provider, path, review_prompt(repo, branch, context, prior), write=False)
+    branch, head, fingerprint, context = review_context(path, scope)
+    prior = load_repo_runs(repo)
+    raw, model = call_provider(provider, path, review_prompt(repo, branch, context, prior, scope), write=False)
     report = extract_json(raw)
-    saved = save_review(repo, branch, head, fingerprint, provider, model, report, raw, [row["id"] for row in prior[-8:]])
+    saved = save_review(repo, branch, head, fingerprint, provider, model, report, raw, [row["id"] for row in prior[-8:]], scope)
     print(json.dumps(saved))
 
 
 def resolve_prompt(repo: str, run_row: dict[str, Any]) -> str:
     issues = "\n".join(f"- {item}" for item in run_row.get("issues", []))
+    if run_row.get("scope") == "roadmap":
+        return f"""You are the TV7 implementation agent working in {repo}.
+Implement the selected roadmap plan below. Inspect current code and repository guidance first. Preserve unrelated user changes. Do not commit or push.
+
+ROADMAP PLAN {run_row.get('id')} ({run_row.get('provider')}):
+{issues}
+
+After editing, run the repository's appropriate validation. Your final response must summarize the implementation, files changed, validation results, and remaining work.
+"""
     return f"""You are the TV7 implementation agent working in {repo}.
 Resolve only the selected review findings below. Inspect current files and tests before editing. Preserve unrelated user changes. Do not commit or push.
 
@@ -241,12 +305,18 @@ After editing, run the repository's appropriate focused validation. Your final r
 """
 
 
-def run_resolve(repo: str, provider: str, run_id: str | None) -> None:
+def run_resolve(repo: str, provider: str, run_id: str | None, run_file: str | None) -> None:
     path = repo_path(repo)
     _, _, fingerprint, _ = worktree_context(path)
     root = review_root(repo, fingerprint)
     runs = load_runs(root)
-    selected = next((row for row in runs if row.get("id") == run_id), None) if run_id else (runs[-1] if runs else None)
+    selected = None
+    if run_file:
+        selected = json.loads(Path(run_file).read_text(encoding="utf-8"))
+        if str(selected.get("head_sha") or "") != git(path, "rev-parse", "HEAD").strip():
+            raise RuntimeError("Selected assessment is stale for the current HEAD")
+    else:
+        selected = next((row for row in runs if row.get("id") == run_id), None) if run_id else (runs[-1] if runs else None)
     if not selected:
         raise RuntimeError("No matching review exists for the current worktree fingerprint")
     if not selected.get("issues"):
@@ -269,12 +339,14 @@ def main() -> int:
     parser.add_argument("--repo", required=True)
     parser.add_argument("--model", required=True, choices=sorted(PROVIDERS))
     parser.add_argument("--run-id")
+    parser.add_argument("--run-file")
+    parser.add_argument("--scope", choices=("worktree", "pull_request", "roadmap"), default="worktree")
     args = parser.parse_args()
     try:
         if args.action == "review":
-            run_review(args.repo, args.model)
+            run_review(args.repo, args.model, args.scope)
         else:
-            run_resolve(args.repo, args.model, args.run_id)
+            run_resolve(args.repo, args.model, args.run_id, args.run_file)
         return 0
     except Exception as exc:
         print(f"[ai-agent error] {exc}", file=sys.stderr)

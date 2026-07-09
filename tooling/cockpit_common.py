@@ -45,6 +45,80 @@ def normalize_action(action_type: str) -> str:
     return mapping.get(action_type, action_type)
 
 
+def workflow_from_state(row: dict, latest_review: dict | None = None) -> dict:
+    action = row.get("action") or {}
+    pr = row.get("pr") or {}
+    dirty = int(row.get("dirty_file_count") or 0)
+    ahead = int(row.get("ahead") or 0)
+    if action.get("state") == "validated-needs-commit":
+        return {
+            "mode": "validated-commit",
+            "allowed_actions": ["commit"],
+            "summary": "Machine and human validation passed; commit this slice locally.",
+        }
+    if action.get("state") == "awaiting-human-validation":
+        return {
+            "mode": "human-validation",
+            "allowed_actions": ["record-validation"],
+            "summary": "Machine checks passed; complete the human validation step before commit.",
+        }
+    if action.get("state") == "validation-failed":
+        return {
+            "mode": "validation-failed",
+            "allowed_actions": ["return-to-agent"],
+            "summary": "Human validation failed; return the failure context before another ready check.",
+        }
+    if action.get("state") in {"dirty-needs-ready", "dirty-pr-needs-ready"}:
+        return {
+            "mode": "dirty-validation",
+            "allowed_actions": ["ready"],
+            "summary": "Local changes need machine validation before human validation, commit, or review.",
+        }
+    if pr and "note" not in pr:
+        if latest_review:
+            reviewed_sha = str(latest_review.get("head_sha") or "")
+            head_sha = str(row.get("head_sha") or "")
+            fresh = reviewed_sha == head_sha
+            if fresh and not dirty and not ahead:
+                verdict = str(latest_review.get("verdict") or "").upper()
+                confidence = latest_review.get("confidence")
+                return {
+                    "mode": "pr-review-decision",
+                    "review": latest_review,
+                    "allowed_actions": ["fix-pr-review", "merge-pr", "defer"],
+                    "summary": f"DeepSeek reviewed current PR HEAD: {verdict} {confidence or ''}%",
+                }
+            return {
+                "mode": "pr-follow-up",
+                "review": latest_review,
+                "allowed_actions": ["prepare-pr-follow-up", "defer"],
+                "summary": "DeepSeek review covers an older PR state; local changes must be prepared and reviewed before merge.",
+            }
+        if action.get("state") in {"pr-awaiting-review", "pr-updates-need-review"}:
+            return {
+                "mode": "pr-awaiting-review",
+                "allowed_actions": ["review-pr", "defer"],
+                "summary": "PR is open and waiting for a current DeepSeek review.",
+            }
+    if action.get("state") == "ahead-needs-review":
+        return {
+            "mode": "ahead-review",
+            "allowed_actions": ["review-pr"],
+            "summary": "Local commits are ready to push and review.",
+        }
+    if action.get("state") == "clean-needs-agent-work":
+        return {
+            "mode": "agent-work",
+            "allowed_actions": ["start-roadmap"],
+            "summary": "Repo is clean and ready for the next roadmap item.",
+        }
+    return {
+        "mode": "idle",
+        "allowed_actions": [],
+        "summary": "No immediate cockpit action is required.",
+    }
+
+
 def action_command(repo: str, action_type: str, requested: str) -> tuple[list[str], Path]:
     if repo not in allowed_repos():
         raise ValueError("Unknown repository.")

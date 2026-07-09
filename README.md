@@ -76,6 +76,8 @@ The Conductor repo participates in `make sync` as a sibling repo, but it is not 
 
 The dirty-slice lifecycle is intentionally gated: **Ready** refreshes handoffs and runs machine checks; it does not commit. A successful Ready unlocks the generated human Pass/Fail contract. Passing that contract unlocks **Commit validated slice**, which creates a local commit without pushing. The resulting ahead commit then moves to the PR/review action.
 
+Assessments share one history while retaining scope. Worktree assessments cover uncommitted changes; PR assessments cover the committed branch diff. GitHub DeepSeek comments are shown alongside local Gemini, Codex, and DeepSeek runs with provider, scope, reviewed SHA, confidence, findings, and raw output. Older SHAs remain visible as stale evidence but cannot unlock resolution or merge.
+
 ## Mounting in other repos (symlinked)
 - Ensure `tv7-core` is a sibling directory to each repo (see layout above).
 - Add symlinks so shared assets are visible in each repo (tracked as links, content lives in `tv7-core`). From repo root:

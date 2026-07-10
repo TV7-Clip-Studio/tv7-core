@@ -32,6 +32,19 @@ Evidence: forgotten_client/lib/data/local/engine_job_poller.dart:62
             ["forgotten_client/lib/data/local/engine_job_poller.dart:62"],
         )
 
+    def test_extracts_new_valid_findings_section(self):
+        review = """### Valid Findings
+- Current-head runtime failure.
+Evidence: tooling/review.py:10
+
+### Unverifiable Concerns
+- Speculation that must not be carried forward.
+"""
+        findings = extract_prior_findings(review)
+        self.assertEqual(len(findings), 1)
+        self.assertIn("runtime failure", findings[0].claim)
+        self.assertNotIn("Speculation", findings[0].claim)
+
     def test_no_findings_text_is_empty_checklist(self):
         review = """### Findings
 No meaningful findings.

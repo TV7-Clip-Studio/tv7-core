@@ -13,7 +13,9 @@ Last updated: 2026-05-21
 
 ## Needs To Be Done
 - [ ] [CO-A01-02-01] Complete docs reorganization so every active reference resolves without legacy fallbacks.
-- [ ] [CO-A01-02-02] Keep the product coordination roadmap current with active owners and status updates.
+- [X] [CO-A01-02-02] Keep the product coordination roadmap current with active owners and status updates.
+    **COMPLETED** | Architect Agent | 2026-07-09 00:00
+    - **NOTE**: Clarified cockpit next-action ordering for dirty open-PR branches so validated local follow-up work proceeds toward human validation or commit before PR review/merge decisions. Validated with targeted cockpit tests, Python compilation, and `make precommit-context`.
 - [ ] [CO-A01-02-03] Add a stable index for standards, architecture, and runbooks to reduce path drift.
 - [ ] [CO-A01-02-04] Tighten governance around what is allowed in repo-local docs vs core docs.
 - [X] [CO-A01-02-05] Document shared symlink coordination and Codex app visibility caveats.

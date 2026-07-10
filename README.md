@@ -26,6 +26,7 @@ From a fresh sibling checkout, use `tv7-core` as the workspace entrypoint:
 ```
 cd tv7-core
 make sync
+make cockpit
 make dev-status
 make dev
 ```
@@ -62,6 +63,20 @@ Useful controls:
 - `make dev-stop` — stop background engine/site pids and backend Docker Compose.
 
 The Conductor repo participates in `make sync` as a sibling repo, but it is not part of the TV7 localhost product stack.
+
+### Workspace Cockpit
+
+`make cockpit` starts the local operator dashboard at `http://127.0.0.1:7979`. Its FastAPI service runs Make targets as persistent background jobs and serves a React interface from `tooling/cockpit-ui`.
+
+- Workspace reads use the latest cached sync snapshot and never blank the dashboard.
+- Ready, review, resolve, refresh, and Conductor operations stream plain logs into a persistent drawer.
+- Only the affected repository shows a running state; expanded panels and scroll position remain stable.
+- Job metadata and logs are local under `docs/.tmp/cockpit/jobs/`.
+- Python and Node dependencies are isolated in `.venv-cockpit` and `tooling/cockpit-ui/node_modules`.
+
+The dirty-slice lifecycle is intentionally gated: **Ready** refreshes handoffs and runs machine checks; it does not commit. A successful Ready unlocks the generated human Pass/Fail contract. Passing that contract unlocks **Commit validated slice**, which creates a local commit without pushing. The resulting ahead commit then moves to the PR/review action.
+
+Assessments share one history while retaining scope. Worktree assessments cover uncommitted changes; PR assessments cover the committed branch diff. GitHub DeepSeek comments are shown alongside local Gemini, Codex, and DeepSeek runs with provider, scope, reviewed SHA, confidence, findings, and raw output. Older SHAs remain visible as stale evidence but cannot unlock resolution or merge.
 
 ## Mounting in other repos (symlinked)
 - Ensure `tv7-core` is a sibling directory to each repo (see layout above).
@@ -135,6 +150,8 @@ make ready -> human test pass/fail -> confirmed commit -> roadmap branch -> read
 ```
 
 When the validated commit starts on `main`, `make sync` passes its primary roadmap item to `make review`. The generated branch follows `<roadmap-item>-<slice>`, with a numeric suffix only when that name already exists. After DeepSeek responds, Conductor opens the gated resolution flow; it does not merge or apply findings without the operator's choice.
+
+DeepSeek confidence expresses confidence in its verdict, not a code-quality score. An approved review below the normal 90% confidence threshold remains mergeable after an explicit warning and `MERGE` confirmation. Rejected reviews use the same guarded override; passing checks and a clean merge state are still required.
 
 Human test instructions are generated into `docs/handoffs/active/`. Pass/fail state and optional failure notes stay local in `docs/.tmp/sync-review-queue.json`. A result is invalidated when the selected repo's HEAD or worktree content changes. Choosing `Exit and resume later` has no timeout; the next `make sync` resumes the same queue entry.
 

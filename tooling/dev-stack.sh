@@ -6,6 +6,8 @@ DEV_STATE_DIR="${DEV_STATE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 BACKEND_PORT="${BACKEND_PORT:-8000}"
 ENGINE_PORT="${ENGINE_PORT:-7070}"
 SITE_PORT="${SITE_PORT:-4321}"
+BACKEND_URL="${BACKEND_URL:-http://localhost:$BACKEND_PORT}"
+ENGINE_URL="${ENGINE_URL:-http://127.0.0.1:$ENGINE_PORT}"
 
 BACKEND_REPO="$REPO_ROOT/tv7-backend"
 ENGINE_REPO="$REPO_ROOT/tv7-engine"
@@ -17,7 +19,7 @@ PID_DIR="$DEV_STATE_DIR/pids"
 
 usage() {
   cat <<EOF
-Usage: dev-stack.sh {up|backend|engine|site|studio|status|stop|logs}
+Usage: dev-stack.sh {up|backend|engine|site|studio|status|stop|stop-backend|stop-engine|stop-site|stop-studio|logs}
 
 Environment:
   REPO_ROOT       Workspace root containing the TV7 repos. Default: $REPO_ROOT
@@ -111,6 +113,14 @@ known_site_pid() {
   [[ "$args" == *"tv7-site"* || "$cwd" == "$SITE_REPO"* ]]
 }
 
+known_backend_pid() {
+  local pid="$1"
+  local args cwd
+  args="$(pid_command "$pid")"
+  cwd="$(pid_cwd "$pid")"
+  [[ "$args" == *"uvicorn"* && ( "$args" == *"app.main:app"* || "$cwd" == "$BACKEND_REPO"* ) ]]
+}
+
 known_studio_pid() {
   local pid="$1"
   local args cwd
@@ -174,6 +184,36 @@ stop_known_port_owner() {
   fi
 }
 
+docker_available() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "[X] Docker is not installed or not on PATH."
+    return 1
+  fi
+  if docker info >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "[X] Docker daemon is not reachable."
+  echo "    Context: $(docker context show 2>/dev/null || echo unknown)"
+  echo "    Socket: ${DOCKER_HOST:-unix://$HOME/.docker/run/docker.sock}"
+  echo "    Start Docker Desktop, then retry. If another process owns port $BACKEND_PORT, choose another backend port."
+  return 1
+}
+
+ensure_backend_port_free() {
+  local pid
+  pid="$(port_pid "$BACKEND_PORT")"
+  if [[ -z "$pid" ]]; then
+    return 0
+  fi
+  if known_backend_pid "$pid" || [[ "${FORCE:-0}" == "1" ]]; then
+    stop_known_port_owner "backend" "$BACKEND_PORT" known_backend_pid
+    return
+  fi
+  echo "[X] Backend port $BACKEND_PORT is already in use by pid $pid: $(pid_command "$pid")"
+  echo "    This does not look like the TV7 backend. Choose another backend port or stop that process manually."
+  return 1
+}
+
 start_background() {
   local name="$1"
   local dir="$2"
@@ -216,10 +256,12 @@ start_backend() {
     echo "[X] backend Makefile or target 'up' missing at $BACKEND_REPO"
     return 1
   fi
+  docker_available || return 1
+  ensure_backend_port_free || return 1
   echo "[..] starting backend api/postgres with docker compose"
   (
     cd "$BACKEND_REPO"
-    make up DETACH=1
+    make up DETACH=1 API_PORT="$BACKEND_PORT"
   ) >"$log_file" 2>&1
   echo "[ok] backend compose requested (log $log_file)"
 }
@@ -228,13 +270,18 @@ stop_backend() {
   ensure_dirs
   if [[ -d "$BACKEND_REPO" ]]; then
     echo "[..] stopping backend compose"
-    (
-      cd "$BACKEND_REPO"
-      make down
-    ) >"$LOG_DIR/backend-stop.log" 2>&1 || {
-      echo "[X] backend compose stop failed (log $LOG_DIR/backend-stop.log)"
-      return 1
-    }
+    if docker_available; then
+      (
+        cd "$BACKEND_REPO"
+        make down API_PORT="$BACKEND_PORT"
+      ) >"$LOG_DIR/backend-stop.log" 2>&1 || {
+        echo "[X] backend compose stop failed (log $LOG_DIR/backend-stop.log)"
+        return 1
+      }
+    else
+      echo "[..] Docker unavailable; checking for a direct backend listener on port $BACKEND_PORT"
+    fi
+    ensure_backend_port_free || return 1
     echo "[ok] backend compose stopped"
   fi
 }
@@ -495,7 +542,7 @@ engine() {
   stop_engine
   echo "[..] starting engine in foreground"
   cd "$ENGINE_REPO"
-  exec make dev
+  exec make dev TV7_ENGINE_PORT="$ENGINE_PORT"
 }
 
 site() {
@@ -516,8 +563,12 @@ studio() {
   repo_exists "studio" "$STUDIO_REPO"
   stop_studio
   echo "[..] starting studio in foreground"
-  cd "$STUDIO_REPO"
-  exec make run-desktop
+  cd "$STUDIO_REPO/forgotten_client"
+  exec flutter run -d macos \
+    --dart-define-from-file=.env.dev \
+    --dart-define=API_BASE_URL="$BACKEND_URL" \
+    --dart-define=TV7_ENGINE_HOST=127.0.0.1 \
+    --dart-define=TV7_ENGINE_PORT="$ENGINE_PORT"
 }
 
 stop() {
@@ -550,6 +601,10 @@ case "$command" in
   studio) studio ;;
   status) status ;;
   stop) stop ;;
+  stop-backend) stop_backend ;;
+  stop-engine) stop_engine ;;
+  stop-site) stop_site ;;
+  stop-studio) stop_studio ;;
   logs) logs ;;
   -h|--help|help) usage ;;
   *)

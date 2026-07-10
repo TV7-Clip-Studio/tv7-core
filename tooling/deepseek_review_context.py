@@ -22,6 +22,8 @@ KNOWN_SECTIONS = {
     "summary",
     "follow-up on previous review",
     "findings",
+    "valid findings",
+    "unverifiable concerns",
     "risks",
     "recommendations",
     "final_verdict",
@@ -49,6 +51,9 @@ def extract_section(markdown: str, section_name: str) -> str:
     start: int | None = None
     start_level: int | None = None
     wanted = section_name.strip().lower()
+    wanted_titles = {wanted}
+    if wanted == "findings":
+        wanted_titles.add("valid findings")
 
     def heading(line: str) -> tuple[str, int | None] | None:
         match = HEADER_RE.match(line)
@@ -65,7 +70,7 @@ def extract_section(markdown: str, section_name: str) -> str:
         if not parsed:
             continue
         title, level = parsed
-        if title == wanted:
+        if title in wanted_titles:
             start = index + 1
             start_level = level
             break

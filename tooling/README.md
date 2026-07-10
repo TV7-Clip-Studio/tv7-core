@@ -7,6 +7,7 @@ Cross-repo automation and bootstrap scripts live here. Invoke via root `Makefile
 - `make pull-all` - pull current branch in each repo (auto-sets upstream if present).
 - `make bootstrap` - clone/fix remotes and ensure sibling repos exist.
 - `make sync` (`make update`) - bootstrap, pull with rebase, show PR URLs, infer roadmap/code focus per repo, and offer the repo operation flow.
+- `make cockpit` - build and start the FastAPI + React workspace dashboard with background Make jobs and streamed logs.
 - `make inspect REPO=tv7-backend` - local, non-mutating post-agent inspection for one repo.
 - `make handoff` - update tracked active Backend/Engine/Studio handoffs from the latest sync cockpit artifact.
 - `make handoff-check` - warning-only check for stale generated active handoffs.

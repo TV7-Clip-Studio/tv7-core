@@ -15,6 +15,7 @@ from review import (
     review_is_approved,
     review_matches_head,
     roadmap_branch_name,
+    pr_mergeable,
     unique_branch_name,
 )
 
@@ -61,6 +62,39 @@ class ReviewBranchNameTest(unittest.TestCase):
 
     def test_review_is_approved_accepts_threshold_boundary(self) -> None:
         self.assertTrue(review_is_approved({"verdict": "APPROVED", "confidence": "90%"}, 90))
+
+    @patch("review.gh_json")
+    def test_mergeability_rejects_failed_checks(self, gh_json) -> None:
+        gh_json.return_value = {
+            "state": "OPEN",
+            "isDraft": False,
+            "mergeStateStatus": "CLEAN",
+            "statusCheckRollup": [
+                {"name": "tests", "status": "COMPLETED", "conclusion": "FAILURE"}
+            ],
+        }
+        ok, reason = pr_mergeable("TV7-Clip-Studio", "tv7-core", 51)
+        self.assertFalse(ok)
+        self.assertIn("tests", reason)
+
+    @patch("review.merge_pr", return_value=0)
+    @patch("review.print_full_review")
+    @patch("builtins.input", side_effect=["1", "MERGE"])
+    def test_below_threshold_can_merge_with_explicit_warning_confirmation(
+        self, _input, _print_review, merge_pr
+    ) -> None:
+        result = ask_after_review_round(
+            "TV7-Clip-Studio",
+            Path("/tmp/tv7-core"),
+            RepoConfig("tv7-core", "main", "make precommit-context", True),
+            "tv7-core",
+            51,
+            "feature",
+            {"verdict": "APPROVED", "confidence": "85%", "merge_recommendation": "MERGE_WITH_WARNING"},
+            90,
+        )
+        self.assertEqual(result, 0)
+        merge_pr.assert_called_once()
 
     @patch("review.print_full_review")
     @patch("builtins.input", return_value="2")

@@ -36,6 +36,10 @@ Last updated: 2026-05-21
     - **CROSS-AGENT-NOTES**: Studio removed the old client and promoted Tauri; Backend removed unused media storage/debug code; Engine ignored generated local assets; Core updated dev entry points and canonical docs.
     - **NOTE**: Core browser stack restarted from the Studio root; Vite :5173 showed Engine connected; Core's 69 tests, media MCP check, Backend 76 tests, Engine workspace check, Studio browser and macOS package checks passed. Packaging dependencies and product workflow gaps remain separately tracked.
 
+- [X] [CO-A01-02-09] Restore the Agy Studio review path after the media MCP stalled its CLI transport.
+    **COMPLETED** | Architect Agent | 2026-10-01 19:10
+    - **NOTE**: Removed the stale global `tv7-media` MCP registration after a disabled registration still launched with Agy CLI 1.2.14. A Gemini 3.8 Flash Medium `READY` probe completed in 2.4 seconds, then a read-only Studio review returned five concrete UI findings. `COHORT.md` records the working command and timeout detection.
+
 ## Nice To Have
 - [ ] [CO-A01-03-01] Add a docs link checker in CI for all markdown links and symlink targets.
 - [ ] [CO-A01-03-02] Publish shared templates for recurring deliverables (roadmap updates, ADRs, handoffs).

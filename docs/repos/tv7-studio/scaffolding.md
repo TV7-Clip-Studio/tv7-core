@@ -1,42 +1,7 @@
-# Studio Scaffolding and Conventions
+# Studio Structure and Commands
 
-Last updated: 2026-02-12
+Updated: 2026-10-01. The repository root contains `package.json`, Vite configuration, and `src/` for the shared React UI. `src-tauri/` contains the desktop shell and Engine sidecar integration. There is no Flutter project or generated Dart SDK.
 
-This document describes the current repository structure and the expected development conventions.
+Run `npm install`, `npm run dev` for browser development, `npm run build` for the browser bundle, and `npm run desktop:build` for the macOS package. Run `make check` from the Studio repository for its standard validation. From Core, `make dev-browser-up` serves a production UI build on `:8080` with Backend and Engine; `make dev-studio` starts Vite on `:5173`.
 
-## Repo Layout
-- Flutter app root: `forgotten_client/`
-- Makefile entrypoint (repo root): `Makefile`
-- Canonical backend contract artifact: `docs/contracts/openapi/tv7-backend/openapi.json`
-
-## Current App Structure
-- Entrypoints: `forgotten_client/lib/main_dev.dart`, `forgotten_client/lib/main_stage.dart`, `forgotten_client/lib/main_prod.dart`
-- App bootstrap: `forgotten_client/lib/bootstrap.dart`, `forgotten_client/lib/app.dart`
-- Feature modules: `forgotten_client/lib/features/{auth,dashboard,ingest,player,user}`
-- Data modules: `forgotten_client/lib/data/{api,auth,config,local}`
-- Generated API SDK: `forgotten_client/lib/api/generated/`
-- Tests: `forgotten_client/test/`
-
-## Environment and Run Commands
-- Env templates: `forgotten_client/.env.dev.example`, `forgotten_client/.env.stage.example`, `forgotten_client/.env.prod.example`
-- Desktop run (recommended): `make run-desktop DEVICE=macos ENV_FILE=.env.dev`
-- Flavor run: `make run FLAVOR=dev ENV_FILE=.env.dev`
-
-## Quality Commands
-- Format: `make format`
-- Analyze: `make analyze`
-- Test: `make test`
-- Full check gate: `make check`
-
-## OpenAPI Client Workflow
-- Sync canonical spec into app input:
-  - `./.codex/skills/studio-openapi-sync/scripts/sync_spec.sh`
-- Regenerate client:
-  - `make gen-api` (calls `forgotten_client/tool/generate_api.sh`)
-- Treat `forgotten_client/lib/api/generated/` as generated-only code.
-- Apply handwritten adapters in `forgotten_client/lib/data/api/` and feature/repository consumers.
-
-## Conventions
-- Keep desktop-first workflows stable; mobile parity can follow.
-- Keep external-process and local media interactions in `lib/data/local/`.
-- Keep test doubles/fakes in `forgotten_client/test/` to avoid real external dependencies in CI.
+Keep `node_modules/`, `dist/`, `src-tauri/target/`, local media, and credentials out of Git. The canonical Backend and Engine OpenAPI contracts live in `tv7-core/docs/contracts/openapi/`.

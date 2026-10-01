@@ -16,6 +16,18 @@ Last updated: 2026-06-17
 - [X] [ST-A01-02-06] Harden runtime diagnostics and secret-safe Studio logging.
     **COMPLETED** | Studio Agent | 2026-06-09 00:00
     - **NOTE**: Added secret-safe Dio logging for generated DTOs, JSON strings, headers, and token responses; Studio now attaches to an already healthy Engine instead of starting a conflicting second process; transcript download accepts legacy `source_url`/`sourceUrl` metadata while rejecting local-only sources with a clearer message; license diagnostics now label backend 404s as endpoint-unavailable compatibility warnings. Hardened Quick Clip preflight so local imports without transcripts or remote caption metadata are blocked with an inline user-facing message, persisted card-level issue, and DiagnosticsLog entry instead of failing silently after Generate Clips. Follow-up added Engine-owned local transcript generation for local imports. Verified with focused Flutter tests and `make check`.
+- [X] [ST-A01-02-07] Keep the macOS desktop build compatible with Xcode 27.
+    **COMPLETED** | Architect Agent | 2026-09-29 15:00
+    - **NOTE**: Raised the Runner and generated Pod deployment targets to macOS 12. `flutter analyze --no-pub`, focused login/navigation widget tests, and `flutter build macos --debug --no-pub` passed with Xcode 27.
+- [X] [ST-A01-02-08] Establish an automatable browser Studio login and video library.
+    **COMPLETED** | Architect + Studio + Backend Agents | 2026-09-29
+    - **NOTE**: Added a web startup path that avoids desktop Engine and filesystem initialization, and a Backend-backed video library. Allowed the local web origin through Backend CORS. Verified Flutter analysis, 72 Studio tests, web build, 62 Backend tests, and live browser sign-in with the disposable local account; the library displayed the existing creator-check video and clip count. Browser media ingest, editing, Engine control, and publishing remain future work.
+- [X] [ST-A01-02-09] Exercise browser Studio against a repeatable local Backend and Engine stack.
+    **COMPLETED** | Architect + Studio + Engine Agents | 2026-09-30
+    - **NOTE**: Added a loopback-only browser stack runner with an ignored SQLite test database and disposable account bootstrap. Browser Studio now shows Backend readiness and Engine diagnostics, with local-origin Engine CORS. Fixed a live Flutter `setState` crash found during sign-in. Verified a fresh browser login, empty video library, Diagnostics readiness and all five Engine capabilities, tab switching, diagnostics refresh, Flutter analysis, 72 tests, web build, and live service health. Creator media workflows remain outside the browser workspace.
+- [X] [ST-A01-02-10] Sync desktop source videos and play them in browser Studio.
+    **COMPLETED** | Studio Agent + Architect | 2026-10-01
+    - **NOTE**: Desktop Studio offers Sync Video and Verify Sync, uploads the source after owner-scoped registration, and distinguishes metadata-only registration from cloud media. Browser Studio lists the account's source and requests a signed streaming URL for playback. Verified Studio analysis, 75 tests, macOS and web builds; the existing Papa Noel video was uploaded to the local test account, appeared in browser Studio, and played past 27 seconds at 1920x1080. Desktop UI click-through remains unverified because the macOS host input bridge is unavailable.
 - [X] [ST-A01-02-02] Wire clip suggestion/highlight APIs into production auto-clip flows with robust error UX.
     **COMPLETED** | Studio Agent | 2026-05-29 16:15
     - **NOTE**: Fully resolved the backend highlights 404 bad response by transitioning to a 100% local, offline intelligence pipeline. Integrated a custom high-performance VTT subtitle parser, a timeline gap detection algorithm (targeting unclipped content strictly), duration segmenting (Short: 10-15s, Medium: 30-45s, Long: 60-90s Presets) aligned to cues and sentence boundaries, and a rule-based smart social post copywriting generator. Designed a premium glassmorphic Quick Clip Config Bottom Sheet (ChoiceChips, ListTiles) and an M3 status card progress overlay featuring a linear progress bar. Completely integrated and verified with the local Rust Media Engine sidecar. All tests pass green.
@@ -105,6 +117,20 @@ Last updated: 2026-06-17
     **BACKLOG** | Studio Agent | 2026-06-03 00:00
     - **CROSS-AGENT-NOTES**: Coordinate with Engine `EN-A06` and Core contract docs. Validate packaged Studio on a clean profile with no developer repos and no Homebrew dependency assumptions.
     - **NOTE**: Verify local media import, probe, transcription when local assets exist, AI transcript analysis when local LLM is configured, render, and local export without internet. URL ingest and social publishing may require internet.
+
+## Epic ST-A05: Unified Downloadable Studio Proof
+- [X] [ST-A05-01-01] Prove one browser and macOS desktop UI with Engine-owned local media work.
+    **COMPLETED** | Studio Agent + Architect | 2026-10-01
+    - **NOTE**: React/Tauri Studio shares UI code across browser and a macOS `.app`. Browser UI supports computer media import, single URL jobs, and channel metadata preselection with explicit batch confirmation. Packaged app starts/stops its Engine child; native UI imported video and VTT, reviewed and adjusted a deterministic candidate, and rendered a captioned MP4. Web lint/build and desktop build passed; FFprobe confirmed the rendered file. Studio was promoted to the repository root and the Flutter client was retired on 2026-10-01; Windows and release gates remain open.
+- [ ] [ST-A05-01-02] Bundle FFmpeg, yt-dlp, JavaScript runtime, and optional transcription model for clean macOS and Windows installs.
+- [ ] [ST-A05-01-03] Persist editable local projects and platform variants; add a full preview/timeline and creator approval flow.
+- [X] [ST-A05-01-04] Connect cloud account, license, approved asset storage, and scheduling drafts to the unified Studio UI.
+    **COMPLETED** | Studio Agent + Architect | 2026-10-01
+    - **NOTE**: Browser smoke signed in, rendered locally, explicitly approved transfer of the finished MP4 to owner-scoped private storage, registered fractional clip timing, created a pending schedule draft, and refreshed its status. Anonymous asset access returned 401. No live post was sent; Backend publishing capability remains gated.
+- [X] [ST-A05-01-05] Generate a per-launch Engine token and protect the packaged desktop loopback API.
+    **COMPLETED** | Studio Agent + Engine Agent | 2026-10-01
+    - **NOTE**: Tauri creates 32 random bytes per launch, passes the bearer token only to its Engine child, and supplies it to bundled UI requests through a narrow native command. Release navigation is restricted to bundled content, scripts use a self-only CSP, and the token is absent from UI/logs. Native import passed while missing/wrong-token HTTP requests returned 401; Engine child exits with the app. Browser development mode remains explicitly unprotected.
+- [ ] [ST-A05-01-06] Complete signed Windows/macOS distribution and a clean-install dependency check.
 
 ## Nice To Have
 - [X] [ST-A01-03-01] Add local transcription path through Engine.

@@ -19,7 +19,7 @@
 
 ## 4. Cross-Repo Protocol
 - **Need to change shared docs?** → Ask user to switch to `tv7-core` (or use the Architect Agent).
-- **Need to change the backend API?** → Plan the change, implement in Backend, then handoff to Flutter agent.
+- **Need to change the backend API?** → Plan the change, implement in Backend, then check Studio consumers and Core OpenAPI.
 - **NEVER** try to refactor the whole ecosystem in one go (unless you are the **Architect Agent** handling a multi-repo task).
 
 ## 5. Coding Philosophy
@@ -41,10 +41,9 @@ This workspace includes custom Model Context Protocol (MCP) servers to bridge th
 - **Python (`tv7-backend`)**:
     - `make check` (Run all checks) or individual: `make fmt`, `make lint`, `make type`, `make sec`, `make test`
     - **Note**: `make up` to start services.
-- **Flutter (`tv7-studio`)**:
-    - `make check` (Format, Analyze, Test)
-    - **Note**: `make run-desktop` to launch.
-    - **Workflow**: Use `/sync-backend-to-flutter` after backend changes.
+- **React/Tauri (`tv7-studio`)**:
+    - `make check` (lint and browser build); `npm run desktop:build` for macOS packaging.
+    - **Workflow**: Verify Studio's Backend and Engine API calls against Core OpenAPI contracts.
 - **Rust (`tv7-engine`)**:
     - *Tooling pending.* Use `cargo check` / `cargo clippy` for now.
 - **Astro (`tv7-site`)**:

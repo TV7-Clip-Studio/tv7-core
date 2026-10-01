@@ -8,7 +8,7 @@
 - Architecture references: high-level system view plus per-surface overviews.
 - Standards: agent rules, governance, naming/structure guidance.
 - Tooling: shared Make targets/scripts for bootstrap, lint/test orchestration, CI snippets.
-- Templates: starter scaffolds for TV7 stacks (FastAPI, Flutter, Rust/Axum, Astro).
+- Templates: shared editor settings and reusable scaffolding.
 
 ## Boundaries
 - No product/runtime code; no service configs.

@@ -1,4 +1,6 @@
-# Studio Sidecar Migration
+# Studio Sidecar Migration (Historical)
+
+This document records the retired Flutter-to-Engine migration. It is retained for archived handoff provenance. Current Studio runtime and product boundaries are in `docs/architecture/downloadable-studio.md` and `tv7-studio/README.md`.
 
 This document is the Engine-to-Studio handoff for the first mandatory sidecar adoption milestone.
 

@@ -55,6 +55,23 @@ Last updated: 2026-06-10
 - [P] [EN-A03-01-02] Move `yt-dlp` metadata/download responsibilities into Engine with structured progress and errors.
     **IN-PROGRESS** | Engine Agent | 2026-05-22 00:00
     - **NOTE**: First implementation runs `yt-dlp` behind Engine for metadata and download, records coarse queued/running/completed/failed job state, and checks `yt-dlp` in diagnostics. Next hardening: real streamed progress/log capture, richer output path resolution, and cancellation.
+    - **NOTE**: 2026-10-01: Added bounded channel discovery, explicit selected-video batch jobs, a three-download concurrency cap, and process-level `yt-dlp` cancellation. Rich progress, durable restart recovery, and commercial YouTube source approval remain open.
+- [X] [EN-A03-01-04] Add bounded browser-to-Engine local media handoff and selected channel import contract.
+    **COMPLETED** | Engine Agent | 2026-10-01 11:20
+    - **CROSS-AGENT-NOTES**: The same Studio UI uses streaming multipart media import in browser and desktop. Core OpenAPI declares `/v1/ingest/file`, `/v1/channels/discover`, and `/v1/ingest/selected`.
+    - **NOTE**: Engine-owned file storage enforces a 1 GiB cap, generated filename, atomic move, and partial-file cleanup. Discovery returns at most 25 entries per page without downloading; only explicitly selected IDs start jobs. Verified by 20 core and 36 service tests, strict clippy, and OpenAPI contract checks. Local caller authorization remains a release gate.
+- [X] [EN-A03-01-05] Generate deterministic transcript clip candidates and burn optional VTT subtitles locally.
+    **COMPLETED** | Engine Agent + Architect | 2026-10-01
+    - **NOTE**: Bounded Engine-owned VTT input yields chronological, editable candidate ranges without a viral score. Rendering shifts relevant cues and burns simple captions into the clip. Verified 64 Engine tests, strict clippy, and an HTTP source-to-candidate-to-captioned-render smoke. VTT styling, durable drafts, and path-free media IDs remain open.
+- [X] [EN-A03-01-06] Import creator-selected VTT through a bounded Engine endpoint.
+    **COMPLETED** | Engine Agent + Architect | 2026-10-01
+    - **NOTE**: Multipart `/v1/transcripts/import` validates a VTT up to 5 MiB, atomically stores it in Engine assets, and returns transcript ID/path plus cue metadata. Verified 65 Engine tests, strict clippy, OpenAPI route alignment, and a live shared-stack import. Packaged caller authorization is tracked in `EN-A03-01-07`.
+- [X] [EN-A03-01-07] Protect packaged loopback Engine routes with a per-session bearer token.
+    **COMPLETED** | Engine Agent + Studio Agent | 2026-10-01
+    - **NOTE**: Every route, including health, requires `Authorization: Bearer` when `TV7_ENGINE_API_TOKEN` is set; OPTIONS preflight is exempt. Packaged Studio generates and supplies the token, and native missing/wrong-token requests returned 401 while authorized import passed. Development mode without a token logs a warning. Verified 68 Engine tests and strict clippy.
+- [X] [EN-A03-01-08] Export only approved Engine-owned rendered MP4s by opaque temporary ID.
+    **COMPLETED** | Engine Agent + Architect | 2026-10-01
+    - **NOTE**: Render returns `media_id` only for Engine-owned MP4 output; authenticated GET streams that ID with full or bounded Range responses and revalidates path/size. IDs expire after one hour, after 100 exports, or on restart. Verified 71 Engine tests, strict clippy, release build, and shared-stack route presence. Durable asset identity and approval state remain open.
 - [P] [EN-A03-01-03] Move transcript discovery/download/normalization behind Engine APIs.
     **IN-PROGRESS** | Engine Agent | 2026-05-22 00:00
     - **NOTE**: First implementation runs transcript download behind Engine and returns the created VTT path through job result. Next hardening: transcript discovery, language selection details, and normalization output.
@@ -69,6 +86,7 @@ Last updated: 2026-06-10
     - **NOTE**: Added `GET /v1/jobs/{id}` status polling, `GET /v1/jobs/{id}/logs`, and `POST /v1/jobs/{id}/cancel` with coarse logs and cooperative cancellation state. Process-level `yt-dlp` termination and streamed progress parsing remain to be implemented.
     - **NOTE**: Studio contract now documents current cancellation behavior, path ownership, URL safety rules, and diagnostics expectations. Job IDs now use sequentially consistent atomic ordering to close review feedback, though atomic uniqueness did not depend on this ordering.
     - **NOTE**: Added a hard in-memory job cap in Engine service so terminal TTL cleanup is not the only protection against sustained job growth. Full child-process termination for in-flight `yt-dlp`/`ffmpeg` remains pending in EN-A04.
+    - **NOTE**: 2026-10-01: Cancellation now terminates in-flight `yt-dlp` children for URL/selected download jobs. `ffmpeg` cancellation, richer progress, and durable jobs remain open.
 
 ## Epic EN-A05: Local AI, Transcription, And Clip Intelligence
 - [P] [EN-A05-01-01] Add local transcription backend abstraction and model configuration.
@@ -111,8 +129,9 @@ Last updated: 2026-06-10
     - **NOTE**: Added first setup readiness resolver and `/v1/setup/{manifest,status}` endpoints. Engine now reports one `ai` capability with provider candidates in order: Ollama/user local, TV7-managed local model, then TV7 cloud AI via Backend. Cloud AI can make `ai` ready only when a valid delegated Engine token is present, but must not make `offline_creation` ready. Added `POST /v1/ai/cloud-debug` for the Studio -> Engine -> Backend cloud AI debug path. Follow-up: fold all capability groups into `/v1/diagnostics` and add mutating setup/download jobs.
 - [ ] [EN-A06-01-05] Add benchmark harness for probe/transcode/transcription/LLM hot paths.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
-- [ ] [EN-A06-01-06] Add `engine-ffi` crate stub for Flutter/mobile interoperability planning.
-    **BACKLOG** | Engine Agent | 2026-05-21 00:00
+- [X] [EN-A06-01-06] Retire the planned Flutter/mobile `engine-ffi` stub after the Tauri sidecar decision.
+    **COMPLETED** | Architect Agent | 2026-10-01
+    - **NOTE**: No FFI crate was implemented. The desktop Studio uses Engine's authenticated loopback HTTP API; Windows support belongs to the Tauri packaging work.
 - [ ] [EN-A06-01-07] Add feature flags for optional GPU acceleration and model backends.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
 - [ ] [EN-A06-01-08] Publish a compatibility matrix for supported codecs, formats, AI runtimes, and platform constraints.

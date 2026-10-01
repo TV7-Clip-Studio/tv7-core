@@ -260,7 +260,7 @@ fn media_probe(args: &Value) -> Result<Value, String> {
                 "format": meta.format
             }
         })),
-        Err(err) => Err(err),
+        Err(err) => Err(err.to_string()),
     }
 }
 

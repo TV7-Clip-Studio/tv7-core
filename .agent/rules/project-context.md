@@ -17,19 +17,19 @@ This workspace contains multiple integrated services. Use the correct folder nam
     * **Roadmap**: [`tv7-core/docs/roadmaps/roadmap.md`](file:///Users/joaquinastelarra/Documents/TV7/tv7-core/docs/roadmaps/roadmap.md)
     * **Architecture**: [`tv7-core/docs/tv7_high_architecture.md`](file:///Users/joaquinastelarra/Documents/TV7/tv7-core/docs/tv7_high_architecture.md)
 * **`tv7-conductor`**: Standalone Project Conductor runtime (plan/seed/expand/execute/review).
-* **`tv7-flutter-studio`** (The Client): Flutter Desktop application. Primary UI, manages local Engine processes.
-* **`tv7-fastapi-backend`** (The Control Plane): Python/FastAPI backend service. **Auth, Billing, Scheduling ONLY.** No media processing.
-* **`tv7-astro-site`**: Documentation or marketing site (Astro).
-* **`tv7-axum-engine`**: High-performance Rust components. **Local Compute Sidecar.** Transcoding, AI, Media. No business logic.
+* **`tv7-studio`** (The Client): React UI in a Tauri desktop shell, coordinating a local Engine child.
+* **`tv7-backend`** (The Control Plane): Python/FastAPI service for identity, licensing, approved private assets, scheduling, and publishing. No media rendering.
+* **`tv7-site`**: Documentation or marketing site (Astro).
+* **`tv7-engine`**: Rust local compute sidecar for media ingest and rendering. No business logic.
 * **`.agent/mcp`**: **Custom MCP Servers.** Local bridge for AI agents to interact with the Engine.
     * **`tv7-media-mcp`**: Rust MCP for media analysis and transform operations.
 
 ## 3. Full-Stack Workflow Rules
-**Context:** The system relies on tight integration between the Flutter Client and FastAPI Backend.
+**Context:** Studio, Engine, and Backend share explicit API contracts.
 
 **Rule 1: Cross-Repo Sync**: When modifying one side, **ALWAYS** check the other.
-* **Modifying `tv7-fastapi-backend`?** -> Check if `tv7-flutter-studio` models/API calls need updates.
-* **Modifying `tv7-flutter-studio`?** -> Verify backend endpoints support the new UI logic.
+* **Modifying `tv7-backend`?** -> Check Studio's API calls and Core OpenAPI contract.
+* **Modifying `tv7-studio`?** -> Verify Backend and Engine endpoints support the UI logic.
 
 **Rule 2: Roadmap Synchronization**:
 * Agents are responsible for keeping [`tv7-core/docs/roadmaps/roadmap.md`](file:///Users/joaquinastelarra/Documents/TV7/tv7-core/docs/roadmaps/roadmap.md) up to date.
@@ -45,15 +45,14 @@ This workspace contains multiple integrated services. Use the correct folder nam
 ## 4. Execution & Testing Commands
 Execute commands inside the specific service directories:
 
-### Backend (`tv7-fastapi-backend`)
+### Backend (`tv7-backend`)
 * **Start:** `make up` (Docker) or `make dev` (Local)
 * **Test:** `make test` or `pytest`
 * **Lint:** `make lint`
 
-### Frontend (`tv7-flutter-studio`)
-* **Start:** `make run-desktop` (macOS) or `make run FLAVOR=dev`
-* **Test:** `flutter test`
-* **Lint:** `flutter analyze`
+### Frontend (`tv7-studio`)
+* **Start:** `make dev-studio` from Core for the browser UI, or `npm run desktop:build` from Studio for a macOS package.
+* **Check:** `make check` from Studio (lint and browser build).
 
 ### Conductor (`tv7-conductor`)
 * **Start/Status:** `make conductor-init`, `make conductor-status` (from `tv7-core` shim) or `python3 tooling/conductor.py` (inside `tv7-conductor`)
@@ -63,5 +62,5 @@ Execute commands inside the specific service directories:
 As per "Agent Best Practices," you must output a numbered **Implementation Plan**.
 In that plan, explicitly list:
 1.  Which folders (`tv7-*`) are affected.
-2.  The cross-repo impact (e.g., "Changes in Backend require update in Flutter").
+2.  The cross-repo impact (e.g., "Changes in Backend require update in Studio").
 3.  The test commands you will run for each folder.

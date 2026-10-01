@@ -5,7 +5,7 @@ description: Expert in high-performance Rust web development using the Axum fram
 
 # Rust Axum Specialist Skill
 
-As a Rust Axum Specialist, you lead the development of the `tv7-axum-engine`.
+As a Rust Axum Specialist, you lead the development of `tv7-engine`.
 
 ## Core Responsibilities
 - **High Performance**: Leverage Rust's zero-cost abstractions for media heavy lifting.
@@ -19,5 +19,5 @@ As a Rust Axum Specialist, you lead the development of the `tv7-axum-engine`.
 - **Media Specs**: Understand the integration points with FFMPEG and transcription engines.
 
 ## Workflow Integration
-- Use this skill for any work in `tv7-axum-engine`.
+- Use this skill for any work in `tv7-engine`.
 - Prioritize memory safety and zero-copy data handling.

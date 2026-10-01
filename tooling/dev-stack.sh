@@ -6,6 +6,7 @@ DEV_STATE_DIR="${DEV_STATE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 BACKEND_PORT="${BACKEND_PORT:-8000}"
 ENGINE_PORT="${ENGINE_PORT:-7070}"
 SITE_PORT="${SITE_PORT:-4321}"
+STUDIO_PORT="${STUDIO_PORT:-5173}"
 BACKEND_URL="${BACKEND_URL:-http://localhost:$BACKEND_PORT}"
 ENGINE_URL="${ENGINE_URL:-http://127.0.0.1:$ENGINE_PORT}"
 
@@ -27,6 +28,7 @@ Environment:
   BACKEND_PORT   Backend API port. Default: $BACKEND_PORT
   ENGINE_PORT    Engine port. Default: $ENGINE_PORT
   SITE_PORT      Site port. Default: $SITE_PORT
+  STUDIO_PORT    Studio Vite port. Default: $STUDIO_PORT
   FORCE          Set to 1 to stop unknown managed-port or Studio-like processes.
 EOF
 }
@@ -126,7 +128,7 @@ known_studio_pid() {
   local args cwd
   args="$(pid_command "$pid")"
   cwd="$(pid_cwd "$pid")"
-  [[ "$args" == *"forgotten_client"* || ( "$cwd" == "$STUDIO_REPO"* && "$args" == *"flutter"* ) ]]
+  [[ "$cwd" == "$STUDIO_REPO"* && ( "$args" == *"vite"* || "$args" == *"npm run dev"* ) ]]
 }
 
 unique_lines() {
@@ -354,40 +356,15 @@ port_status() {
 }
 
 studio_pids() {
-  {
-    pgrep -x forgotten_client 2>/dev/null || true
-    pgrep -f "flutter_tools.snapshot run|flutter run|make .*run-desktop|make -C .*run-desktop" 2>/dev/null || true
-  } | while read -r pid; do
-    [[ -n "$pid" ]] || continue
-    if known_studio_pid "$pid"; then
-      echo "$pid"
-    fi
-  done | unique_lines
+  local pid
+  pid="$(port_pid "$STUDIO_PORT")"
+  if [[ -n "$pid" ]] && known_studio_pid "$pid"; then
+    echo "$pid"
+  fi
 }
 
 studio_status() {
-  local pids pid app_pid runner_pid
-  pids="$(studio_pids)"
-  if [[ -z "$pids" ]]; then
-    echo "[X] studio process not running"
-    return 1
-  fi
-
-  while IFS= read -r pid; do
-    [[ -n "$pid" ]] || continue
-    if [[ "$(pid_command "$pid")" == *"forgotten_client.app"* ]]; then
-      app_pid="$pid"
-    elif [[ -z "${runner_pid:-}" ]]; then
-      runner_pid="$pid"
-    fi
-  done <<<"$pids"
-
-  if [[ -n "${app_pid:-}" ]]; then
-    echo "[ok] studio app pid $app_pid - $(pid_command "$app_pid")"
-  fi
-  if [[ -n "${runner_pid:-}" ]]; then
-    echo "[ok] studio runner pid $runner_pid - $(pid_command "$runner_pid")"
-  fi
+  health_url "studio" "http://127.0.0.1:$STUDIO_PORT/"
 }
 
 print_next_steps() {
@@ -447,7 +424,7 @@ up() {
   echo "Backend: http://localhost:$BACKEND_PORT/health"
   echo "Engine:  http://127.0.0.1:$ENGINE_PORT/health"
   echo "Site:    http://localhost:$SITE_PORT/"
-  echo "Studio:  run 'make dev-studio' in tv7-core when you want Flutter desktop."
+  echo "Studio:  run 'make dev-studio' for the web development UI or 'make desktop:build' in tv7-studio for macOS packaging."
   echo "Logs:    $LOG_DIR"
 }
 
@@ -465,11 +442,13 @@ status() {
   port_status "backend" "$BACKEND_PORT" || true
   port_status "engine" "$ENGINE_PORT" || true
   port_status "site" "$SITE_PORT" || true
+  port_status "studio" "$STUDIO_PORT" || true
   echo
   echo "Health:"
   health_url "backend" "http://localhost:$BACKEND_PORT/health" || true
   health_url "engine" "http://127.0.0.1:$ENGINE_PORT/health" || true
   health_url "site" "http://localhost:$SITE_PORT/" || true
+  health_url "studio" "http://127.0.0.1:$STUDIO_PORT/" || true
   echo
   echo "Logs: $LOG_DIR"
   echo
@@ -506,22 +485,7 @@ stop_site() {
 
 stop_studio() {
   ensure_dirs
-  local pids pid
-  pids="$(studio_pids)"
-  if [[ -z "$pids" ]]; then
-    echo "[ok] studio not running"
-    return 0
-  fi
-  while IFS= read -r pid; do
-    [[ -n "$pid" ]] || continue
-    if known_studio_pid "$pid" || [[ "${FORCE:-0}" == "1" ]]; then
-      stop_pid_value "studio" "$pid"
-    else
-      echo "[X] Refusing to stop unknown studio-like process pid $pid: $(pid_command "$pid")"
-      echo "    Re-run with FORCE=1 if this process should be replaced."
-      return 1
-    fi
-  done <<<"$pids"
+  stop_known_port_owner "studio" "$STUDIO_PORT" known_studio_pid
 }
 
 backend() {
@@ -562,13 +526,9 @@ studio() {
   ensure_dirs
   repo_exists "studio" "$STUDIO_REPO"
   stop_studio
-  echo "[..] starting studio in foreground"
-  cd "$STUDIO_REPO/forgotten_client"
-  exec flutter run -d macos \
-    --dart-define-from-file=.env.dev \
-    --dart-define=API_BASE_URL="$BACKEND_URL" \
-    --dart-define=TV7_ENGINE_HOST=127.0.0.1 \
-    --dart-define=TV7_ENGINE_PORT="$ENGINE_PORT"
+  echo "[..] starting Studio Vite UI in foreground"
+  cd "$STUDIO_REPO"
+  exec env VITE_ENGINE_URL="$ENGINE_URL" npm run dev -- --host 127.0.0.1 --port "$STUDIO_PORT"
 }
 
 stop() {

@@ -2,6 +2,8 @@
 
 `tv7-core` is the shared operating system for all `TV7-Clip-Studio` repos. It holds the canonical docs, cross-repo contracts, standards, shared tooling, templates, and governance.
 
+**Start here:** [DEVELOPMENT.md](DEVELOPMENT.md) gives the small daily loop and local service commands. [COHORT.md](COHORT.md) defines Architect, component owner, Agy UI reviewer, and optional DeepSeek reviewer roles. Run `make help` for the normal commands. Older Conductor, Cockpit, `sync`, and bulk PR workflows are opt-in via `make -f Makefile.legacy <target>`; they are not required to build or test Studio.
+
 ## Workspace layout (required)
 - Clone all repos as siblings:  
   ```
@@ -21,29 +23,29 @@
 - Simpler mental model: edit through the link, commit in `tv7-core`, done.
 
 ## New developer localhost flow
-From a fresh sibling checkout, use `tv7-core` as the workspace entrypoint:
+From a fresh sibling checkout, use `tv7-core` as the workspace entrypoint. For an integrated browser test:
 
 ```
 cd tv7-core
-make sync
-make cockpit
-make dev-status
-make dev
+make dev-browser-up
+make dev-browser-status
 ```
+
+This starts the React Studio at `http://127.0.0.1:8080/`, the local Engine, and the Backend. Use `make dev-browser-stop` when finished. See [DEVELOPMENT.md](DEVELOPMENT.md) for component checks and desktop packaging.
 
 Local prerequisites:
 - Docker Desktop or Docker Engine for backend Postgres/API containers.
 - `lsof` for local port/process ownership checks.
 - Rust/Cargo for the Engine.
-- Node/npm for the Site.
-- Flutter with macOS desktop support for Studio.
+- Node/npm for the Site and Studio.
+- A Rust toolchain for the packaged Tauri Studio.
 
 `make dev` starts the product services that make sense as a background local stack:
 - Backend and Postgres through `tv7-backend` Docker Compose.
 - Engine through `tv7-engine`.
 - Site through `tv7-site`.
 
-Studio is a desktop app and stays explicit:
+Studio's browser development UI starts explicitly:
 
 ```
 make dev-studio
@@ -53,6 +55,7 @@ Default local URLs:
 - Backend health: `http://localhost:8000/health`
 - Engine health: `http://127.0.0.1:7070/health`
 - Site: `http://localhost:4321/`
+- Studio development UI: `http://127.0.0.1:5173/`
 
 Useful controls:
 - `make dev-backend` — run the backend foreground dev command in its repo.
@@ -64,7 +67,7 @@ Useful controls:
 
 The Conductor repo participates in `make sync` as a sibling repo, but it is not part of the TV7 localhost product stack.
 
-### Workspace Cockpit
+### Legacy workspace Cockpit
 
 `make cockpit` starts the local operator dashboard at `http://127.0.0.1:7979`. Its FastAPI service runs Make targets as persistent background jobs and serves a React interface from `tooling/cockpit-ui`.
 
@@ -111,7 +114,7 @@ Assessments share one history while retaining scope. Worktree assessments cover 
 - `repos/` — repo-scoped docs promoted to core (e.g., Studio/Backend architecture, integration notes, runbooks).
 - `contracts/` — cross-repo interface artifacts (e.g., OpenAPI exports).
 - `tooling/` — cross-repo Make targets and scripts (lint-all, format-all, bootstrap).
-- `templates/` — shared scaffolds (Rust/FastAPI/Flutter/Astro starters, CI snippets).
+- `templates/` — shared editor settings and reusable scaffolding.
 - `standards/` — naming, repo structure, versioning rules, changelog policy, security guidelines.
 - `meta/` — ADRs, decision log, and the Arch Agent directive.
 
@@ -125,7 +128,9 @@ Assessments share one history while retaining scope. Worktree assessments cover 
 See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 
 
-## Makefile targets
+## Legacy and advanced Makefile targets
+
+These targets require `make -f Makefile.legacy <target>`; they are not exposed by the default Makefile.
 - `make status` — show git status for all tracked repos.
 - `make pull-all` — pull current branch in each repo (auto-sets upstream if present).
 - `make bootstrap` — clone/fix remotes and ensure sibling repos exist.
@@ -136,12 +141,12 @@ See `meta/ARCH_AGENT_DIRECTIVE.md` for the full governance rules.
 - `make dev-status` — check localhost repo/process/health status.
 - `make dev-stop` — stop the background localhost stack.
 - `make dev-logs` — show recent localhost stack logs.
-- `make dev-backend`, `make dev-engine`, `make dev-site`, `make dev-studio` — refresh one service from core, then stream its logs in the current terminal.
+- `make dev-backend`, `make dev-engine`, `make dev-site`, `make dev-studio` — start one service from Core in the current terminal.
 - `make review REPO=tv7-engine` — after a local commit, validate one repo, push/create a ready PR, and collect the DeepSeek review into `docs/code-reviews/<repo>/pr-<number>/`.
 - `make reviews` — collect all open PR review data across TV7 repos into `docs/code-reviews/<repo>/`.
 - `make set-secret` — set a GitHub Actions secret across repos via `tooling/set-secret.sh` (pass `SECRET_NAME`, `SECRET_VALUE`, and `REPOS` or `ALL`; optional `ORG`).
 
-### Architect validation queue
+### Legacy Architect validation queue
 
 `make sync` owns the resumable human validation/review queue. Select `Process validation/review queue` to process one repo at a time:
 

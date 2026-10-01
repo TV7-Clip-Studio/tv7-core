@@ -7,7 +7,7 @@ Cross-repo interface contracts are stored here as canonical artifacts.
 - `openapi/tv7-engine/openapi.json` - canonical local Engine sidecar contract export.
 
 ## Engine Handoffs
-- `tv7-engine/studio-sidecar-migration.md` - Engine-to-Studio migration contract for mandatory sidecar adoption.
+- `tv7-engine/studio-sidecar-migration.md` - historical Flutter-to-Engine migration record; not current implementation guidance.
 - `tv7-engine/runtime-setup.md` - Engine-managed runtime asset manifest and first-run setup contract.
 - `tv7-engine/ai-provider-handoff.md` - Studio/Engine/Backend responsibilities for unified AI provider dispatch and TV7 cloud AI delegation.
 

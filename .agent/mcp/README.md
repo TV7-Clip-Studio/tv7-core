@@ -26,10 +26,10 @@ app or via CLI config. See scopes.json for the suggested mapping.
 ## Scoping map
 - Defaults: context7 (all roles/repos)
 - Architect: tv7_media
-- Engine (tv7-axum-engine): tv7_media
-- Backend (tv7-fastapi-backend): defaults only
-- Studio (tv7-flutter-studio): defaults only
-- Site (tv7-astro-site): defaults only
+- Engine (tv7-engine): tv7_media
+- Backend (tv7-backend): defaults only
+- Studio (tv7-studio): defaults only
+- Site (tv7-site): defaults only
 - Core (tv7-core): defaults only
 
 See scopes.json for the exact mapping and defaults.

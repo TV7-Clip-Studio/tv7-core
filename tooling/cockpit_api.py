@@ -44,6 +44,7 @@ DEFAULT_PORTS = {
     "tv7-backend": 8000,
     "tv7-engine": 7070,
     "tv7-site": 4321,
+    "tv7-studio": 5173,
 }
 
 app = FastAPI(title="TV7 Cockpit", docs_url="/api/docs")
@@ -182,18 +183,6 @@ def is_port_listening(port: int) -> bool:
         s.settimeout(0.1)
         return s.connect_ex(("127.0.0.1", port)) == 0
 
-def is_studio_process_alive() -> bool:
-    try:
-        res1 = subprocess.run(["pgrep", "-x", "forgotten_client"], capture_output=True, text=True, check=False)
-        if res1.stdout.strip():
-            return True
-        res2 = subprocess.run(["pgrep", "-f", "flutter_tools.snapshot run|flutter run"], capture_output=True, text=True, check=False)
-        if res2.stdout.strip():
-            return True
-    except Exception:
-        pass
-    return False
-
 def validate_repo(repo: str) -> None:
     if repo not in allowed_repos():
         raise HTTPException(400, "Unknown repository")
@@ -250,12 +239,8 @@ def get_workspace() -> dict:
         server_job = next((j for j in active_jobs if j.get("repo") == repo and j.get("kind") == f"server:{repo}"), None)
         job_id = server_job["id"] if server_job else None
 
-        if repo == "tv7-studio":
-            active = is_studio_process_alive()
-            owner = {"pid": None, "command": ""}
-        else:
-            active = is_port_listening(port_map[repo])
-            owner = port_owner(port_map[repo]) if active else {"pid": None, "command": ""}
+        active = is_port_listening(port_map[repo])
+        owner = port_owner(port_map[repo]) if active else {"pid": None, "command": ""}
 
         servers_status.append({
             "repo": repo,
@@ -264,7 +249,7 @@ def get_workspace() -> dict:
             "status": "active" if active else "offline",
             "active_job_id": job_id,
             "owner": owner,
-            "can_change_port": repo in {"tv7-backend", "tv7-engine", "tv7-site"},
+            "can_change_port": repo in {"tv7-backend", "tv7-engine", "tv7-site", "tv7-studio"},
         })
 
     return {
@@ -317,15 +302,6 @@ def stop_server(request: ServerRequest) -> dict:
         port = port_map[request.repo]
         try:
             res = subprocess.run(["lsof", "-t", f"-iTCP:{port}", "-sTCP:LISTEN"], capture_output=True, text=True, check=False)
-            pids = res.stdout.strip().split()
-            for pid in pids:
-                os.kill(int(pid), signal.SIGKILL)
-        except Exception:
-            pass
-
-    if request.repo == "tv7-studio":
-        try:
-            res = subprocess.run(["pgrep", "-f", "forgotten_client|flutter run"], capture_output=True, text=True, check=False)
             pids = res.stdout.strip().split()
             for pid in pids:
                 os.kill(int(pid), signal.SIGKILL)

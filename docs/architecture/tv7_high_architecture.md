@@ -1,7 +1,9 @@
 # TV7 High Architecture Behavior (Revised)
 
 ## Overview
-TV7 is a local-first video clipping and repurposing application consisting of a desktop/mobile studio, a local compute engine, and a cloud control plane.
+TV7 is a local-first video clipping and repurposing application consisting of a downloadable desktop Studio, a local compute Engine, and a cloud control plane.
+
+The current downloadable desktop product decision proof and its local/cloud boundaries are specified in [Downloadable Studio](downloadable-studio.md). This proof supersedes web/mobile parity assumptions for the next release slice.
 
 ## 1. TV7 Studio
 *See [Studio Architecture](studio_architecture.md) for details.*

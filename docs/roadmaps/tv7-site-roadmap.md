@@ -15,7 +15,9 @@ Last updated: 2026-02-08
 - [ ] [SI-A01-02-01] Confirm all marketing/docs pages fully adopt the redesigned component system.
 - [ ] [SI-A01-02-02] Close remaining redesign polish tasks (hover tuning, responsive verification, hero refinements).
 - [ ] [SI-A01-02-03] Resolve style/FOUC issues noted in CTA/button behavior and validate consistent load state.
-- [ ] [SI-A01-02-04] Ensure copy and route-level messaging stays aligned with backend/control-plane reality.
+- [X] [SI-A01-02-04] Ensure copy and route-level messaging stays aligned with backend/control-plane reality.
+    **COMPLETED** | Site Agent + Architect | 2026-10-01
+    - **NOTE**: Rewrote active pages to distinguish the internal macOS Tauri proof from unshipped Windows, AI, public publishing, and billing features. Removed dead download/pricing controls and unused components; all seven pages build.
 
 ## Nice To Have
 - [ ] [SI-A01-03-01] Add visual regression checks for major page sections.

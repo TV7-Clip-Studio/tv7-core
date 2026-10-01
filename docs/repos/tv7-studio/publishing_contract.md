@@ -1,35 +1,7 @@
 # Publishing Contract (Studio + Backend Worker)
 
-Last updated: 2026-02-12
+Updated: 2026-10-01. Studio creates and displays creator intent. Backend owns account-bound OAuth credentials, schedule truth, private approved assets, worker execution, provider receipts, and reconciliation.
 
-Publishing is backend-owned execution. Studio triggers, monitors, and reports status to the user.
+A creator must approve cloud upload of a finished local render. Studio may create a draft for a target account and UTC time, but must display it as pending until Backend verifies provider publication. Do not treat an HTTP upload response, queued job, or accepted draft as proof of a public post. Backend capabilities must reflect live configured adapters and account connection state.
 
-## Ownership
-- **Backend and worker**: platform OAuth/tokens, publish execution, retries, auditing, and final status updates.
-- **Studio client**: local render/export, upload initiation, publish trigger/schedule request, and status/error presentation.
-
-## Current Spec-Aligned Surface
-In the checked-in OpenAPI, publishing is currently represented by:
-- `POST /api/v1/clips/{clip_id}/publish`
-- `PublishJobRead` and `PublishJobStatus` schemas
-
-This supports job-oriented publish triggering and status reporting, even while broader scheduling APIs evolve.
-
-## Contract Rules
-- Studio must never store platform OAuth tokens.
-- Studio must gate publish UX behind backend config and plan checks.
-- Studio must send stable clip identifiers and required metadata for backend job execution.
-- Backend must return enough status detail for user-visible progress and failures.
-
-## Target Evolution (Pro Scheduler)
-As Pro scheduling matures, preserve backward-safe behavior while adding:
-- Dedicated schedule resources (create/read/list by time/platform).
-- Explicit publish timestamps and retry metadata.
-- Dashboard/WebView connection flow for social account linking.
-
-## Cross-Repo Coordination
-For any publish contract changes:
-1. Update backend producer and OpenAPI artifact.
-2. Regenerate Studio SDK.
-3. Update Studio publish UI/data flow.
-4. Validate with `make check` in Studio and backend checks in backend repo.
+YouTube publication still requires Google credentials, an owner-bound connection, audit approval for public visibility, and a live end-to-end test. Instagram and TikTok adapters are not yet implemented. Contract changes must update Backend, Studio, and the canonical Core OpenAPI artifact together.

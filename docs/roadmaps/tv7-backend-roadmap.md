@@ -3,20 +3,37 @@
 Roadmap Code: BE
 Batch Code: A01
 
-Last updated: 2026-06-10
+Last updated: 2026-10-01
 
 ## Done
-- [X] [BE-A01-01-01] Completed control-plane cleanup: backend now focuses on auth, metadata, uploads, and publish scheduling.
+- [X] [BE-A01-01-01] Completed control-plane cleanup: backend now focuses on auth, metadata, uploads, and scheduling metadata.
 - [X] [BE-A01-01-02] Removed legacy media pipeline responsibilities from backend (download/transcribe/render paths).
 - [X] [BE-A01-01-03] Implemented JWT auth flow and protected API routes (`login`, `refresh`, users, videos, clips, config).
 - [X] [BE-A01-01-04] Restored/kept lightweight admin surfaces for operators (users, schedules, metrics).
 - [X] [BE-A01-01-05] Kept quality gates and developer workflow (`make fmt/lint/type/test/testcov`).
 
 ## Needs To Be Done
-- [ ] [BE-A01-02-01] Finalize and document clip sync contract for Flutter desktop clients.
+- [ ] [BE-A01-02-01] Finalize and document clip sync contract for Studio desktop clients.
 - [ ] [BE-A01-02-02] Expose and harden read-only polling/status APIs used by client/admin workflows.
 - [ ] [BE-A01-02-03] Remove any remaining pre-credits scheduling logic and reconcile credit-ledger behavior.
 - [ ] [BE-A01-02-04] Expand publish workflow model (`PublishJob`) and endpoint behavior with clear status transitions.
+- [X] [BE-A01-02-09] Add owner-scoped private assets and durable schedule drafts.
+    **COMPLETED** | Backend Agent + Architect | 2026-10-01
+    - **NOTE**: Added private asset upload/read, owner-scoped clip update and publish listing, and idempotent `PENDING` schedule drafts with target platform/account, caption, asset, and UTC time. The direct publish route now returns 503 until a real adapter exists. Capability flags report scheduling and publishing unavailable. Verified 66 Backend tests, lint, type checking, and fresh/copy SQLite migrations; exported OpenAPI.
+- [X] [BE-A01-02-10] Add a separate worker with durable due-job claims, leases, safe retries, and provider receipts after Studio exits.
+    **COMPLETED** | Backend Agent + Architect | 2026-10-01
+    - **NOTE**: Worker entrypoints and migration gate added for local, Compose, and Fly deployment. Due UTC drafts are claimed conditionally with a lease token; only a matching adapter receipt with remote post ID can complete a job. Safe pre-request errors retry at most three times; unknown outcomes and expired leases enter `RECONCILE`. The adapter registry is empty and publishing flags remain false. Verified 72 tests, lint, type checking, Compose config, and fresh/copied SQLite migrations. Real OAuth, adapters, shared object storage, billing, and provider reconciliation remain release gates.
+- [ ] [BE-A01-02-11] Connect creator social accounts and implement real YouTube, Instagram, and TikTok publishing adapters with provider receipts.
+- [X] [BE-A01-02-14] Build the first real account and publishing path for YouTube.
+    **COMPLETED** | Backend Agent + Architect | 2026-10-01
+    - **NOTE**: Added one-use PKCE OAuth, encrypted access/refresh credentials, owner-bound channel identity, resumable upload from approved assets, verified public/channel receipts, and reconciliation of uncertain sessions without blind re-upload. Capability flags require configured credentials plus explicit audit/publish gates. Exact fractional clip timing is preserved in migration `d8e5f3a1b720`. Verified 79 tests, lint, type checks, Compose config, and fresh SQLite migrations. Live Google OAuth, API audit, and public upload remain unverified; Instagram/TikTok remain open.
+- [X] [BE-A01-02-12] Add private cloud object storage for approved assets retained for unattended schedules.
+    **COMPLETED** | Backend Agent + Architect | 2026-10-01
+    - **NOTE**: Owner-scoped asset API now supports local development storage and private S3-compatible production storage; worker materializes assets with checksum verification and temporary-file cleanup. Production fails closed without S3 configuration. Verified 75 Backend tests, lint, type checks, Compose config, and fresh SQLite migration `b457e9c83a12`. Live bucket access and billing remain unverified/open.
+- [ ] [BE-A01-02-13] Meter storage usage, retention, and billing for scheduled approved assets.
+- [X] [BE-A01-02-08] Store and serve owner-scoped source videos for Studio sync.
+    **COMPLETED** | Backend Agent + Architect | 2026-10-01
+    - **NOTE**: Local video registration is idempotent per account and source URL. Added private source upload, authenticated source retrieval, and duration-aware signed playback tickets for browser Range streaming. Video list/detail and clip creation are owner-scoped. Exported the updated OpenAPI contract. Verified 64 Backend tests, lint, type checking, a real 96 MB upload, and a live 206 partial response.
 - [X] [BE-A01-02-05] Add Engine cloud AI delegation token endpoint.
     **COMPLETED** | Backend Agent | 2026-06-10 00:00
     - **CROSS-AGENT-NOTES**: Studio authenticates the user normally, requests a short-lived delegated Engine token after a lightweight account/credit check, and passes it to Engine over loopback. Token scope should be limited to `engine:cloud_ai`; for testing phase, keep revocation and auth mechanics simple and maintainable while preserving expiry and secret-safe logs.

@@ -5,7 +5,7 @@ description: Specialized in Astro, React, and Tailwind CSS for high-performance,
 
 # Astro Modern Web Expert Skill
 
-As an Astro Modern Web Expert, you manage the `tv7-astro-site`.
+As an Astro Modern Web Expert, you manage `tv7-site`.
 
 ## Core Responsibilities
 - **Performance First**: Optimize for Core Web Vitals (LCP, CLS).
@@ -24,7 +24,7 @@ As an Astro Modern Web Expert, you manage the `tv7-astro-site`.
 - **Component Reusability**: Build clean, reusable React components within Astro.
 
 ## Workflow Integration
-- Use this skill for all work in `tv7-astro-site`.
+- Use this skill for all work in `tv7-site`.
 - **Pre-check**: Always verify if a component can be static before making it a "client" island.
 - **Audit**: Use PageSpeed Insights / Lighthouse metrics as a baseline for performance work.
 - Use the Vercel optimization skills imported from `skills.sh`.

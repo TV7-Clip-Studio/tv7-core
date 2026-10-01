@@ -153,14 +153,14 @@ Use these lanes when selecting work:
 | --- | --- | --- | --- |
 | Core governance | `tv7-core` | all repos for shared docs/tooling impact | `make conductor-shim-check` |
 | Conductor runtime | `tv7-conductor` | `tv7-core` shims/runbooks | `PYTHONPATH=tooling python3 -m unittest discover -s tooling/tests/orchestrator -p 'test_*.py'` |
-| Backend control plane | `tv7-backend` | Flutter API clients and publish UX | `make lint`, `make type`, `make test` |
+| Backend control plane | `tv7-backend` | Studio API clients and publish UX | `make lint`, `make type`, `make test` |
 | Studio | `tv7-studio` | Backend API contract and Engine sidecar contract | `make check` |
 | Engine | `tv7-engine` | Studio local sidecar integration | `make check`, `make test` |
 | Site | `tv7-site` | product truth from Studio/Backend/Engine | `npm run build` |
 
 Cross-repo contract rule:
-- Backend API changes require Flutter client and `tv7-core` OpenAPI contract review.
-- Engine API changes require Flutter integration and local contract review.
+- Backend API changes require Studio client and `tv7-core` OpenAPI contract review.
+- Engine API changes require Studio integration and local contract review.
 - Studio schedule/publish changes require Backend schedule truth review.
 - Site messaging must match the actual local-first/control-plane architecture.
 - Conductor runtime semantics require `tv7-core` shim/runbook review.

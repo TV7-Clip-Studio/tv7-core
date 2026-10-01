@@ -3,7 +3,7 @@
   "info": {
     "title": "TV7 Engine Local API",
     "version": "0.3.0",
-    "description": "Local-only engine sidecar API exposed on loopback. Studio starts this service and uses it as the mandatory boundary for local media compute."
+    "description": "Local-only engine sidecar API exposed on loopback. Studio starts this service and uses it as the mandatory boundary for local media compute. When TV7_ENGINE_API_TOKEN is configured, every route including health requires Authorization: Bearer <token>; the packaged app enables this. Development mode without the variable is unprotected and logs a warning."
   },
   "servers": [
     {
@@ -141,7 +141,7 @@
       "post": {
         "summary": "Generate a thumbnail image for local media",
         "operationId": "generateThumbnail",
-        "description": "Always overwrites the output file. Studio owns workspace paths, must pass absolute source and output paths, and must create the output parent directory before calling Engine.",
+        "description": "Always overwrites the output file. Studio owns workspace paths, must pass absolute source and output paths, and must create the output parent directory before calling Engine. Optional VTT subtitles are validated inside Engine's asset workspace and burned into the clip.",
         "requestBody": {
           "required": true,
           "content": {
@@ -238,6 +238,58 @@
         }
       }
     },
+    "/v1/media/assets/{id}": {
+      "get": {
+        "summary": "Stream an Engine-owned rendered MP4 by opaque export ID",
+        "operationId": "getRenderedAsset",
+        "description": "Returns only a recently rendered Engine-owned MP4. IDs expire after one hour, after more than 100 exports, or when Engine restarts. A configured Engine bearer token is required on this route. Arbitrary filesystem paths are not accepted.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "Optional single bytes range."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete rendered MP4",
+            "headers": {
+              "Content-Length": {"schema": {"type": "integer"}},
+              "Accept-Ranges": {"schema": {"type": "string", "enum": ["bytes"]}}
+            },
+            "content": {"video/mp4": {"schema": {"type": "string", "format": "binary"}}}
+          },
+          "206": {
+            "description": "Partial rendered MP4",
+            "headers": {
+              "Content-Range": {"schema": {"type": "string"}}
+            },
+            "content": {"video/mp4": {"schema": {"type": "string", "format": "binary"}}}
+          },
+          "401": {
+            "description": "Engine token required or invalid when token mode is enabled",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "413": {
+            "description": "Rendered asset exceeds export size limit",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
+          "416": {
+            "description": "Requested byte range is invalid",
+            "headers": {"Content-Range": {"schema": {"type": "string"}}}
+          }
+        }
+      }
+    },
     "/v1/ingest/url": {
       "post": {
         "summary": "Start a job-backed URL ingest",
@@ -254,7 +306,6 @@
                 "default": {
                   "value": {
                     "url": "https://example.com/video",
-                    "output_dir": "/absolute/path/to/workspace",
                     "output_template": "%(title).200B.%(ext)s"
                   }
                 }
@@ -276,6 +327,82 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
+        }
+      }
+    },
+    "/v1/transcripts/candidates": {
+      "post": {
+        "summary": "Find deterministic local clip candidates from a VTT transcript",
+        "operationId": "generateTranscriptCandidates",
+        "description": "Reads a bounded Engine-owned VTT and returns chronological cue windows. These are editable candidate ranges, not viral predictions or rendered clips.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptCandidatesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Candidate ranges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptCandidatesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/transcripts/import": {
+      "post": {
+        "summary": "Import a VTT transcript into Engine storage",
+        "operationId": "importTranscript",
+        "description": "Accepts one bounded multipart .vtt file, validates cues, and atomically stores it under Engine ownership. Browser clients do not pass filesystem paths.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {"type": "string", "format": "binary"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Validated transcript stored under Engine ownership",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/TranscriptImportResponse"}
+              }
+            }
+          },
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "413": {
+            "description": "Transcript exceeds 5 MiB",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+              }
+            }
+          },
+          "500": {"$ref": "#/components/responses/InternalFailure"}
         }
       }
     },
@@ -599,6 +726,133 @@
             "$ref": "#/components/responses/OutputInvalid"
           },
           "503": {
+            "$ref": "#/components/responses/InternalFailure"
+          }
+        }
+      }
+    },
+    "/v1/channels/discover": {
+      "post": {
+        "summary": "Discover one bounded page of channel videos",
+        "operationId": "discoverChannel",
+        "description": "Metadata discovery only. Returns at most 25 videos and never starts downloads. Cursor pages in increments of 25, through 475.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelDiscoverRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Channel metadata page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "422": {
+            "$ref": "#/components/responses/CommandFailed"
+          },
+          "502": {
+            "$ref": "#/components/responses/OutputInvalid"
+          }
+        }
+      }
+    },
+    "/v1/ingest/selected": {
+      "post": {
+        "summary": "Start downloads for selected channel videos",
+        "operationId": "startSelectedIngest",
+        "description": "Requires explicit selection of 1 to 25 unique video IDs and canonical YouTube watch URLs. Starts one cancellable local job per selected item; omitted videos are not downloaded.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectedIngestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Selected download jobs accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelectedIngestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalFailure"
+          }
+        }
+      }
+    },
+    "/v1/ingest/file": {
+      "post": {
+        "summary": "Stream a local media file into Engine storage",
+        "operationId": "ingestFile",
+        "description": "Accepts one multipart file field, streams to an Engine-owned asset directory, enforces a 1 GiB limit, and removes partial files after failure. Browser clients do not pass filesystem paths.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File stored under Engine ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileIngestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "413": {
+            "description": "Upload exceeds size limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
             "$ref": "#/components/responses/InternalFailure"
           }
         }
@@ -1271,6 +1525,10 @@
             "type": "number",
             "exclusiveMinimum": 0,
             "description": "End time of the clip in seconds. Must be > start_seconds."
+          },
+          "subtitle_path": {
+            "type": "string",
+            "description": "Optional absolute .vtt path inside Engine's asset workspace. Engine shifts relevant cues to clip time and burns them into the result."
           }
         }
       },
@@ -1298,14 +1556,17 @@
           "duration_seconds": {
             "type": "number",
             "minimum": 0
+          },
+          "media_id": {
+            "type": "string",
+            "description": "Optional opaque export ID for Engine-owned MP4 output, valid only while the Engine export registry retains it."
           }
         }
       },
       "UrlIngestRequest": {
         "type": "object",
         "required": [
-          "url",
-          "output_dir"
+          "url"
         ],
         "properties": {
           "url": {
@@ -1314,7 +1575,7 @@
           },
           "output_dir": {
             "type": "string",
-            "description": "Existing absolute local directory where Engine writes downloaded media. Studio must create it before calling Engine."
+            "description": "Optional absolute local directory inside Engine's asset workspace. Defaults to Engine's managed asset directory."
           },
           "output_template": {
             "type": "string",
@@ -1342,6 +1603,58 @@
             "type": "object",
             "additionalProperties": true
           }
+        }
+      },
+      "TranscriptImportResponse": {
+        "type": "object",
+        "required": ["transcript_id", "transcript_path", "cue_count", "duration_seconds"],
+        "properties": {
+          "transcript_id": {"type": "string"},
+          "transcript_path": {"type": "string"},
+          "cue_count": {"type": "integer", "minimum": 1},
+          "duration_seconds": {"type": "number", "minimum": 0}
+        }
+      },
+      "TranscriptCandidatesRequest": {
+        "type": "object",
+        "required": ["transcript_path"],
+        "properties": {
+          "transcript_path": {
+            "type": "string",
+            "description": "Absolute .vtt path inside Engine's asset workspace; maximum 5 MiB and 20000 cues."
+          },
+          "max_candidates": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "default": 8
+          },
+          "max_duration_seconds": {
+            "type": "number",
+            "minimum": 15,
+            "maximum": 90,
+            "default": 45
+          }
+        }
+      },
+      "TranscriptCandidatesResponse": {
+        "type": "object",
+        "required": ["candidates"],
+        "properties": {
+          "candidates": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/TranscriptCandidate"}
+          }
+        }
+      },
+      "TranscriptCandidate": {
+        "type": "object",
+        "required": ["start_seconds", "end_seconds", "text", "cue_count"],
+        "properties": {
+          "start_seconds": {"type": "number", "minimum": 0},
+          "end_seconds": {"type": "number", "exclusiveMinimum": 0},
+          "text": {"type": "string"},
+          "cue_count": {"type": "integer", "minimum": 1}
         }
       },
       "TranscriptDownloadRequest": {
@@ -1881,6 +2194,179 @@
           "latency_ms": {
             "type": "integer",
             "nullable": true
+          }
+        }
+      },
+      "ChannelDiscoverRequest": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Public YouTube channel URL."
+          },
+          "cursor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 475,
+            "multipleOf": 25
+          }
+        }
+      },
+      "ChannelVideo": {
+        "type": "object",
+        "required": [
+          "id",
+          "url",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "duration_seconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          }
+        }
+      },
+      "ChannelPage": {
+        "type": "object",
+        "required": [
+          "channel_url",
+          "videos"
+        ],
+        "properties": {
+          "channel_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "videos": {
+            "type": "array",
+            "maxItems": 25,
+            "items": {
+              "$ref": "#/components/schemas/ChannelVideo"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 25,
+            "maximum": 475
+          }
+        }
+      },
+      "SelectedVideo": {
+        "type": "object",
+        "required": [
+          "id",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "SelectedIngestRequest": {
+        "type": "object",
+        "required": [
+          "videos"
+        ],
+        "properties": {
+          "videos": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 25,
+            "items": {
+              "$ref": "#/components/schemas/SelectedVideo"
+            }
+          },
+          "output_dir": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional existing directory under the Engine asset root."
+          }
+        }
+      },
+      "SelectedJob": {
+        "type": "object",
+        "required": [
+          "video_id",
+          "job_id"
+        ],
+        "properties": {
+          "video_id": {
+            "type": "string"
+          },
+          "job_id": {
+            "type": "string"
+          }
+        }
+      },
+      "SelectedIngestResponse": {
+        "type": "object",
+        "required": [
+          "jobs"
+        ],
+        "properties": {
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectedJob"
+            }
+          }
+        }
+      },
+      "FileIngestResponse": {
+        "type": "object",
+        "required": [
+          "media_id",
+          "media_path",
+          "size_bytes"
+        ],
+        "properties": {
+          "media_id": {
+            "type": "string"
+          },
+          "media_path": {
+            "type": "string",
+            "description": "Engine-owned absolute path; retained for current path-based media APIs."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       }

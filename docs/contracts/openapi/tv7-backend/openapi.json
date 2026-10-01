@@ -7,6 +7,10 @@
             "title": "Asset Checksum",
             "type": "string"
           },
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "integer"
+          },
           "asset_size_bytes": {
             "title": "Asset Size Bytes",
             "type": "integer"
@@ -28,6 +32,7 @@
           }
         },
         "required": [
+          "asset_id",
           "asset_url",
           "asset_checksum",
           "asset_size_bytes"
@@ -73,17 +78,6 @@
       },
       "Body_update_schedule_entry_admin_schedule__job_id__post": {
         "properties": {
-          "asset_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Url"
-          },
           "error_message": {
             "anyOf": [
               {
@@ -95,17 +89,6 @@
             ],
             "title": "Error Message"
           },
-          "response_payload": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Payload"
-          },
           "status_value": {
             "title": "Status Value",
             "type": "string"
@@ -115,6 +98,19 @@
           "status_value"
         ],
         "title": "Body_update_schedule_entry_admin_schedule__job_id__post",
+        "type": "object"
+      },
+      "Body_update_user_account_status_admin_users__user_id__status_post": {
+        "properties": {
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_active"
+        ],
+        "title": "Body_update_user_account_status_admin_users__user_id__status_post",
         "type": "object"
       },
       "Body_upload_asset_api_v1_uploads_assets_post": {
@@ -129,6 +125,20 @@
           "file"
         ],
         "title": "Body_upload_asset_api_v1_uploads_assets_post",
+        "type": "object"
+      },
+      "Body_upload_video_source_api_v1_videos__video_id__source_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_video_source_api_v1_videos__video_id__source_post",
         "type": "object"
       },
       "ClipGenerationMode": {
@@ -192,7 +202,7 @@
           },
           "end_sec": {
             "title": "End Sec",
-            "type": "integer"
+            "type": "number"
           },
           "file_size_bytes": {
             "anyOf": [
@@ -260,7 +270,7 @@
           },
           "start_sec": {
             "title": "Start Sec",
-            "type": "integer"
+            "type": "number"
           },
           "status": {
             "$ref": "#/components/schemas/ClipStatus"
@@ -463,8 +473,9 @@
             "title": "Caption Text"
           },
           "end_sec": {
+            "exclusiveMinimum": 0.0,
             "title": "End Sec",
-            "type": "integer"
+            "type": "number"
           },
           "file_size_bytes": {
             "anyOf": [
@@ -527,8 +538,9 @@
             "title": "Render Width"
           },
           "start_sec": {
+            "minimum": 0.0,
             "title": "Start Sec",
-            "type": "integer"
+            "type": "number"
           },
           "status": {
             "$ref": "#/components/schemas/ClipStatus",
@@ -778,6 +790,11 @@
           },
           "publishing_enabled": {
             "title": "Publishing Enabled",
+            "type": "boolean"
+          },
+          "scheduling_enabled": {
+            "default": false,
+            "title": "Scheduling Enabled",
             "type": "boolean"
           }
         },
@@ -1074,6 +1091,17 @@
             ],
             "title": "Asset Checksum"
           },
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
           "asset_size_bytes": {
             "anyOf": [
               {
@@ -1095,6 +1123,22 @@
               }
             ],
             "title": "Asset Url"
+          },
+          "attempt_count": {
+            "default": 0,
+            "title": "Attempt Count",
+            "type": "integer"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
           },
           "clip_id": {
             "title": "Clip Id",
@@ -1120,9 +1164,78 @@
             "title": "Id",
             "type": "integer"
           },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "last_error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error Code"
+          },
+          "lease_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lease Expires At"
+          },
+          "next_attempt_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Attempt At"
+          },
           "platform": {
             "title": "Platform",
             "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "remote_post_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote Post Id"
           },
           "response_payload": {
             "anyOf": [
@@ -1135,13 +1248,47 @@
             ],
             "title": "Response Payload"
           },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          },
           "status": {
             "$ref": "#/components/schemas/PublishJobStatus"
+          },
+          "target_account_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Account Ref"
           },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
             "type": "string"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
           }
         },
         "required": [
@@ -1162,7 +1309,8 @@
           "publishing",
           "partial",
           "complete",
-          "failed"
+          "failed",
+          "reconcile"
         ],
         "title": "PublishJobStatus",
         "type": "string"
@@ -1214,6 +1362,73 @@
           "platforms"
         ],
         "title": "PublishRequest",
+        "type": "object"
+      },
+      "ScheduleDraftRequest": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "integer"
+          },
+          "caption": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Caption",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "platform": {
+            "enum": [
+              "youtube_shorts",
+              "tiktok",
+              "instagram"
+            ],
+            "title": "Platform",
+            "type": "string"
+          },
+          "scheduled_at": {
+            "format": "date-time",
+            "title": "Scheduled At",
+            "type": "string"
+          },
+          "target_account_ref": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Target Account Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "platform",
+          "target_account_ref",
+          "scheduled_at",
+          "asset_id",
+          "idempotency_key"
+        ],
+        "title": "ScheduleDraftRequest",
+        "type": "object"
+      },
+      "SourceTicketResponse": {
+        "properties": {
+          "expires_in_seconds": {
+            "title": "Expires In Seconds",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_in_seconds"
+        ],
+        "title": "SourceTicketResponse",
         "type": "object"
       },
       "Token": {
@@ -1460,6 +1675,17 @@
               }
             ],
             "title": "Requested By User Id"
+          },
+          "source_media_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Media Url"
           },
           "source_url": {
             "title": "Source Url",
@@ -1865,6 +2091,58 @@
         ]
       }
     },
+    "/admin/users/{user_id}/status": {
+      "post": {
+        "operationId": "update_user_account_status_admin_users__user_id__status_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_update_user_account_status_admin_users__user_id__status_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update User Account Status",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/auth/license": {
       "get": {
         "operationId": "license_readiness_api_v1_auth_license_get",
@@ -2104,15 +2382,66 @@
           "required": true
         },
         "responses": {
-          "202": {
+          "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/PublishJobRead"
-                  },
-                  "title": "Response Publish Clip Api V1 Clips  Clip Id  Publish Post",
-                  "type": "array"
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Publish Clip",
+        "tags": [
+          "publish"
+        ]
+      }
+    },
+    "/api/v1/clips/{clip_id}/schedule-drafts": {
+      "post": {
+        "operationId": "create_schedule_draft_api_v1_clips__clip_id__schedule_drafts_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "clip_id",
+            "required": true,
+            "schema": {
+              "title": "Clip Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishJobRead"
                 }
               }
             },
@@ -2134,7 +2463,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Publish Clip",
+        "summary": "Create Schedule Draft",
         "tags": [
           "publish"
         ]
@@ -2214,7 +2543,7 @@
     },
     "/api/v1/config": {
       "get": {
-        "description": "Expose feature flags and limits for the Flutter client.",
+        "description": "Expose feature flags and limits for Studio.",
         "operationId": "get_config_api_v1_config_get",
         "responses": {
           "200": {
@@ -2241,7 +2570,7 @@
     },
     "/api/v1/uploads/assets": {
       "post": {
-        "description": "Accept multipart asset upload from Flutter; store under MEDIA_STORAGE_DIR.",
+        "description": "Store a rendered clip for its owner, outside the public media tree.",
         "operationId": "upload_asset_api_v1_uploads_assets_post",
         "requestBody": {
           "content": {
@@ -2281,6 +2610,51 @@
           }
         ],
         "summary": "Upload Asset",
+        "tags": [
+          "uploads"
+        ]
+      }
+    },
+    "/api/v1/uploads/assets/{asset_id}": {
+      "get": {
+        "operationId": "get_asset_api_v1_uploads_assets__asset_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Asset",
         "tags": [
           "uploads"
         ]
@@ -2537,6 +2911,314 @@
         "summary": "Create Clip For Video",
         "tags": [
           "videos"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/source": {
+      "get": {
+        "operationId": "get_video_source_api_v1_videos__video_id__source_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "title": "Video Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ticket",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ticket"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Video Source",
+        "tags": [
+          "videos"
+        ]
+      },
+      "post": {
+        "operationId": "upload_video_source_api_v1_videos__video_id__source_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "title": "Video Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_video_source_api_v1_videos__video_id__source_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upload Video Source",
+        "tags": [
+          "videos"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/source-ticket": {
+      "post": {
+        "operationId": "create_source_ticket_api_v1_videos__video_id__source_ticket_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "title": "Video Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceTicketResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Source Ticket",
+        "tags": [
+          "videos"
+        ]
+      }
+    },
+    "/api/v1/youtube/callback": {
+      "get": {
+        "operationId": "youtube_callback_api_v1_youtube_callback_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "state",
+            "required": true,
+            "schema": {
+              "maxLength": 256,
+              "minLength": 32,
+              "title": "State",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Youtube Callback Api V1 Youtube Callback Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Youtube Callback",
+        "tags": [
+          "youtube"
+        ]
+      }
+    },
+    "/api/v1/youtube/connect": {
+      "post": {
+        "operationId": "connect_youtube_api_v1_youtube_connect_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Connect Youtube Api V1 Youtube Connect Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Connect Youtube",
+        "tags": [
+          "youtube"
+        ]
+      }
+    },
+    "/api/v1/youtube/connection": {
+      "delete": {
+        "operationId": "disconnect_youtube_api_v1_youtube_connection_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Disconnect Youtube",
+        "tags": [
+          "youtube"
+        ]
+      },
+      "get": {
+        "operationId": "youtube_connection_api_v1_youtube_connection_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "title": "Response Youtube Connection Api V1 Youtube Connection Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Youtube Connection",
+        "tags": [
+          "youtube"
         ]
       }
     },

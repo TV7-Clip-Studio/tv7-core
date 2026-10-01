@@ -1,5 +1,7 @@
 # TV7 Studio Architecture
 
+This document describes the target creator workflow, including features that are not yet built. The current React/Tauri implementation and verified boundaries are recorded in [Downloadable Studio](downloadable-studio.md).
+
 Primary user interface for the whole workflow.
 
 ## 1. Ingestion

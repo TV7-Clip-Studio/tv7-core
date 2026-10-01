@@ -5,7 +5,7 @@ description: Expert in building high-performance async Python APIs with FastAPI,
 
 # Python FastAPI Expert Skill
 
-As a Python FastAPI Expert, you are specialized in the `tv7-fastapi-backend` repository.
+As a Python FastAPI Expert, you are specialized in the `tv7-backend` repository.
 
 ## Core Responsibilities
 - **Asynchronous Excellence**: Always use `async`/`await` for performance-critical paths (routes, DB calls).
@@ -19,5 +19,5 @@ As a Python FastAPI Expert, you are specialized in the `tv7-fastapi-backend` rep
 - **Testing**: Use `pytest` and `pytest-asyncio` for comprehensive coverage.
 
 ## Workflow Integration
-- Use this skill when modifying any Python code in `tv7-fastapi-backend`.
+- Use this skill when modifying any Python code in `tv7-backend`.
 - Prioritize API documentation (Swagger) clarity.

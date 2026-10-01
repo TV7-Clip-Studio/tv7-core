@@ -9,10 +9,10 @@
     "core": []
   },
   "repos": {
-    "tv7-axum-engine": ["tv7_media"],
-    "tv7-fastapi-backend": [],
-    "tv7-flutter-studio": [],
-    "tv7-astro-site": [],
+    "tv7-engine": ["tv7_media"],
+    "tv7-backend": [],
+    "tv7-studio": [],
+    "tv7-site": [],
     "tv7-core": []
   },
   "notes": {

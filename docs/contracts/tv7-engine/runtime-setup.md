@@ -26,7 +26,7 @@ Studio must not collect user DeepSeek/OpenAI keys for TV7 cloud AI. Engine must 
 
 ## Startup Boundary
 
-Studio still starts Engine with the sidecar startup environment from `studio-sidecar-migration.md`.
+The Tauri desktop shell starts the bundled Engine on a dynamic loopback port with a fresh per-launch bearer token. The older `studio-sidecar-migration.md` records the retired Flutter migration and is historical.
 
 Packaged builds should resolve Engine and bundled tool paths from app resources. Developer builds may continue using the sibling Engine repo and `PATH`-resolved tools.
 

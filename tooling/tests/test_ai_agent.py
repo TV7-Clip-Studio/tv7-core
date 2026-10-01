@@ -33,12 +33,12 @@ class AiAgentTest(unittest.TestCase):
         self.assertEqual(normalize_action("clean-needs-agent-work"), "start")
         self.assertEqual(normalize_action("validated-needs-commit"), "commit")
 
-    def test_deepseek_command_uses_profile_and_danger_full_access(self) -> None:
+    def test_deepseek_review_uses_profile_and_read_only_sandbox(self) -> None:
         with tempfile.TemporaryDirectory() as temp, patch("ai_agent.deepseek_ready"):
             command, output = ai_agent.codex_command("deepseek", Path(temp), "review", write=False)
             try:
                 self.assertIn("deepseek", command)
-                self.assertIn("danger-full-access", command)
+                self.assertEqual(command[command.index("--sandbox") + 1], "read-only")
                 self.assertIn('plugins."github@openai-curated".enabled=false', command)
             finally:
                 output.unlink(missing_ok=True)
@@ -49,6 +49,15 @@ class AiAgentTest(unittest.TestCase):
             try:
                 self.assertIn("workspace-write", command)
                 self.assertNotIn("--profile", command)
+            finally:
+                output.unlink(missing_ok=True)
+
+    def test_deepseek_resolution_uses_workspace_write(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            command, output = ai_agent.codex_command("deepseek", Path(temp), "resolve", write=True)
+            try:
+                self.assertEqual(command[command.index("--sandbox") + 1], "workspace-write")
+                self.assertEqual(command[command.index("--profile") + 1], "deepseek")
             finally:
                 output.unlink(missing_ok=True)
 

@@ -3,7 +3,7 @@
 # Auto-detects project type and installs dependencies.
 # Behavior:
 # - Visits each repo under REPO_ROOT and installs deps unless SKIP_DEPS=1.
-# - Requires relevant package managers to be pre-installed (poetry/pip, npm, cargo, flutter).
+# - Requires relevant package managers to be pre-installed (poetry/pip, npm, cargo).
 # Usage: SKIP_DEPS=1 ./install-deps.sh  # skip installs
 #        ./install-deps.sh              # install deps
 
@@ -18,17 +18,6 @@ log_info(){ printf " ${BLUE}ℹ %s${RESET}\n" "$1"; }
 log_ok()  { printf " ${GREEN}✓ %s${RESET}\n" "$1"; }
 log_err() { printf " ${RED}✗ %s${RESET}\n" "$1"; }
 log_warn(){ printf " ${YELLOW}! %s${RESET}\n" "$1"; }
-
-install_flutter() {
-  log_info "Flutter project detected."
-  if command -v flutter >/dev/null; then
-    flutter pub get
-    return $?
-  else
-    log_err "Flutter not found. Skipping."
-    return 1
-  fi
-}
 
 install_python() {
   log_info "Python project detected."
@@ -110,20 +99,16 @@ while read -r repo_path; do
   rc=0
 
   # prefer root-level manifests for known repo layouts
-  manifest_pub=""
   manifest_cargo=""
   manifest_pkg=""
   manifest_py=""
 
-  [ -f "$repo_path/pubspec.yaml" ] && manifest_pub="$repo_path/pubspec.yaml"
   [ -f "$repo_path/Cargo.toml" ] && manifest_cargo="$repo_path/Cargo.toml"
   [ -f "$repo_path/package.json" ] && manifest_pkg="$repo_path/package.json"
   [ -f "$repo_path/pyproject.toml" ] && manifest_py="$repo_path/pyproject.toml"
   [ -z "$manifest_py" ] && [ -f "$repo_path/requirements.txt" ] && manifest_py="$repo_path/requirements.txt"
 
-  if [ -n "$manifest_pub" ]; then
-    (cd "$(dirname "$manifest_pub")" && install_flutter) || rc=$?
-  elif [ -n "$manifest_cargo" ]; then
+  if [ -n "$manifest_cargo" ]; then
     (cd "$(dirname "$manifest_cargo")" && install_rust) || rc=$?
   elif [ -n "$manifest_pkg" ]; then
     (cd "$(dirname "$manifest_pkg")" && install_node) || rc=$?

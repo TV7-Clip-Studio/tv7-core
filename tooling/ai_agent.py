@@ -162,7 +162,7 @@ def codex_command(provider: str, path: Path, prompt: str, *, write: bool) -> tup
     output = Path(tempfile.mkstemp(prefix=f"tv7-{provider}-", suffix=".txt")[1])
     command = [
         "codex", "exec", "--ephemeral", "--color", "never",
-        "--sandbox", "danger-full-access" if provider == "deepseek" else ("workspace-write" if write else "read-only"),
+        "--sandbox", "workspace-write" if write else "read-only",
         "-C", str(path),
         "-c", 'plugins."github@openai-curated".enabled=false',
         "-o", str(output),

@@ -13,6 +13,8 @@ The product is a downloadable Studio. Engine performs heavy video work locally. 
 
 `make help` lists the normal entry points. Conductor, Cockpit, `sync`, and bulk PR commands live in `Makefile.legacy` for opt-in historical/advanced workflows: `make -f Makefile.legacy <target>`. They are not prerequisites for ordinary development. In particular, legacy `review`, `batch-pr`, and `batch-pr-open` can mutate GitHub and are not part of this daily loop.
 
+Local transcription needs `whisper-cli` and a multilingual GGML model. For a macOS development machine, install the Homebrew `whisper.cpp` formula and put `ggml-base.bin` from the upstream `ggerganov/whisper.cpp` model collection at `../tv7-engine/.tv7-engine-assets/models/whisper/ggml-base.bin`. The browser stack detects both on startup and configures Engine; restart the stack after installing them. This development convenience does not bundle transcription for a clean desktop install. Engine reports a setup-required state when either part is missing.
+
 ## Checks by component
 
 | Component | Local check |

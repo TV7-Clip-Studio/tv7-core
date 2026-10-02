@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import signal
 import sqlite3
 import subprocess
@@ -19,6 +20,7 @@ BACKEND = ROOT / "tv7-backend"
 ENGINE = ROOT / "tv7-engine"
 STUDIO = ROOT / "tv7-studio"
 DEV_YT_DLP = STATE / "yt-dlp-venv/bin/yt-dlp"
+DEV_WHISPER_MODEL = ENGINE / ".tv7-engine-assets/models/whisper/ggml-base.bin"
 LEGACY_DATABASE = STATE / "tv7-test.sqlite"
 DATABASE = STATE / "tv7-test-v2.sqlite"
 DATABASE_URL = f"sqlite+aiosqlite:////{str(DATABASE).lstrip('/')}"
@@ -132,6 +134,10 @@ def up() -> None:
     if DEV_YT_DLP.is_file():
         engine_env.setdefault("TV7_ENGINE_YT_DLP_BIN", str(DEV_YT_DLP))
         engine_env.setdefault("TV7_ENGINE_YT_DLP_JS_RUNTIME", "node")
+    whisper_bin = shutil.which("whisper-cli")
+    if whisper_bin and DEV_WHISPER_MODEL.is_file():
+        engine_env.setdefault("TV7_ENGINE_WHISPER_BIN", whisper_bin)
+        engine_env.setdefault("TV7_ENGINE_WHISPER_MODEL", str(DEV_WHISPER_MODEL))
     engine_binary = ENGINE / "target/debug/engine-service"
     if not engine_binary.is_file():
         engine_binary = ENGINE / "target/release/engine-service"

@@ -131,6 +131,9 @@ Last updated: 2026-06-17
     **COMPLETED** | Studio Agent + Engine Agent | 2026-10-01
     - **NOTE**: Tauri creates 32 random bytes per launch, passes the bearer token only to its Engine child, and supplies it to bundled UI requests through a narrow native command. Release navigation is restricted to bundled content, scripts use a self-only CSP, and the token is absent from UI/logs. Native import passed while missing/wrong-token HTTP requests returned 401; Engine child exits with the app. Browser development mode remains explicitly unprotected.
 - [ ] [ST-A05-01-06] Complete signed Windows/macOS distribution and a clean-install dependency check.
+- [X] [ST-A05-01-07] Automatically prepare a local transcript and editable batch of clips after video import.
+    **COMPLETED** | Architect | 2026-10-02
+    - **NOTE**: Studio now obtains source captions when available or generates a local transcript, proposes up to five clips by default (adjustable 1–12), and offers source preview, editable trims/caption text, optional subtitle burn, batch render, rendered preview, and explicit cloud handoff. Live browser checks imported a short spoken MP4 and a 154-second creator video, generated transcripts and one/four proposals respectively, rendered original and corrected burned captions, and rendered without captions. Engine source preview supports byte ranges. These are timing proposals, not viral quality rankings; edited text currently becomes one subtitle cue across the clip. Full timeline/project persistence and automatic scheduling/publishing remain separate work.
 
 ## Nice To Have
 - [X] [ST-A01-03-01] Add local transcription path through Engine.

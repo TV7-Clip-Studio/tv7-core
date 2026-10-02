@@ -290,6 +290,42 @@
         }
       }
     },
+    "/v1/media/source": {
+      "get": {
+        "summary": "Stream an Engine-owned source video for local clip review",
+        "operationId": "getSourceMedia",
+        "description": "Only absolute paths to media inside the Engine asset directory are accepted. Symlink escapes and files outside this directory are rejected. MP4, M4V, WebM, and MOV up to 1 GiB are supported. A configured Engine bearer token is required.",
+        "parameters": [
+          {"name": "path", "in": "query", "required": true, "schema": {"type": "string"}, "description": "Absolute path returned by Engine ingest."},
+          {"name": "Range", "in": "header", "required": false, "schema": {"type": "string"}, "description": "Optional single bytes range."}
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete Engine-owned source video",
+            "headers": {"Content-Length": {"schema": {"type": "integer"}}, "Accept-Ranges": {"schema": {"type": "string", "enum": ["bytes"]}}},
+            "content": {
+              "video/mp4": {"schema": {"type": "string", "format": "binary"}},
+              "video/webm": {"schema": {"type": "string", "format": "binary"}},
+              "video/quicktime": {"schema": {"type": "string", "format": "binary"}}
+            }
+          },
+          "206": {
+            "description": "Partial Engine-owned source video",
+            "headers": {"Content-Range": {"schema": {"type": "string"}}},
+            "content": {
+              "video/mp4": {"schema": {"type": "string", "format": "binary"}},
+              "video/webm": {"schema": {"type": "string", "format": "binary"}},
+              "video/quicktime": {"schema": {"type": "string", "format": "binary"}}
+            }
+          },
+          "400": {"description": "Invalid path", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "401": {"description": "Engine token required or invalid when token mode is enabled", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "413": {"description": "Source exceeds the Engine export size limit", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "416": {"description": "Requested byte range is invalid", "headers": {"Content-Range": {"schema": {"type": "string"}}}}
+        }
+      }
+    },
     "/v1/ingest/url": {
       "post": {
         "summary": "Start a job-backed URL ingest",

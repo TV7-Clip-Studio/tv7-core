@@ -140,6 +140,9 @@ Last updated: 2026-06-17
 - [X] [ST-A05-01-09] Review and submit a spaced schedule plan for locally rendered channel clips.
     **COMPLETED** | Architect | 2026-10-02
     - **NOTE**: Studio offers a reviewable plan of up to 25 selected local renders, default three-day spacing, editable dates/captions, and target platform/account. One explicit approval uploads private assets and creates idempotent per-clip Backend drafts with persistent partial-failure state. The authenticated owner queue lists, reschedules, and cancels eligible drafts. A live disposable-account pass uploaded a clip, created pending draft #2, rescheduled it, then cancelled it; an expired Engine export was recovered via rerender and Use latest local render. TikTok/Instagram are labeled draft-only; no live post was sent or verified.
+- [X] **COMPLETED** [ST-A05-01-10] Offer opt-in transcript-aware AI clip selection and local vertical remix presets. Verified local Studio cue estimation and 1080×1920 render; delegated DeepSeek Flash returned two suggestions through Engine and Backend.
+    **IN-PROGRESS** | Architect | 2026-10-02
+    - **NOTE**: Route transcript scoring through Engine and a Backend-issued DeepSeek delegation token, with clear cloud transcript consent and local timing fallback. Add an Engine-rendered 9:16 output option for social clips; Codex/Agy stay development tools, not product runtime dependencies.
 
 ## Nice To Have
 - [X] [ST-A01-03-01] Add local transcription path through Engine.

@@ -131,6 +131,7 @@ def up() -> None:
     )
     start("backend", [str(BACKEND / ".venv/bin/uvicorn"), "app.main:app", "--host", "127.0.0.1", "--port", "8000"], BACKEND, backend_env)
     engine_env = os.environ.copy()
+    engine_env.setdefault("TV7_ENGINE_BACKEND_BASE_URL", "http://127.0.0.1:8000")
     if DEV_YT_DLP.is_file():
         engine_env.setdefault("TV7_ENGINE_YT_DLP_BIN", str(DEV_YT_DLP))
         engine_env.setdefault("TV7_ENGINE_YT_DLP_JS_RUNTIME", "node")

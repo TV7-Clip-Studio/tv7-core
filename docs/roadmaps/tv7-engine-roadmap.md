@@ -112,6 +112,9 @@ Last updated: 2026-06-10
 - [ ] [EN-A05-01-05] Add local clip detection interfaces for transcript-to-segment workflows.
     **BACKLOG** | Engine Agent | 2026-05-21 00:00
     - **CROSS-AGENT-NOTES**: Coordinate with Studio on UX and with Backend only for publishing/scheduling boundaries. Backend must not own local transcript analysis or clip scoring.
+- [X] **COMPLETED** [EN-A05-01-06] Harden transcript intelligence and add local social aspect remix rendering. Engine tests and live 1080×1920 render passed; bounded transcript request returned two DeepSeek Flash suggestions via Backend.
+    **IN-PROGRESS** | Architect | 2026-10-02
+    - **NOTE**: Expose guarded complete transcript cues for Studio, analyze bounded chunks rather than a silent first-cue truncation, validate suggestions against source timing, and preserve deterministic fallback. Add optional vertical output framing in Engine's existing render path; do not make generative video services mandatory.
 
 ## Epic EN-A06: Packaging, First-Run Setup, Distribution, And Future FFI
 - [ ] [EN-A06-01-01] Package Engine binary for Studio-managed startup on desktop.

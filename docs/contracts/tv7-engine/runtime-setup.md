@@ -382,7 +382,7 @@ Generates structured Quick Clip-style suggestions from transcript cues through t
 ```json
 {
   "provider": "tv7_cloud",
-  "model": "deepseek-chat",
+  "model": "deepseek-flash",
   "clips": [
     {
       "title": "Strong opening",

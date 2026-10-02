@@ -442,6 +442,22 @@
         }
       }
     },
+    "/v1/transcripts/cues": {
+      "get": {
+        "summary": "Read bounded cues from an Engine-owned WebVTT transcript",
+        "operationId": "getTranscriptCues",
+        "description": "Returns parsed cues for local review or opt-in AI analysis. Only canonical .vtt files inside Engine's asset directory are accepted; a configured Engine bearer token is required. Transcript size is capped at 5 MiB and AI use at 10000 cues with 4000 characters per cue.",
+        "parameters": [
+          {"name": "path", "in": "query", "required": true, "schema": {"type": "string"}, "description": "Absolute Engine-owned VTT path."}
+        ],
+        "responses": {
+          "200": {"description": "Parsed transcript cues", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TranscriptCuesResponse"}}}},
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "401": {"description": "Engine token required or invalid when token mode is enabled", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
+          "413": {"description": "Transcript exceeds the size or cue limits", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
     "/v1/transcripts/download": {
       "post": {
         "summary": "Start a job-backed transcript download",
@@ -1565,6 +1581,12 @@
           "subtitle_path": {
             "type": "string",
             "description": "Optional absolute .vtt path inside Engine's asset workspace. Engine shifts relevant cues to clip time and burns them into the result."
+          },
+          "format": {
+            "type": "string",
+            "enum": ["source", "vertical_9_16", "vertical_9_16_crop"],
+            "default": "source",
+            "description": "Optional local output framing. vertical_9_16 fits the full source frame within 1080x1920 and pads remaining space; vertical_9_16_crop fills then center-crops the frame and may cut off subjects. Subtitles are burned after framing. source preserves native dimensions."
           }
         }
       },
@@ -2096,6 +2118,13 @@
           "text": {
             "type": "string"
           }
+        }
+      },
+      "TranscriptCuesResponse": {
+        "type": "object",
+        "required": ["cues"],
+        "properties": {
+          "cues": {"type": "array", "items": {"$ref": "#/components/schemas/TranscriptCue"}}
         }
       },
       "ExistingClip": {

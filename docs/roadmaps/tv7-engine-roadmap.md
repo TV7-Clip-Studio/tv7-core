@@ -72,6 +72,9 @@ Last updated: 2026-06-10
 - [X] [EN-A03-01-08] Export only approved Engine-owned rendered MP4s by opaque temporary ID.
     **COMPLETED** | Engine Agent + Architect | 2026-10-01
     - **NOTE**: Render returns `media_id` only for Engine-owned MP4 output; authenticated GET streams that ID with full or bounded Range responses and revalidates path/size. IDs expire after one hour, after 100 exports, or on restart. Verified 71 Engine tests, strict clippy, release build, and shared-stack route presence. Durable asset identity and approval state remain open.
+- [X] [EN-A03-01-09] Stream Engine-owned source previews and harden automatic local captions and timing proposals.
+    **COMPLETED** | Architect | 2026-10-02
+    - **NOTE**: Guarded source video preview supports browser byte ranges. Caption download prefers available source subtitles; local Whisper first extracts 16 kHz mono WAV and uses automatic language detection unless explicitly overridden. Invalid/empty VTT output fails, and non-speech-only or weak short candidate windows are excluded. Live English and Spanish transcription, source Range, 76 Engine tests, format, compile, and clippy checks passed. Recognition still requires creator review; timing proposals are not viral quality rankings.
 - [P] [EN-A03-01-03] Move transcript discovery/download/normalization behind Engine APIs.
     **IN-PROGRESS** | Engine Agent | 2026-05-22 00:00
     - **NOTE**: First implementation runs transcript download behind Engine and returns the created VTT path through job result. Next hardening: transcript discovery, language selection details, and normalization output.

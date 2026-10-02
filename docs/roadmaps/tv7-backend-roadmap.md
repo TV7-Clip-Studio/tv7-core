@@ -31,6 +31,9 @@ Last updated: 2026-10-01
     **COMPLETED** | Backend Agent + Architect | 2026-10-01
     - **NOTE**: Owner-scoped asset API now supports local development storage and private S3-compatible production storage; worker materializes assets with checksum verification and temporary-file cleanup. Production fails closed without S3 configuration. Verified 75 Backend tests, lint, type checks, Compose config, and fresh SQLite migration `b457e9c83a12`. Live bucket access and billing remain unverified/open.
 - [ ] [BE-A01-02-13] Meter storage usage, retention, and billing for scheduled approved assets.
+- [X] [BE-A01-02-15] Let creators review, cancel, and reschedule their own pending post queue.
+    **COMPLETED** | Architect | 2026-10-02
+    - **NOTE**: Added owner-scoped paginated queue listing, future-time rescheduling, and repeat-safe cancellation restricted to unattempted pending jobs. Conditional updates protect worker-claim races; foreign jobs return 404 and ineligible states return 409. Backend lint, type checks, and 78 tests passed; local OpenAPI exposes the routes with anonymous 401. Publishing gates remain unchanged.
 - [X] [BE-A01-02-08] Store and serve owner-scoped source videos for Studio sync.
     **COMPLETED** | Backend Agent + Architect | 2026-10-01
     - **NOTE**: Local video registration is idempotent per account and source URL. Added private source upload, authenticated source retrieval, and duration-aware signed playback tickets for browser Range streaming. Video list/detail and clip creation are owner-scoped. Exported the updated OpenAPI contract. Verified 64 Backend tests, lint, type checking, a real 96 MB upload, and a live 206 partial response.

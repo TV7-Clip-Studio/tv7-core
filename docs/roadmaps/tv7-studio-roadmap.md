@@ -143,6 +143,9 @@ Last updated: 2026-06-17
 - [X] **COMPLETED** [ST-A05-01-10] Offer opt-in transcript-aware AI clip selection and local vertical remix presets. Verified local Studio cue estimation and 1080×1920 render; delegated DeepSeek Flash returned two suggestions through Engine and Backend.
     **IN-PROGRESS** | Architect | 2026-10-02
     - **NOTE**: Route transcript scoring through Engine and a Backend-issued DeepSeek delegation token, with clear cloud transcript consent and local timing fallback. Add an Engine-rendered 9:16 output option for social clips; Codex/Agy stay development tools, not product runtime dependencies.
+- [X] **COMPLETED** [ST-A05-01-11] Repair desktop media-tool discovery and prove owned-channel discovery through local clipping.
+    **COMPLETED** | Architect | 2026-10-03
+    - **NOTE**: The macOS package includes yt-dlp 2026.08.19 and repairs GUI tool discovery. Native Studio discovered six @OtroDiaEnElBarrio videos, downloaded one selected video, chose its Spanish source captions, and rendered local clips. The browser flow also produced two requested clips. Old saved jobs remain visible; new Engine job IDs are unique across restarts. Native UI inspection of the final ID fix timed out, so the new ID behavior is covered by Engine tests rather than a final native screen confirmation.
 
 ## Nice To Have
 - [X] [ST-A01-03-01] Add local transcription path through Engine.

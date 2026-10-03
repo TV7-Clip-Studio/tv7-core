@@ -115,6 +115,9 @@ Last updated: 2026-06-10
 - [X] **COMPLETED** [EN-A05-01-06] Harden transcript intelligence and add local social aspect remix rendering. Engine tests and live 1080×1920 render passed; bounded transcript request returned two DeepSeek Flash suggestions via Backend.
     **IN-PROGRESS** | Architect | 2026-10-02
     - **NOTE**: Expose guarded complete transcript cues for Studio, analyze bounded chunks rather than a silent first-cue truncation, validate suggestions against source timing, and preserve deterministic fallback. Add optional vertical output framing in Engine's existing render path; do not make generative video services mandatory.
+- [X] **COMPLETED** [EN-A05-01-07] Prefer direct HTTPS 1080p source formats for reliable owned-channel ingest.
+    **COMPLETED** | Architect | 2026-10-03
+    - **NOTE**: An owned-channel video downloaded through Studio after the default YouTube HLS choice returned 403. Engine now prefers direct HTTPS AVC/AAC, uses unique job and media IDs across restarts, selects the source-language caption track, and normalizes YouTube rolling captions. Engine checks and browser/packaged desktop clip renders passed.
 
 ## Epic EN-A06: Packaging, First-Run Setup, Distribution, And Future FFI
 - [ ] [EN-A06-01-01] Package Engine binary for Studio-managed startup on desktop.

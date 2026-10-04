@@ -146,6 +146,9 @@ Last updated: 2026-06-17
 - [X] **COMPLETED** [ST-A05-01-11] Repair desktop media-tool discovery and prove owned-channel discovery through local clipping.
     **COMPLETED** | Architect | 2026-10-03
     - **NOTE**: The macOS package includes yt-dlp 2026.08.19 and repairs GUI tool discovery. Native Studio discovered six @OtroDiaEnElBarrio videos, downloaded one selected video, chose its Spanish source captions, and rendered local clips. The browser flow also produced two requested clips. Old saved jobs remain visible; new Engine job IDs are unique across restarts. Native UI inspection of the final ID fix timed out, so the new ID behavior is covered by Engine tests rather than a final native screen confirmation.
+- [X] **COMPLETED** [ST-A05-01-12] Make channel clips quick to review and edit in one local workspace, with edits and renders reflected in the release queue.
+    **COMPLETED** | Architect | 2026-10-03
+    - **NOTE**: Channel jobs now show compact clip choices opening a focused workspace with source-range playback, visual and precise trim controls, subtitle override, format choice, and render preview. New drafts default to vertical 9:16 fit with timed subtitles on. Edits and renders update the same saved channel drafts and release queue; invalidated renders leave the queue until regenerated. An owned @OtroDiaEnElBarrio video produced two ready vertical clips, a trim survived reload, and a five-second 1080×1920 custom-caption render was visually checked. The macOS bundle builds and launches its Engine child; native UI automation timed out, so the post-change native screen was not inspected. Full project persistence and a production timeline remain in ST-A05-01-03.
 
 ## Nice To Have
 - [X] [ST-A01-03-01] Add local transcription path through Engine.

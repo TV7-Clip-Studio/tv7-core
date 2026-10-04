@@ -75,6 +75,9 @@ Last updated: 2026-06-10
 - [X] [EN-A03-01-09] Stream Engine-owned source previews and harden automatic local captions and timing proposals.
     **COMPLETED** | Architect | 2026-10-02
     - **NOTE**: Guarded source video preview supports browser byte ranges. Caption download prefers available source subtitles; local Whisper first extracts 16 kHz mono WAV and uses automatic language detection unless explicitly overridden. Invalid/empty VTT output fails, and non-speech-only or weak short candidate windows are excluded. Live English and Spanish transcription, source Range, 76 Engine tests, format, compile, and clippy checks passed. Recognition still requires creator review; timing proposals are not viral quality rankings.
+- [X] [EN-A03-01-10] Burn shifted subtitles correctly when clipping from a nonzero source timestamp.
+    **COMPLETED** | Architect | 2026-10-03
+    - **NOTE**: FFmpeg now seeks before opening the source and renders for the selected duration, aligning video timestamps with Engine's clip-relative VTT. A new nonzero-start pixel test verifies visible subtitle burn; 33 Engine Core tests, workspace check, strict Clippy, and live Studio rerenders passed. Inspected frames showed both timed Spanish captions and a custom line on an owned-channel vertical clip.
 - [P] [EN-A03-01-03] Move transcript discovery/download/normalization behind Engine APIs.
     **IN-PROGRESS** | Engine Agent | 2026-05-22 00:00
     - **NOTE**: First implementation runs transcript download behind Engine and returns the created VTT path through job result. Next hardening: transcript discovery, language selection details, and normalization output.

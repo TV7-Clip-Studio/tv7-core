@@ -139,6 +139,7 @@ Status markers in checkbox position:
 
 ## Public Source Release
 
-- [P] [CO-M01-05-01] Publish the six TV7 source repositories under MIT.
-    **IN-PROGRESS** | CV Publication Agent | 2026-10-29
+- [X] [CO-M01-05-01] Publish the six TV7 source repositories under MIT.
+    **COMPLETED** | CV Publication Agent | 2026-10-29
     - **NOTE**: Human approved publication and MIT licensing. Scope excludes .github-private and uncommitted local work.
+    - **NOTE**: All six repositories are public with MIT licenses; anonymous API access verified. Remote histories scanned without credential findings. Conductor precommit-context passed 102 tests; source changes are limited to documentation/licensing.

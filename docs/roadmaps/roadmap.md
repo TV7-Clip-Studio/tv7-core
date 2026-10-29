@@ -136,3 +136,9 @@ Status markers in checkbox position:
 - [P] [CO-M01-04-15] Add an optional DeepSeek reasoning profile for Codex.
     **IN-PROGRESS** | Architect Agent | 2026-07-04 00:00
     - **CROSS-AGENT-NOTES**: Applies only to optional `tv7-core` developer tooling and user-level Codex configuration; the existing OpenAI default and GitHub DeepSeek reviewer remain unchanged.
+
+## Public Source Release
+
+- [P] [CO-M01-05-01] Publish the six TV7 source repositories under MIT.
+    **IN-PROGRESS** | CV Publication Agent | 2026-10-29
+    - **NOTE**: Human approved publication and MIT licensing. Scope excludes .github-private and uncommitted local work.

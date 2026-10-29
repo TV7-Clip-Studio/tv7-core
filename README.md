@@ -1,5 +1,7 @@
 # TV7 Core (Shared Foundation)
 
+**Project overview and source map:** [TV7 — Local-first video clipping studio](PROJECT.md).
+
 `tv7-core` is the shared operating system for all `TV7-Clip-Studio` repos. It holds the canonical docs, cross-repo contracts, standards, shared tooling, templates, and governance.
 
 **Start here:** [DEVELOPMENT.md](DEVELOPMENT.md) gives the small daily loop and local service commands. [COHORT.md](COHORT.md) defines Architect, component owner, Agy UI reviewer, and optional DeepSeek reviewer roles. Run `make help` for the normal commands. Older Conductor, Cockpit, `sync`, and bulk PR workflows are opt-in via `make -f Makefile.legacy <target>`; they are not required to build or test Studio.
@@ -189,3 +191,7 @@ TV7/tv7-core/docs/
 You MUST follow all rules defined there.
 Acknowledge with your detected agent type:
 “Agent {TYPE} ready. What's the task?”
+
+## License
+
+TV7 source in this repository is available under the [MIT License](LICENSE). External dependencies and tools retain their respective licenses. See the [TV7 project overview](https://github.com/TV7-Clip-Studio/tv7-core/blob/main/PROJECT.md) for the repository map and current scope.

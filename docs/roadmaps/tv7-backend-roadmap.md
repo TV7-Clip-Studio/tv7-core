@@ -17,7 +17,9 @@ Last updated: 2026-10-01
     **COMPLETED** | Codex | 2026-11-10
     - **NOTE**: Reviewed and locally committed profile-scoped social OAuth and metadata-only local YouTube uploads; merged the public MIT license update. Added tested Python 3.12 dependency constraints, standalone setup documentation, and removed tracked generated package metadata. Fresh-environment lint, typing, pip consistency, and 138 tests passed (85.25% aggregate app+test coverage). Disposable SQLite fresh/upgrade/downgrade and duplicate-receipt preservation checks passed. Studio make check passed (21 tests). Updated the canonical OpenAPI. Bandit reports 17 low and 1 medium finding; live provider OAuth, uploads, PostgreSQL migrations, public publishing, deployment, remote push, and Aligner evaluation content were not performed.
 - [ ] [BE-A01-02-01] Finalize and document clip sync contract for Studio desktop clients.
-- [ ] [BE-A01-02-02] Expose and harden read-only polling/status APIs used by client/admin workflows.
+- [X] [BE-A01-02-02] Expose and harden read-only polling/status APIs used by client/admin workflows.
+    **COMPLETED** | Backend Agent | 2026-11-10
+    - **NOTE**: Added owner-scoped schedule-job lookup and composable status/platform filters before pagination, preserving owner/profile restrictions and existing routes. Added GET aliases under `/api/v1/publish/schedule-jobs`, updated canonical OpenAPI and Backend README, and verified Studio still calls the unchanged canonical paths. All 164 tests passed (26 new cases; 85.42% aggregate app+test coverage); full-repository Ruff, Black checks, mypy, and diff checks passed. Full-repository Ruff required an import-order-only cleanup in the schedule worker script. No database migration or provider operation is involved.
 - [ ] [BE-A01-02-03] Remove any remaining pre-credits scheduling logic and reconcile credit-ledger behavior.
 - [ ] [BE-A01-02-04] Expand publish workflow model (`PublishJob`) and endpoint behavior with clear status transitions.
 - [X] [BE-A01-02-09] Add owner-scoped private assets and durable schedule drafts.

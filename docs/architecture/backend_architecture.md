@@ -13,7 +13,8 @@ Exists to support account + scheduling + posting execution; not involved in clip
 - Validates credit availability for schedule creation.
 
 ### Scheduling & Posting
-- Accepts uploads of rendered clips + metadata from Studio.
+- Supports metadata-only local-to-YouTube pre-uploads: authorizes resumable sessions, verifies provider receipts, and stores channel/video IDs and release times.
+- Accepts rendered clip uploads for destinations that still require Backend-hosted assets.
 - Stores clips temporarily (short-lived retention).
 - **Scheduling Source of Truth**: Stores schedule entries (publish time(s), platform, captions).
 - **Background Posting Workers**:

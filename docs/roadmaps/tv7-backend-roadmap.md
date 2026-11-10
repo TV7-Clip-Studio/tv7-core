@@ -13,6 +13,9 @@ Last updated: 2026-10-01
 - [X] [BE-A01-01-05] Kept quality gates and developer workflow (`make fmt/lint/type/test/testcov`).
 
 ## Needs To Be Done
+- [X] [BE-A01-02-16] Validate and commit the existing profile-scoped social connections and local YouTube upload work; prepare a standalone source snapshot.
+    **COMPLETED** | Codex | 2026-11-10
+    - **NOTE**: Reviewed and locally committed profile-scoped social OAuth and metadata-only local YouTube uploads; merged the public MIT license update. Added tested Python 3.12 dependency constraints, standalone setup documentation, and removed tracked generated package metadata. Fresh-environment lint, typing, pip consistency, and 138 tests passed (85.25% aggregate app+test coverage). Disposable SQLite fresh/upgrade/downgrade and duplicate-receipt preservation checks passed. Studio make check passed (21 tests). Updated the canonical OpenAPI. Bandit reports 17 low and 1 medium finding; live provider OAuth, uploads, PostgreSQL migrations, public publishing, deployment, remote push, and Aligner evaluation content were not performed.
 - [ ] [BE-A01-02-01] Finalize and document clip sync contract for Studio desktop clients.
 - [ ] [BE-A01-02-02] Expose and harden read-only polling/status APIs used by client/admin workflows.
 - [ ] [BE-A01-02-03] Remove any remaining pre-credits scheduling logic and reconcile credit-ledger behavior.

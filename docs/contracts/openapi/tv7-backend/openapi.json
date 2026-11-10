@@ -1,23 +1,2650 @@
 {
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TV7 Video Cutter",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Endpoint that serves Prometheus metrics.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Refresh Token",
+        "operationId": "refresh_token_api_v1_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/license": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "License Readiness",
+        "operationId": "license_readiness_api_v1_auth_license_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseReadinessResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/users/": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "List Users Endpoint",
+        "operationId": "list_users_endpoint_api_v1_users__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Users Endpoint Api V1 Users  Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Create User Endpoint",
+        "operationId": "create_user_endpoint_api_v1_users__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clips/{clip_id}": {
+      "patch": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Update Clip",
+        "operationId": "update_clip_api_v1_clips__clip_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClipUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClipRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/videos": {
+      "get": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "List Videos",
+        "operationId": "list_videos_api_v1_videos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VideoRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Videos Api V1 Videos Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}": {
+      "get": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "Get Video Status",
+        "operationId": "get_video_status_api_v1_videos__video_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Video Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/videos/{video_id}/clips": {
+      "post": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "Create Clip For Video",
+        "operationId": "create_clip_for_video_api_v1_videos__video_id__clips_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Video Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClipUpsert"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClipRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/videos/local": {
+      "post": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "Register Local Video",
+        "operationId": "register_local_video_api_v1_videos_local_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalVideoCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/source": {
+      "post": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "Upload Video Source",
+        "operationId": "upload_video_source_api_v1_videos__video_id__source_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Video Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_video_source_api_v1_videos__video_id__source_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "Get Video Source",
+        "operationId": "get_video_source_api_v1_videos__video_id__source_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Video Id"
+            }
+          },
+          {
+            "name": "ticket",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ticket"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/videos/{video_id}/source-ticket": {
+      "post": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "Create Source Ticket",
+        "operationId": "create_source_ticket_api_v1_videos__video_id__source_ticket_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Video Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceTicketResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/publishing-targets": {
+      "get": {
+        "tags": [
+          "publish"
+        ],
+        "summary": "List Publishing Targets",
+        "operationId": "list_publishing_targets_api_v1_publishing_targets_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "creator_profile_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Creator Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "boolean"
+                        }
+                      ]
+                    }
+                  },
+                  "title": "Response List Publishing Targets Api V1 Publishing Targets Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-jobs": {
+      "get": {
+        "tags": [
+          "publish"
+        ],
+        "summary": "List Schedule Jobs",
+        "operationId": "list_schedule_jobs_api_v1_schedule_jobs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "creator_profile_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Creator Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublishJobRead"
+                  },
+                  "title": "Response List Schedule Jobs Api V1 Schedule Jobs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-jobs/{job_id}": {
+      "patch": {
+        "tags": [
+          "publish"
+        ],
+        "summary": "Reschedule Job",
+        "operationId": "reschedule_job_api_v1_schedule_jobs__job_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleRescheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishJobRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-jobs/{job_id}/cancel": {
+      "post": {
+        "tags": [
+          "publish"
+        ],
+        "summary": "Cancel Job",
+        "operationId": "cancel_job_api_v1_schedule_jobs__job_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishJobRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clips/{clip_id}/publish": {
+      "post": {
+        "tags": [
+          "publish"
+        ],
+        "summary": "Publish Clip",
+        "operationId": "publish_clip_api_v1_clips__clip_id__publish_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "503": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "publish"
+        ],
+        "summary": "List Publish Jobs",
+        "operationId": "list_publish_jobs_api_v1_clips__clip_id__publish_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublishJobRead"
+                  },
+                  "title": "Response List Publish Jobs Api V1 Clips  Clip Id  Publish Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clips/{clip_id}/schedule-drafts": {
+      "post": {
+        "tags": [
+          "publish"
+        ],
+        "summary": "Create Schedule Draft",
+        "operationId": "create_schedule_draft_api_v1_clips__clip_id__schedule_drafts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleDraftRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishJobRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Get Config",
+        "description": "Expose feature flags and limits for Studio.",
+        "operationId": "get_config_api_v1_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/uploads/assets": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Upload Asset",
+        "description": "Store a rendered clip for its owner, outside the public media tree.",
+        "operationId": "upload_asset_api_v1_uploads_assets_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_asset_api_v1_uploads_assets_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetUploadResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/uploads/assets/{asset_id}": {
+      "get": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Get Asset",
+        "operationId": "get_asset_api_v1_uploads_assets__asset_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Asset Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cloud-ai/engine-token": {
+      "post": {
+        "tags": [
+          "cloud-ai"
+        ],
+        "summary": "Create Engine Cloud Ai Token",
+        "operationId": "create_engine_cloud_ai_token_api_v1_cloud_ai_engine_token_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineCloudAiTokenResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/cloud-ai/engine/execute": {
+      "post": {
+        "tags": [
+          "cloud-ai"
+        ],
+        "summary": "Execute Engine Cloud Ai",
+        "operationId": "execute_engine_cloud_ai_api_v1_cloud_ai_engine_execute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloudAiExecuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAiExecuteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/youtube/connect": {
+      "post": {
+        "tags": [
+          "youtube"
+        ],
+        "summary": "Connect Youtube",
+        "operationId": "connect_youtube_api_v1_youtube_connect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_connect_youtube_api_v1_youtube_connect_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Connect Youtube Api V1 Youtube Connect Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/youtube/callback": {
+      "get": {
+        "tags": [
+          "youtube"
+        ],
+        "summary": "Youtube Callback",
+        "operationId": "youtube_callback_api_v1_youtube_callback_get",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 256,
+              "title": "State"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/youtube/connections": {
+      "get": {
+        "tags": [
+          "youtube"
+        ],
+        "summary": "Youtube Connections",
+        "operationId": "youtube_connections_api_v1_youtube_connections_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Youtube Connections Api V1 Youtube Connections Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/youtube/connection": {
+      "get": {
+        "tags": [
+          "youtube"
+        ],
+        "summary": "Youtube Connection",
+        "operationId": "youtube_connection_api_v1_youtube_connection_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "account_ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Account Ref"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "title": "Response Youtube Connection Api V1 Youtube Connection Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "youtube"
+        ],
+        "summary": "Disconnect Youtube",
+        "operationId": "disconnect_youtube_api_v1_youtube_connection_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "account_ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Account Ref"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/youtube/connection/profile": {
+      "put": {
+        "tags": [
+          "youtube"
+        ],
+        "summary": "Assign Youtube Profile",
+        "operationId": "assign_youtube_profile_api_v1_youtube_connection_profile_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "account_ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Account Ref"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_assign_youtube_profile_api_v1_youtube_connection_profile_put"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Assign Youtube Profile Api V1 Youtube Connection Profile Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/social/providers": {
+      "get": {
+        "tags": [
+          "social"
+        ],
+        "summary": "Providers",
+        "operationId": "providers_api_v1_social_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Providers Api V1 Social Providers Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/social/connections": {
+      "get": {
+        "tags": [
+          "social"
+        ],
+        "summary": "Connections",
+        "operationId": "connections_api_v1_social_connections_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "creator_profile_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Creator Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Connections Api V1 Social Connections Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/social/{platform}/connect": {
+      "post": {
+        "tags": [
+          "social"
+        ],
+        "summary": "Connect",
+        "operationId": "connect_api_v1_social__platform__connect_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "type": "string",
+              "title": "Platform"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_connect_api_v1_social__platform__connect_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Connect Api V1 Social  Platform  Connect Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/social/{platform}/callback": {
+      "get": {
+        "tags": [
+          "social"
+        ],
+        "summary": "Callback",
+        "operationId": "callback_api_v1_social__platform__callback_get",
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "type": "string",
+              "title": "Platform"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 256,
+              "title": "State"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/social/connections/{connection_id}": {
+      "delete": {
+        "tags": [
+          "social"
+        ],
+        "summary": "Disconnect",
+        "operationId": "disconnect_api_v1_social_connections__connection_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connection Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/youtube/local-uploads": {
+      "get": {
+        "tags": [
+          "youtube-local-uploads"
+        ],
+        "summary": "List Uploads",
+        "operationId": "list_uploads_api_v1_youtube_local_uploads_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "creator_profile_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "title": "Creator Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response List Uploads Api V1 Youtube Local Uploads Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "youtube-local-uploads"
+        ],
+        "summary": "Create Upload",
+        "operationId": "create_upload_api_v1_youtube_local_uploads_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Upload Api V1 Youtube Local Uploads Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/youtube/local-uploads/{upload_id}": {
+      "get": {
+        "tags": [
+          "youtube-local-uploads"
+        ],
+        "summary": "Get Upload",
+        "operationId": "get_upload_api_v1_youtube_local_uploads__upload_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Upload Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Upload Api V1 Youtube Local Uploads  Upload Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/youtube/local-uploads/{upload_id}/transfer": {
+      "post": {
+        "tags": [
+          "youtube-local-uploads"
+        ],
+        "summary": "Transfer",
+        "operationId": "transfer_api_v1_youtube_local_uploads__upload_id__transfer_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Upload Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Transfer Api V1 Youtube Local Uploads  Upload Id  Transfer Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/youtube/local-uploads/{upload_id}/verify": {
+      "post": {
+        "tags": [
+          "youtube-local-uploads"
+        ],
+        "summary": "Verify",
+        "operationId": "verify_api_v1_youtube_local_uploads__upload_id__verify_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Upload Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Verify Api V1 Youtube Local Uploads  Upload Id  Verify Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/youtube/local-uploads/{upload_id}/schedule": {
+      "put": {
+        "tags": [
+          "youtube-local-uploads"
+        ],
+        "summary": "Reschedule Upload",
+        "operationId": "reschedule_upload_api_v1_youtube_local_uploads__upload_id__schedule_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Upload Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Reschedule Upload Api V1 Youtube Local Uploads  Upload Id  Schedule Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/youtube/local-uploads/clear-schedule": {
+      "post": {
+        "tags": [
+          "youtube-local-uploads"
+        ],
+        "summary": "Clear Profile Schedule",
+        "operationId": "clear_profile_schedule_api_v1_youtube_local_uploads_clear_schedule_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClearProfileScheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Clear Profile Schedule Api V1 Youtube Local Uploads Clear Schedule Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/login": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Login Form",
+        "operationId": "login_form_admin_login_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Login Submit",
+        "operationId": "login_submit_admin_login_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_login_submit_admin_login_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/logout": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Logout",
+        "operationId": "logout_admin_logout_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/dashboard": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Dashboard",
+        "operationId": "dashboard_admin_dashboard_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/schedule": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "View Schedule",
+        "operationId": "view_schedule_admin_schedule_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/cloud-ai": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "View Cloud Ai",
+        "operationId": "view_cloud_ai_admin_cloud_ai_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/cloud-ai/credits": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Grant Cloud Ai Credits",
+        "operationId": "grant_cloud_ai_credits_admin_cloud_ai_credits_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_grant_cloud_ai_credits_admin_cloud_ai_credits_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/schedule/{job_id}": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update Schedule Entry",
+        "operationId": "update_schedule_entry_admin_schedule__job_id__post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_update_schedule_entry_admin_schedule__job_id__post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Users",
+        "operationId": "list_users_admin_users_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{user_id}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "User Detail",
+        "operationId": "user_detail_admin_users__user_id__get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{user_id}/status": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update User Account Status",
+        "operationId": "update_user_account_status_admin_users__user_id__status_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_update_user_account_status_admin_users__user_id__status_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "summary": "Readyz",
+        "operationId": "readyz_readyz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Readyz Readyz Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "summary": "Version",
+        "operationId": "version_version_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Version Version Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "components": {
     "schemas": {
       "AssetUploadResponse": {
         "properties": {
-          "asset_checksum": {
-            "title": "Asset Checksum",
-            "type": "string"
-          },
           "asset_id": {
-            "title": "Asset Id",
-            "type": "integer"
-          },
-          "asset_size_bytes": {
-            "title": "Asset Size Bytes",
-            "type": "integer"
+            "type": "integer",
+            "title": "Asset Id"
           },
           "asset_url": {
-            "title": "Asset Url",
-            "type": "string"
+            "type": "string",
+            "title": "Asset Url"
+          },
+          "asset_checksum": {
+            "type": "string",
+            "title": "Asset Checksum"
+          },
+          "asset_size_bytes": {
+            "type": "integer",
+            "title": "Asset Size Bytes"
           },
           "content_type": {
             "anyOf": [
@@ -31,53 +2658,106 @@
             "title": "Content Type"
           }
         },
+        "type": "object",
         "required": [
           "asset_id",
           "asset_url",
           "asset_checksum",
           "asset_size_bytes"
         ],
-        "title": "AssetUploadResponse",
-        "type": "object"
+        "title": "AssetUploadResponse"
+      },
+      "Body_assign_youtube_profile_api_v1_youtube_connection_profile_put": {
+        "properties": {
+          "creator_profile_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Creator Profile Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "creator_profile_id"
+        ],
+        "title": "Body_assign_youtube_profile_api_v1_youtube_connection_profile_put"
+      },
+      "Body_connect_api_v1_social__platform__connect_post": {
+        "properties": {
+          "creator_profile_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Creator Profile Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "creator_profile_id"
+        ],
+        "title": "Body_connect_api_v1_social__platform__connect_post"
+      },
+      "Body_connect_youtube_api_v1_youtube_connect_post": {
+        "properties": {
+          "creator_profile_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creator Profile Id"
+          }
+        },
+        "type": "object",
+        "title": "Body_connect_youtube_api_v1_youtube_connect_post"
       },
       "Body_grant_cloud_ai_credits_admin_cloud_ai_credits_post": {
         "properties": {
-          "amount": {
-            "title": "Amount",
-            "type": "integer"
-          },
           "user_id": {
-            "title": "User Id",
-            "type": "integer"
+            "type": "integer",
+            "title": "User Id"
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount"
           }
         },
+        "type": "object",
         "required": [
           "user_id",
           "amount"
         ],
-        "title": "Body_grant_cloud_ai_credits_admin_cloud_ai_credits_post",
-        "type": "object"
+        "title": "Body_grant_cloud_ai_credits_admin_cloud_ai_credits_post"
       },
       "Body_login_submit_admin_login_post": {
         "properties": {
-          "password": {
-            "title": "Password",
-            "type": "string"
-          },
           "username": {
-            "title": "Username",
-            "type": "string"
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
           }
         },
+        "type": "object",
         "required": [
           "username",
           "password"
         ],
-        "title": "Body_login_submit_admin_login_post",
-        "type": "object"
+        "title": "Body_login_submit_admin_login_post"
       },
       "Body_update_schedule_entry_admin_schedule__job_id__post": {
         "properties": {
+          "status_value": {
+            "type": "string",
+            "title": "Status Value"
+          },
           "error_message": {
             "anyOf": [
               {
@@ -88,69 +2768,118 @@
               }
             ],
             "title": "Error Message"
-          },
-          "status_value": {
-            "title": "Status Value",
-            "type": "string"
           }
         },
+        "type": "object",
         "required": [
           "status_value"
         ],
-        "title": "Body_update_schedule_entry_admin_schedule__job_id__post",
-        "type": "object"
+        "title": "Body_update_schedule_entry_admin_schedule__job_id__post"
       },
       "Body_update_user_account_status_admin_users__user_id__status_post": {
         "properties": {
           "is_active": {
-            "title": "Is Active",
-            "type": "boolean"
+            "type": "boolean",
+            "title": "Is Active"
           }
         },
+        "type": "object",
         "required": [
           "is_active"
         ],
-        "title": "Body_update_user_account_status_admin_users__user_id__status_post",
-        "type": "object"
+        "title": "Body_update_user_account_status_admin_users__user_id__status_post"
       },
       "Body_upload_asset_api_v1_uploads_assets_post": {
         "properties": {
           "file": {
+            "type": "string",
             "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
+            "title": "File"
           }
         },
+        "type": "object",
         "required": [
           "file"
         ],
-        "title": "Body_upload_asset_api_v1_uploads_assets_post",
-        "type": "object"
+        "title": "Body_upload_asset_api_v1_uploads_assets_post"
       },
       "Body_upload_video_source_api_v1_videos__video_id__source_post": {
         "properties": {
           "file": {
+            "type": "string",
             "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
+            "title": "File"
           }
         },
+        "type": "object",
         "required": [
           "file"
         ],
-        "title": "Body_upload_video_source_api_v1_videos__video_id__source_post",
-        "type": "object"
+        "title": "Body_upload_video_source_api_v1_videos__video_id__source_post"
+      },
+      "ClearProfileScheduleRequest": {
+        "properties": {
+          "creator_profile_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Creator Profile Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "creator_profile_id"
+        ],
+        "title": "ClearProfileScheduleRequest"
       },
       "ClipGenerationMode": {
+        "type": "string",
         "enum": [
           "replace",
           "append"
         ],
-        "title": "ClipGenerationMode",
-        "type": "string"
+        "title": "ClipGenerationMode"
       },
       "ClipRead": {
         "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "video_id": {
+            "type": "integer",
+            "title": "Video Id"
+          },
+          "start_sec": {
+            "type": "number",
+            "title": "Start Sec"
+          },
+          "end_sec": {
+            "type": "number",
+            "title": "End Sec"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "asset_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Url"
+          },
           "asset_checksum": {
             "anyOf": [
               {
@@ -173,16 +2902,10 @@
             ],
             "title": "Asset Size Bytes"
           },
-          "asset_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Url"
+          "ready_local_only": {
+            "type": "boolean",
+            "title": "Ready Local Only",
+            "default": false
           },
           "caption_text": {
             "anyOf": [
@@ -195,16 +2918,7 @@
             ],
             "title": "Caption Text"
           },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "end_sec": {
-            "title": "End Sec",
-            "type": "number"
-          },
-          "file_size_bytes": {
+          "render_width": {
             "anyOf": [
               {
                 "type": "integer"
@@ -213,38 +2927,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size Bytes"
-          },
-          "frame_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Frame Rate"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "local_path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Local Path"
-          },
-          "ready_local_only": {
-            "default": false,
-            "title": "Ready Local Only",
-            "type": "boolean"
+            "title": "Render Width"
           },
           "render_height": {
             "anyOf": [
@@ -257,7 +2940,18 @@
             ],
             "title": "Render Height"
           },
-          "render_width": {
+          "frame_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame Rate"
+          },
+          "file_size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -266,14 +2960,7 @@
                 "type": "null"
               }
             ],
-            "title": "Render Width"
-          },
-          "start_sec": {
-            "title": "Start Sec",
-            "type": "number"
-          },
-          "status": {
-            "$ref": "#/components/schemas/ClipStatus"
+            "title": "File Size Bytes"
           },
           "thumbnail_path": {
             "anyOf": [
@@ -286,16 +2973,21 @@
             ],
             "title": "Thumbnail Path"
           },
-          "updated_at": {
-            "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
+          "status": {
+            "$ref": "#/components/schemas/ClipStatus"
           },
-          "video_id": {
-            "title": "Video Id",
-            "type": "integer"
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
           }
         },
+        "type": "object",
         "required": [
           "id",
           "video_id",
@@ -307,10 +2999,10 @@
           "created_at",
           "updated_at"
         ],
-        "title": "ClipRead",
-        "type": "object"
+        "title": "ClipRead"
       },
       "ClipStatus": {
+        "type": "string",
         "enum": [
           "rendering",
           "ready",
@@ -318,11 +3010,21 @@
           "published_all",
           "error"
         ],
-        "title": "ClipStatus",
-        "type": "string"
+        "title": "ClipStatus"
       },
       "ClipUpdateRequest": {
         "properties": {
+          "asset_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Url"
+          },
           "asset_checksum": {
             "anyOf": [
               {
@@ -345,29 +3047,7 @@
             ],
             "title": "Asset Size Bytes"
           },
-          "asset_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Url"
-          },
-          "caption_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Caption Text"
-          },
-          "file_size_bytes": {
+          "render_width": {
             "anyOf": [
               {
                 "type": "integer"
@@ -376,29 +3056,7 @@
                 "type": "null"
               }
             ],
-            "title": "File Size Bytes"
-          },
-          "frame_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Frame Rate"
-          },
-          "ready_local_only": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ready Local Only"
+            "title": "Render Width"
           },
           "render_height": {
             "anyOf": [
@@ -411,71 +3069,16 @@
             ],
             "title": "Render Height"
           },
-          "render_width": {
+          "frame_rate": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "number"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Render Width"
-          }
-        },
-        "title": "ClipUpdateRequest",
-        "type": "object"
-      },
-      "ClipUpsert": {
-        "properties": {
-          "asset_checksum": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Checksum"
-          },
-          "asset_size_bytes": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Size Bytes"
-          },
-          "asset_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Url"
-          },
-          "caption_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Caption Text"
-          },
-          "end_sec": {
-            "exclusiveMinimum": 0.0,
-            "title": "End Sec",
-            "type": "number"
+            "title": "Frame Rate"
           },
           "file_size_bytes": {
             "anyOf": [
@@ -488,16 +3091,43 @@
             ],
             "title": "File Size Bytes"
           },
-          "frame_rate": {
+          "caption_text": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Frame Rate"
+            "title": "Caption Text"
+          },
+          "ready_local_only": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ready Local Only"
+          }
+        },
+        "type": "object",
+        "title": "ClipUpdateRequest"
+      },
+      "ClipUpsert": {
+        "properties": {
+          "start_sec": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Start Sec"
+          },
+          "end_sec": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "End Sec"
           },
           "local_path": {
             "anyOf": [
@@ -510,12 +3140,29 @@
             ],
             "title": "Local Path"
           },
-          "ready_local_only": {
-            "default": false,
-            "title": "Ready Local Only",
-            "type": "boolean"
+          "asset_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Url"
           },
-          "render_height": {
+          "asset_checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Checksum"
+          },
+          "asset_size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -524,7 +3171,23 @@
                 "type": "null"
               }
             ],
-            "title": "Render Height"
+            "title": "Asset Size Bytes"
+          },
+          "ready_local_only": {
+            "type": "boolean",
+            "title": "Ready Local Only",
+            "default": false
+          },
+          "caption_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption Text"
           },
           "render_width": {
             "anyOf": [
@@ -537,14 +3200,38 @@
             ],
             "title": "Render Width"
           },
-          "start_sec": {
-            "minimum": 0.0,
-            "title": "Start Sec",
-            "type": "number"
+          "render_height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Render Height"
           },
-          "status": {
-            "$ref": "#/components/schemas/ClipStatus",
-            "default": "ready"
+          "frame_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame Rate"
+          },
+          "file_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size Bytes"
           },
           "thumbnail_path": {
             "anyOf": [
@@ -556,37 +3243,28 @@
               }
             ],
             "title": "Thumbnail Path"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ClipStatus",
+            "default": "ready"
           }
         },
+        "type": "object",
         "required": [
           "start_sec",
           "end_sec"
         ],
-        "title": "ClipUpsert",
-        "type": "object"
+        "title": "ClipUpsert"
       },
       "CloudAiExecuteRequest": {
         "properties": {
-          "max_tokens": {
-            "anyOf": [
-              {
-                "exclusiveMinimum": 0.0,
-                "maximum": 8192.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Tokens"
-          },
           "messages": {
             "items": {
               "$ref": "#/components/schemas/CloudAiMessage"
             },
+            "type": "array",
             "minItems": 1,
-            "title": "Messages",
-            "type": "array"
+            "title": "Messages"
           },
           "model": {
             "anyOf": [
@@ -599,51 +3277,67 @@
             ],
             "title": "Model"
           },
-          "response_format": {
-            "anyOf": [
-              {
-                "const": "json_object",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Format"
-          },
           "temperature": {
             "anyOf": [
               {
+                "type": "number",
                 "maximum": 2.0,
-                "minimum": 0.0,
-                "type": "number"
+                "minimum": 0.0
               },
               {
                 "type": "null"
               }
             ],
             "title": "Temperature"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 8192.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens"
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "json_object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format"
           }
         },
+        "type": "object",
         "required": [
           "messages"
         ],
-        "title": "CloudAiExecuteRequest",
-        "type": "object"
+        "title": "CloudAiExecuteRequest"
       },
       "CloudAiExecuteResponse": {
         "properties": {
-          "content": {
-            "title": "Content",
-            "type": "string"
+          "provider": {
+            "type": "string",
+            "title": "Provider"
           },
           "model": {
-            "title": "Model",
-            "type": "string"
+            "type": "string",
+            "title": "Model"
           },
-          "provider": {
-            "title": "Provider",
-            "type": "string"
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/CloudAiUsage"
           },
           "raw_finish_reason": {
             "anyOf": [
@@ -655,75 +3349,42 @@
               }
             ],
             "title": "Raw Finish Reason"
-          },
-          "usage": {
-            "$ref": "#/components/schemas/CloudAiUsage"
           }
         },
+        "type": "object",
         "required": [
           "provider",
           "model",
           "content",
           "usage"
         ],
-        "title": "CloudAiExecuteResponse",
-        "type": "object"
+        "title": "CloudAiExecuteResponse"
       },
       "CloudAiMessage": {
         "properties": {
-          "content": {
-            "title": "Content",
-            "type": "string"
-          },
           "role": {
+            "type": "string",
             "enum": [
               "system",
               "user",
               "assistant"
             ],
-            "title": "Role",
-            "type": "string"
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
           }
         },
+        "type": "object",
         "required": [
           "role",
           "content"
         ],
-        "title": "CloudAiMessage",
-        "type": "object"
+        "title": "CloudAiMessage"
       },
       "CloudAiUsage": {
         "properties": {
-          "completion_tokens": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Completion Tokens"
-          },
-          "credits_charged": {
-            "title": "Credits Charged",
-            "type": "integer"
-          },
-          "credits_remaining": {
-            "title": "Credits Remaining",
-            "type": "integer"
-          },
-          "latency_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Latency Ms"
-          },
           "prompt_tokens": {
             "anyOf": [
               {
@@ -735,6 +3396,17 @@
             ],
             "title": "Prompt Tokens"
           },
+          "completion_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Tokens"
+          },
           "total_tokens": {
             "anyOf": [
               {
@@ -745,27 +3417,55 @@
               }
             ],
             "title": "Total Tokens"
+          },
+          "credits_charged": {
+            "type": "integer",
+            "title": "Credits Charged"
+          },
+          "credits_remaining": {
+            "type": "integer",
+            "title": "Credits Remaining"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
           }
         },
+        "type": "object",
         "required": [
           "credits_charged",
           "credits_remaining"
         ],
-        "title": "CloudAiUsage",
-        "type": "object"
+        "title": "CloudAiUsage"
       },
       "ConfigRead": {
         "properties": {
+          "publishing_enabled": {
+            "type": "boolean",
+            "title": "Publishing Enabled"
+          },
+          "scheduling_enabled": {
+            "type": "boolean",
+            "title": "Scheduling Enabled",
+            "default": false
+          },
+          "asset_upload_required": {
+            "type": "boolean",
+            "title": "Asset Upload Required"
+          },
           "allowed_platforms": {
             "items": {
               "type": "string"
             },
-            "title": "Allowed Platforms",
-            "type": "array"
-          },
-          "asset_upload_required": {
-            "title": "Asset Upload Required",
-            "type": "boolean"
+            "type": "array",
+            "title": "Allowed Platforms"
           },
           "max_asset_size_bytes": {
             "anyOf": [
@@ -791,65 +3491,56 @@
           },
           "publish_modes": {
             "items": {
+              "type": "string",
               "enum": [
                 "backend_publish",
                 "local_only"
-              ],
-              "type": "string"
+              ]
             },
-            "title": "Publish Modes",
-            "type": "array"
-          },
-          "publishing_enabled": {
-            "title": "Publishing Enabled",
-            "type": "boolean"
-          },
-          "scheduling_enabled": {
-            "default": false,
-            "title": "Scheduling Enabled",
-            "type": "boolean"
+            "type": "array",
+            "title": "Publish Modes"
           }
         },
+        "type": "object",
         "required": [
           "publishing_enabled",
           "asset_upload_required",
           "allowed_platforms"
         ],
-        "title": "ConfigRead",
-        "type": "object"
+        "title": "ConfigRead"
       },
       "EngineCloudAiTokenResponse": {
         "properties": {
-          "credits_remaining": {
-            "title": "Credits Remaining",
-            "type": "integer"
-          },
-          "expires_in_seconds": {
-            "title": "Expires In Seconds",
-            "type": "integer"
-          },
-          "scope": {
-            "default": "engine:cloud_ai",
-            "title": "Scope",
-            "type": "string"
-          },
           "token": {
-            "title": "Token",
-            "type": "string"
+            "type": "string",
+            "title": "Token"
           },
           "token_type": {
-            "default": "bearer",
+            "type": "string",
             "title": "Token Type",
-            "type": "string"
+            "default": "bearer"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": "engine:cloud_ai"
+          },
+          "expires_in_seconds": {
+            "type": "integer",
+            "title": "Expires In Seconds"
+          },
+          "credits_remaining": {
+            "type": "integer",
+            "title": "Credits Remaining"
           }
         },
+        "type": "object",
         "required": [
           "token",
           "expires_in_seconds",
           "credits_remaining"
         ],
-        "title": "EngineCloudAiTokenResponse",
-        "type": "object"
+        "title": "EngineCloudAiTokenResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -857,62 +3548,63 @@
             "items": {
               "$ref": "#/components/schemas/ValidationError"
             },
-            "title": "Detail",
-            "type": "array"
+            "type": "array",
+            "title": "Detail"
           }
         },
-        "title": "HTTPValidationError",
-        "type": "object"
+        "type": "object",
+        "title": "HTTPValidationError"
       },
       "LicenseReadinessResponse": {
         "properties": {
           "account_active": {
-            "description": "Whether the authenticated TV7 account is active.",
+            "type": "boolean",
             "title": "Account Active",
-            "type": "boolean"
-          },
-          "can_request_engine_cloud_ai_token": {
-            "description": "Whether Studio may request a short-lived delegated Engine token.",
-            "title": "Can Request Engine Cloud Ai Token",
-            "type": "boolean"
-          },
-          "cloud_ai_available": {
-            "description": "Whether TV7 cloud AI is currently available to this account.",
-            "title": "Cloud Ai Available",
-            "type": "boolean"
-          },
-          "cloud_ai_credits_remaining": {
-            "description": "Perpetual cloud AI credits remaining; purchased credits do not expire.",
-            "minimum": 0.0,
-            "title": "Cloud Ai Credits Remaining",
-            "type": "integer"
-          },
-          "engine_cloud_ai_scope": {
-            "default": "engine:cloud_ai",
-            "description": "Required scope for delegated Engine cloud AI execution.",
-            "title": "Engine Cloud Ai Scope",
-            "type": "string"
+            "description": "Whether the authenticated TV7 account is active."
           },
           "license_status": {
-            "description": "Account-level cloud AI entitlement readiness.",
+            "type": "string",
             "enum": [
               "active",
               "required"
             ],
             "title": "License Status",
-            "type": "string"
+            "description": "Account-level cloud AI entitlement readiness."
+          },
+          "cloud_ai_available": {
+            "type": "boolean",
+            "title": "Cloud Ai Available",
+            "description": "Whether TV7 cloud AI is currently available to this account."
+          },
+          "cloud_ai_credits_remaining": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Cloud Ai Credits Remaining",
+            "description": "Perpetual cloud AI credits remaining; purchased credits do not expire."
+          },
+          "can_request_engine_cloud_ai_token": {
+            "type": "boolean",
+            "title": "Can Request Engine Cloud Ai Token",
+            "description": "Whether Studio may request a short-lived delegated Engine token."
+          },
+          "engine_cloud_ai_scope": {
+            "type": "string",
+            "title": "Engine Cloud Ai Scope",
+            "description": "Required scope for delegated Engine cloud AI execution.",
+            "default": "engine:cloud_ai"
           },
           "reason_code": {
-            "description": "Stable readiness reason for Studio diagnostics and account UX.",
+            "type": "string",
             "enum": [
               "READY",
               "AI_LICENSE_REQUIRED",
               "AI_QUOTA_EXCEEDED"
             ],
             "title": "Reason Code",
-            "type": "string"
+            "description": "Stable readiness reason for Studio diagnostics and account UX."
           }
         },
+        "type": "object",
         "required": [
           "account_active",
           "license_status",
@@ -921,11 +3613,215 @@
           "can_request_engine_cloud_ai_token",
           "reason_code"
         ],
-        "title": "LicenseReadinessResponse",
-        "type": "object"
+        "title": "LicenseReadinessResponse"
+      },
+      "LocalUploadRequest": {
+        "properties": {
+          "creator_profile_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Creator Profile Id"
+          },
+          "target_account_ref": {
+            "type": "string",
+            "maxLength": 255,
+            "pattern": "^youtube:[A-Za-z0-9_-]+$",
+            "title": "Target Account Ref"
+          },
+          "local_clip_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Local Clip Id"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Idempotency Key"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[^<>]+$",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Description",
+            "default": ""
+          },
+          "size_bytes": {
+            "type": "integer",
+            "maximum": 274877906944.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Size Bytes"
+          },
+          "checksum_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Checksum Sha256"
+          },
+          "content_type": {
+            "type": "string",
+            "enum": [
+              "video/mp4",
+              "video/quicktime",
+              "video/webm"
+            ],
+            "title": "Content Type",
+            "default": "video/mp4"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "creator_profile_id",
+          "target_account_ref",
+          "local_clip_id",
+          "idempotency_key",
+          "title",
+          "size_bytes",
+          "checksum_sha256"
+        ],
+        "title": "LocalUploadRequest"
       },
       "LocalVideoCreate": {
         "properties": {
+          "source_url": {
+            "type": "string",
+            "title": "Source Url",
+            "description": "Identifier for the local video (e.g., file:// or local://)"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "Human-friendly title from desktop (mapped to original_filename)."
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "original_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Filename"
+          },
+          "upload_checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Checksum"
+          },
+          "upload_file_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload File Size Bytes"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "file_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size Bytes"
+          },
+          "transcript_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Text"
+          },
+          "transcript_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Language"
+          },
+          "workspace_root": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Root"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VideoStatus",
+            "default": "ready"
+          },
           "clip_generation_mode": {
             "$ref": "#/components/schemas/ClipGenerationMode",
             "default": "replace"
@@ -943,165 +3839,57 @@
               }
             ],
             "title": "Clips"
-          },
-          "duration_seconds": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration Seconds"
-          },
-          "file_size_bytes": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Size Bytes"
-          },
-          "local_path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Local Path"
-          },
-          "original_filename": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Original Filename"
-          },
-          "source_url": {
-            "description": "Identifier for the local video (e.g., file:// or local://)",
-            "title": "Source Url",
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/VideoStatus",
-            "default": "ready"
-          },
-          "title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Human-friendly title from desktop (mapped to original_filename).",
-            "title": "Title"
-          },
-          "transcript_language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Transcript Language"
-          },
-          "transcript_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Transcript Text"
-          },
-          "upload_checksum": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Upload Checksum"
-          },
-          "upload_file_size_bytes": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Upload File Size Bytes"
-          },
-          "workspace_root": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Workspace Root"
           }
         },
+        "type": "object",
         "required": [
           "source_url"
         ],
-        "title": "LocalVideoCreate",
-        "type": "object"
+        "title": "LocalVideoCreate"
       },
       "LoginRequest": {
         "properties": {
           "email": {
+            "type": "string",
             "format": "email",
-            "title": "Email",
-            "type": "string"
+            "title": "Email"
           },
           "password": {
-            "title": "Password",
-            "type": "string"
+            "type": "string",
+            "title": "Password"
           }
         },
+        "type": "object",
         "required": [
           "email",
           "password"
         ],
-        "title": "LoginRequest",
-        "type": "object"
+        "title": "LoginRequest"
       },
       "PublishJobRead": {
         "properties": {
-          "asset_checksum": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "clip_id": {
+            "type": "integer",
+            "title": "Clip Id"
+          },
+          "platform": {
+            "type": "string",
+            "title": "Platform"
+          },
+          "user_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Asset Checksum"
+            "title": "User Id"
           },
           "asset_id": {
             "anyOf": [
@@ -1114,166 +3902,17 @@
             ],
             "title": "Asset Id"
           },
-          "asset_size_bytes": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Size Bytes"
-          },
-          "asset_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Url"
-          },
-          "attempt_count": {
-            "default": 0,
-            "title": "Attempt Count",
-            "type": "integer"
-          },
-          "caption": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Caption"
-          },
-          "clip_id": {
-            "title": "Clip Id",
-            "type": "integer"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "error_message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error Message"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "idempotency_key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Idempotency Key"
-          },
-          "last_error_code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Error Code"
-          },
-          "lease_expires_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Lease Expires At"
-          },
-          "next_attempt_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Attempt At"
-          },
-          "platform": {
-            "title": "Platform",
-            "type": "string"
-          },
-          "published_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Published At"
-          },
-          "remote_post_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Remote Post Id"
-          },
-          "response_payload": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Payload"
-          },
           "scheduled_at": {
             "anyOf": [
               {
-                "format": "date-time",
-                "type": "string"
+                "type": "string",
+                "format": "date-time"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Scheduled At"
-          },
-          "status": {
-            "$ref": "#/components/schemas/PublishJobStatus"
           },
           "target_account_ref": {
             "anyOf": [
@@ -1286,50 +3925,116 @@
             ],
             "title": "Target Account Ref"
           },
-          "updated_at": {
-            "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
-          },
-          "user_id": {
+          "creator_profile_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "User Id"
-          }
-        },
-        "required": [
-          "id",
-          "clip_id",
-          "platform",
-          "status",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "PublishJobRead",
-        "type": "object"
-      },
-      "PublishJobStatus": {
-        "enum": [
-          "pending",
-          "cancelled",
-          "queued",
-          "publishing",
-          "partial",
-          "complete",
-          "failed",
-          "reconcile"
-        ],
-        "title": "PublishJobStatus",
-        "type": "string"
-      },
-      "PublishRequest": {
-        "properties": {
+            "title": "Creator Profile Id"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "attempt_count": {
+            "type": "integer",
+            "title": "Attempt Count",
+            "default": 0
+          },
+          "next_attempt_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Attempt At"
+          },
+          "lease_expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lease Expires At"
+          },
+          "last_error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error Code"
+          },
+          "remote_post_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote Post Id"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PublishJobStatus"
+          },
+          "asset_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Url"
+          },
           "asset_checksum": {
             "anyOf": [
               {
@@ -1352,6 +4057,73 @@
             ],
             "title": "Asset Size Bytes"
           },
+          "response_payload": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Payload"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "clip_id",
+          "platform",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PublishJobRead"
+      },
+      "PublishJobStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "cancelled",
+          "queued",
+          "publishing",
+          "partial",
+          "complete",
+          "failed",
+          "reconcile"
+        ],
+        "title": "PublishJobStatus"
+      },
+      "PublishRequest": {
+        "properties": {
+          "platforms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Platforms"
+          },
           "asset_url": {
             "anyOf": [
               {
@@ -1363,59 +4135,102 @@
             ],
             "title": "Asset Url"
           },
-          "platforms": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Platforms",
-            "type": "array"
+          "asset_checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Checksum"
+          },
+          "asset_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Size Bytes"
           }
         },
+        "type": "object",
         "required": [
           "platforms"
         ],
-        "title": "PublishRequest",
-        "type": "object"
+        "title": "PublishRequest"
+      },
+      "RescheduleRequest": {
+        "properties": {
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scheduled At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scheduled_at"
+        ],
+        "title": "RescheduleRequest"
       },
       "ScheduleDraftRequest": {
         "properties": {
-          "asset_id": {
-            "title": "Asset Id",
-            "type": "integer"
-          },
-          "caption": {
-            "default": "",
-            "maxLength": 5000,
-            "title": "Caption",
-            "type": "string"
-          },
-          "idempotency_key": {
-            "maxLength": 128,
-            "minLength": 8,
-            "title": "Idempotency Key",
-            "type": "string"
-          },
           "platform": {
+            "type": "string",
             "enum": [
               "youtube_shorts",
               "tiktok",
               "instagram"
             ],
-            "title": "Platform",
-            "type": "string"
-          },
-          "scheduled_at": {
-            "format": "date-time",
-            "title": "Scheduled At",
-            "type": "string"
+            "title": "Platform"
           },
           "target_account_ref": {
+            "type": "string",
             "maxLength": 255,
             "minLength": 1,
-            "title": "Target Account Ref",
-            "type": "string"
+            "title": "Target Account Ref"
+          },
+          "creator_profile_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creator Profile Id"
+          },
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scheduled At"
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Caption",
+            "default": ""
+          },
+          "asset_id": {
+            "type": "integer",
+            "title": "Asset Id"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Idempotency Key"
           }
         },
+        "type": "object",
         "required": [
           "platform",
           "target_account_ref",
@@ -1423,46 +4238,45 @@
           "asset_id",
           "idempotency_key"
         ],
-        "title": "ScheduleDraftRequest",
-        "type": "object"
+        "title": "ScheduleDraftRequest"
       },
       "ScheduleRescheduleRequest": {
         "properties": {
           "scheduled_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Scheduled At",
-            "type": "string"
+            "title": "Scheduled At"
           }
         },
+        "type": "object",
         "required": [
           "scheduled_at"
         ],
-        "title": "ScheduleRescheduleRequest",
-        "type": "object"
+        "title": "ScheduleRescheduleRequest"
       },
       "SourceTicketResponse": {
         "properties": {
-          "expires_in_seconds": {
-            "title": "Expires In Seconds",
-            "type": "integer"
-          },
           "url": {
-            "title": "Url",
-            "type": "string"
+            "type": "string",
+            "title": "Url"
+          },
+          "expires_in_seconds": {
+            "type": "integer",
+            "title": "Expires In Seconds"
           }
         },
+        "type": "object",
         "required": [
           "url",
           "expires_in_seconds"
         ],
-        "title": "SourceTicketResponse",
-        "type": "object"
+        "title": "SourceTicketResponse"
       },
       "Token": {
         "properties": {
           "access_token": {
-            "title": "Access Token",
-            "type": "string"
+            "type": "string",
+            "title": "Access Token"
           },
           "refresh_token": {
             "anyOf": [
@@ -1476,84 +4290,85 @@
             "title": "Refresh Token"
           },
           "token_type": {
-            "default": "bearer",
+            "type": "string",
             "title": "Token Type",
-            "type": "string"
+            "default": "bearer"
           }
         },
+        "type": "object",
         "required": [
           "access_token"
         ],
-        "title": "Token",
-        "type": "object"
+        "title": "Token"
       },
       "TokenRefreshRequest": {
         "properties": {
           "refresh_token": {
-            "title": "Refresh Token",
-            "type": "string"
+            "type": "string",
+            "title": "Refresh Token"
           }
         },
+        "type": "object",
         "required": [
           "refresh_token"
         ],
-        "title": "TokenRefreshRequest",
-        "type": "object"
+        "title": "TokenRefreshRequest"
       },
       "UserCreate": {
         "properties": {
           "email": {
+            "type": "string",
             "format": "email",
-            "title": "Email",
-            "type": "string"
+            "title": "Email"
           },
           "full_name": {
-            "title": "Full Name",
-            "type": "string"
+            "type": "string",
+            "title": "Full Name"
           },
           "password": {
-            "title": "Password",
-            "type": "string"
+            "type": "string",
+            "title": "Password"
           }
         },
+        "type": "object",
         "required": [
           "email",
           "full_name",
           "password"
         ],
-        "title": "UserCreate",
-        "type": "object"
+        "title": "UserCreate"
       },
       "UserRead": {
         "properties": {
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
+          "id": {
+            "type": "integer",
+            "title": "Id"
           },
           "email": {
+            "type": "string",
             "format": "email",
-            "title": "Email",
-            "type": "string"
+            "title": "Email"
           },
           "full_name": {
-            "title": "Full Name",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
+            "type": "string",
+            "title": "Full Name"
           },
           "is_active": {
-            "title": "Is Active",
-            "type": "boolean"
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
           },
           "updated_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
+            "title": "Updated At"
           }
         },
+        "type": "object",
         "required": [
           "id",
           "email",
@@ -1562,18 +4377,10 @@
           "created_at",
           "updated_at"
         ],
-        "title": "UserRead",
-        "type": "object"
+        "title": "UserRead"
       },
       "ValidationError": {
         "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
           "loc": {
             "items": {
               "anyOf": [
@@ -1585,90 +4392,69 @@
                 }
               ]
             },
-            "title": "Location",
-            "type": "array"
+            "type": "array",
+            "title": "Location"
           },
           "msg": {
-            "title": "Message",
-            "type": "string"
+            "type": "string",
+            "title": "Message"
           },
           "type": {
-            "title": "Error Type",
-            "type": "string"
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
+        "type": "object",
         "required": [
           "loc",
           "msg",
           "type"
         ],
-        "title": "ValidationError",
-        "type": "object"
+        "title": "ValidationError"
+      },
+      "VerifyRequest": {
+        "properties": {
+          "remote_video_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote Video Id"
+          }
+        },
+        "type": "object",
+        "title": "VerifyRequest"
       },
       "VideoIngestType": {
+        "type": "string",
         "enum": [
           "youtube",
           "upload"
         ],
-        "title": "VideoIngestType",
-        "type": "string"
+        "title": "VideoIngestType"
       },
       "VideoRead": {
         "properties": {
-          "clip_generation_mode": {
-            "$ref": "#/components/schemas/ClipGenerationMode"
-          },
-          "clips": {
-            "items": {
-              "$ref": "#/components/schemas/ClipRead"
-            },
-            "title": "Clips",
-            "type": "array"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "duration_seconds": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration Seconds"
-          },
-          "error_message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error Message"
-          },
-          "file_size_bytes": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Size Bytes"
-          },
           "id": {
-            "title": "Id",
-            "type": "integer"
+            "type": "integer",
+            "title": "Id"
           },
-          "ingest_type": {
-            "$ref": "#/components/schemas/VideoIngestType"
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
           },
           "local_path": {
             "anyOf": [
@@ -1681,6 +4467,9 @@
             ],
             "title": "Local Path"
           },
+          "ingest_type": {
+            "$ref": "#/components/schemas/VideoIngestType"
+          },
           "original_filename": {
             "anyOf": [
               {
@@ -1691,62 +4480,6 @@
               }
             ],
             "title": "Original Filename"
-          },
-          "requested_by_user_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Requested By User Id"
-          },
-          "source_media_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Media Url"
-          },
-          "source_url": {
-            "title": "Source Url",
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/VideoStatus"
-          },
-          "transcript_language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Transcript Language"
-          },
-          "transcript_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Transcript Text"
-          },
-          "updated_at": {
-            "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
           },
           "upload_checksum": {
             "anyOf": [
@@ -1770,6 +4503,72 @@
             ],
             "title": "Upload File Size Bytes"
           },
+          "source_media_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Media Url"
+          },
+          "transcript_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Text"
+          },
+          "transcript_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Language"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "file_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size Bytes"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
           "workspace_root": {
             "anyOf": [
               {
@@ -1780,8 +4579,43 @@
               }
             ],
             "title": "Workspace Root"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VideoStatus"
+          },
+          "clip_generation_mode": {
+            "$ref": "#/components/schemas/ClipGenerationMode"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "requested_by_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested By User Id"
+          },
+          "clips": {
+            "items": {
+              "$ref": "#/components/schemas/ClipRead"
+            },
+            "type": "array",
+            "title": "Clips"
           }
         },
+        "type": "object",
         "required": [
           "id",
           "source_url",
@@ -1793,1712 +4627,23 @@
           "created_at",
           "updated_at"
         ],
-        "title": "VideoRead",
-        "type": "object"
+        "title": "VideoRead"
       },
       "VideoStatus": {
+        "type": "string",
         "enum": [
           "ingested",
           "processing",
           "ready",
           "error"
         ],
-        "title": "VideoStatus",
-        "type": "string"
+        "title": "VideoStatus"
       }
     },
     "securitySchemes": {
       "HTTPBearer": {
-        "scheme": "bearer",
-        "type": "http"
-      }
-    }
-  },
-  "info": {
-    "title": "TV7 Video Cutter",
-    "version": "0.1.0"
-  },
-  "openapi": "3.1.0",
-  "paths": {
-    "/admin/cloud-ai": {
-      "get": {
-        "operationId": "view_cloud_ai_admin_cloud_ai_get",
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "View Cloud Ai",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/cloud-ai/credits": {
-      "post": {
-        "operationId": "grant_cloud_ai_credits_admin_cloud_ai_credits_post",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_grant_cloud_ai_credits_admin_cloud_ai_credits_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Grant Cloud Ai Credits",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/dashboard": {
-      "get": {
-        "operationId": "dashboard_admin_dashboard_get",
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Dashboard",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/login": {
-      "get": {
-        "operationId": "login_form_admin_login_get",
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Login Form",
-        "tags": [
-          "admin"
-        ]
-      },
-      "post": {
-        "operationId": "login_submit_admin_login_post",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_login_submit_admin_login_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Login Submit",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/logout": {
-      "get": {
-        "operationId": "logout_admin_logout_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Logout",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/schedule": {
-      "get": {
-        "operationId": "view_schedule_admin_schedule_get",
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "View Schedule",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/schedule/{job_id}": {
-      "post": {
-        "operationId": "update_schedule_entry_admin_schedule__job_id__post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "job_id",
-            "required": true,
-            "schema": {
-              "title": "Job Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_update_schedule_entry_admin_schedule__job_id__post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Update Schedule Entry",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/users": {
-      "get": {
-        "operationId": "list_users_admin_users_get",
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "List Users",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/users/{user_id}": {
-      "get": {
-        "operationId": "user_detail_admin_users__user_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "user_id",
-            "required": true,
-            "schema": {
-              "title": "User Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "User Detail",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/users/{user_id}/status": {
-      "post": {
-        "operationId": "update_user_account_status_admin_users__user_id__status_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "user_id",
-            "required": true,
-            "schema": {
-              "title": "User Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_update_user_account_status_admin_users__user_id__status_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Update User Account Status",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/api/v1/auth/license": {
-      "get": {
-        "operationId": "license_readiness_api_v1_auth_license_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LicenseReadinessResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "License Readiness",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/api/v1/auth/login": {
-      "post": {
-        "operationId": "login_api_v1_auth_login_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Token"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Login",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/api/v1/auth/refresh": {
-      "post": {
-        "operationId": "refresh_token_api_v1_auth_refresh_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TokenRefreshRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Token"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Refresh Token",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/api/v1/clips/{clip_id}": {
-      "patch": {
-        "operationId": "update_clip_api_v1_clips__clip_id__patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "clip_id",
-            "required": true,
-            "schema": {
-              "title": "Clip Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ClipUpdateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClipRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Update Clip",
-        "tags": [
-          "clips"
-        ]
-      }
-    },
-    "/api/v1/clips/{clip_id}/publish": {
-      "get": {
-        "operationId": "list_publish_jobs_api_v1_clips__clip_id__publish_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "clip_id",
-            "required": true,
-            "schema": {
-              "title": "Clip Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/PublishJobRead"
-                  },
-                  "title": "Response List Publish Jobs Api V1 Clips  Clip Id  Publish Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "List Publish Jobs",
-        "tags": [
-          "publish"
-        ]
-      },
-      "post": {
-        "operationId": "publish_clip_api_v1_clips__clip_id__publish_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "clip_id",
-            "required": true,
-            "schema": {
-              "title": "Clip Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PublishRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Publish Clip",
-        "tags": [
-          "publish"
-        ]
-      }
-    },
-    "/api/v1/clips/{clip_id}/schedule-drafts": {
-      "post": {
-        "operationId": "create_schedule_draft_api_v1_clips__clip_id__schedule_drafts_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "clip_id",
-            "required": true,
-            "schema": {
-              "title": "Clip Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ScheduleDraftRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublishJobRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Create Schedule Draft",
-        "tags": [
-          "publish"
-        ]
-      }
-    },
-    "/api/v1/cloud-ai/engine-token": {
-      "post": {
-        "operationId": "create_engine_cloud_ai_token_api_v1_cloud_ai_engine_token_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EngineCloudAiTokenResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Create Engine Cloud Ai Token",
-        "tags": [
-          "cloud-ai"
-        ]
-      }
-    },
-    "/api/v1/cloud-ai/engine/execute": {
-      "post": {
-        "operationId": "execute_engine_cloud_ai_api_v1_cloud_ai_engine_execute_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CloudAiExecuteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CloudAiExecuteResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Execute Engine Cloud Ai",
-        "tags": [
-          "cloud-ai"
-        ]
-      }
-    },
-    "/api/v1/config": {
-      "get": {
-        "description": "Expose feature flags and limits for Studio.",
-        "operationId": "get_config_api_v1_config_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConfigRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Get Config",
-        "tags": [
-          "config"
-        ]
-      }
-    },
-    "/api/v1/schedule-jobs": {
-      "get": {
-        "operationId": "list_schedule_jobs_api_v1_schedule_jobs_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 100,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/PublishJobRead"
-                  },
-                  "title": "Response List Schedule Jobs Api V1 Schedule Jobs Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "List Schedule Jobs",
-        "tags": [
-          "publish"
-        ]
-      }
-    },
-    "/api/v1/schedule-jobs/{job_id}": {
-      "patch": {
-        "operationId": "reschedule_job_api_v1_schedule_jobs__job_id__patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "job_id",
-            "required": true,
-            "schema": {
-              "title": "Job Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ScheduleRescheduleRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublishJobRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Reschedule Job",
-        "tags": [
-          "publish"
-        ]
-      }
-    },
-    "/api/v1/schedule-jobs/{job_id}/cancel": {
-      "post": {
-        "operationId": "cancel_job_api_v1_schedule_jobs__job_id__cancel_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "job_id",
-            "required": true,
-            "schema": {
-              "title": "Job Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublishJobRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Cancel Job",
-        "tags": [
-          "publish"
-        ]
-      }
-    },
-    "/api/v1/uploads/assets": {
-      "post": {
-        "description": "Store a rendered clip for its owner, outside the public media tree.",
-        "operationId": "upload_asset_api_v1_uploads_assets_post",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_upload_asset_api_v1_uploads_assets_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssetUploadResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Upload Asset",
-        "tags": [
-          "uploads"
-        ]
-      }
-    },
-    "/api/v1/uploads/assets/{asset_id}": {
-      "get": {
-        "operationId": "get_asset_api_v1_uploads_assets__asset_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "asset_id",
-            "required": true,
-            "schema": {
-              "title": "Asset Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Get Asset",
-        "tags": [
-          "uploads"
-        ]
-      }
-    },
-    "/api/v1/users/": {
-      "get": {
-        "operationId": "list_users_endpoint_api_v1_users__get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/UserRead"
-                  },
-                  "title": "Response List Users Endpoint Api V1 Users  Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "List Users Endpoint",
-        "tags": [
-          "users"
-        ]
-      },
-      "post": {
-        "operationId": "create_user_endpoint_api_v1_users__post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Create User Endpoint",
-        "tags": [
-          "users"
-        ]
-      }
-    },
-    "/api/v1/videos": {
-      "get": {
-        "operationId": "list_videos_api_v1_videos_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/VideoRead"
-                  },
-                  "title": "Response List Videos Api V1 Videos Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "List Videos",
-        "tags": [
-          "videos"
-        ]
-      }
-    },
-    "/api/v1/videos/local": {
-      "post": {
-        "operationId": "register_local_video_api_v1_videos_local_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LocalVideoCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VideoRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Register Local Video",
-        "tags": [
-          "videos"
-        ]
-      }
-    },
-    "/api/v1/videos/{video_id}": {
-      "get": {
-        "operationId": "get_video_status_api_v1_videos__video_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "video_id",
-            "required": true,
-            "schema": {
-              "title": "Video Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VideoRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Get Video Status",
-        "tags": [
-          "videos"
-        ]
-      }
-    },
-    "/api/v1/videos/{video_id}/clips": {
-      "post": {
-        "operationId": "create_clip_for_video_api_v1_videos__video_id__clips_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "video_id",
-            "required": true,
-            "schema": {
-              "title": "Video Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ClipUpsert"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClipRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Create Clip For Video",
-        "tags": [
-          "videos"
-        ]
-      }
-    },
-    "/api/v1/videos/{video_id}/source": {
-      "get": {
-        "operationId": "get_video_source_api_v1_videos__video_id__source_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "video_id",
-            "required": true,
-            "schema": {
-              "title": "Video Id",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "ticket",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Ticket"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Get Video Source",
-        "tags": [
-          "videos"
-        ]
-      },
-      "post": {
-        "operationId": "upload_video_source_api_v1_videos__video_id__source_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "video_id",
-            "required": true,
-            "schema": {
-              "title": "Video Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_upload_video_source_api_v1_videos__video_id__source_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VideoRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Upload Video Source",
-        "tags": [
-          "videos"
-        ]
-      }
-    },
-    "/api/v1/videos/{video_id}/source-ticket": {
-      "post": {
-        "operationId": "create_source_ticket_api_v1_videos__video_id__source_ticket_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "video_id",
-            "required": true,
-            "schema": {
-              "title": "Video Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SourceTicketResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Create Source Ticket",
-        "tags": [
-          "videos"
-        ]
-      }
-    },
-    "/api/v1/youtube/callback": {
-      "get": {
-        "operationId": "youtube_callback_api_v1_youtube_callback_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "state",
-            "required": true,
-            "schema": {
-              "maxLength": 256,
-              "minLength": 32,
-              "title": "State",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "code",
-            "required": true,
-            "schema": {
-              "minLength": 1,
-              "title": "Code",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Youtube Callback Api V1 Youtube Callback Get",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Youtube Callback",
-        "tags": [
-          "youtube"
-        ]
-      }
-    },
-    "/api/v1/youtube/connect": {
-      "post": {
-        "operationId": "connect_youtube_api_v1_youtube_connect_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Connect Youtube Api V1 Youtube Connect Post",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Connect Youtube",
-        "tags": [
-          "youtube"
-        ]
-      }
-    },
-    "/api/v1/youtube/connection": {
-      "delete": {
-        "operationId": "disconnect_youtube_api_v1_youtube_connection_delete",
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Disconnect Youtube",
-        "tags": [
-          "youtube"
-        ]
-      },
-      "get": {
-        "operationId": "youtube_connection_api_v1_youtube_connection_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "title": "Response Youtube Connection Api V1 Youtube Connection Get",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Youtube Connection",
-        "tags": [
-          "youtube"
-        ]
-      }
-    },
-    "/health": {
-      "get": {
-        "operationId": "health_health_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Health Health Get",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Health"
-      }
-    },
-    "/metrics": {
-      "get": {
-        "description": "Endpoint that serves Prometheus metrics.",
-        "operationId": "metrics_metrics_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Metrics"
-      }
-    },
-    "/readyz": {
-      "get": {
-        "operationId": "readyz_readyz_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Readyz Readyz Get",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Readyz"
-      }
-    },
-    "/version": {
-      "get": {
-        "operationId": "version_version_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Version Version Get",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Version"
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   }

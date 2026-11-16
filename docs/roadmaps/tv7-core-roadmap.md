@@ -46,3 +46,12 @@ Last updated: 2026-05-21
 - [ ] [CO-A01-03-03] Add a single command for validating all repo symlinks and reporting drift.
     **BACKLOG** | Core Agent | 2026-05-21 00:00
     - **NOTE**: Should verify `.agent`, `docs/core`, `Makefile.core`, and repo-specific contract symlinks where applicable.
+
+## Portable edit tooling
+
+- [X] [CO-M01-04-01] Validate and render portable edit plans and export editable timelines.
+    **COMPLETED** | Architect Agent | 2026-11-15
+    - **NOTE**: A synthetic fixture verifies stdio tool discovery, local video export, and frame-aligned FCPXML.
+- [X] [CO-M01-04-02] Render agent-directed promotional batches with local audiovisual cues.
+    **COMPLETED** | Architect Agent | 2026-11-15
+    - **NOTE**: The MCP batch journey checks prompts, video and audio effects, and editable timeline output.

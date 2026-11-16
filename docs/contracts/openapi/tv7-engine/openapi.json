@@ -238,6 +238,124 @@
         }
       }
     },
+    "/v1/media/register-export": {
+      "post": {
+        "summary": "Refresh a temporary export ID for an Engine-owned rendered MP4",
+        "operationId": "registerSavedExport",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "output_path"
+                ],
+                "properties": {
+                  "output_path": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Temporary export ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "media_id"
+                  ],
+                  "properties": {
+                    "media_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/v1/library/videos": {
+      "get": {
+        "summary": "List local video projects and recovered Engine media",
+        "operationId": "listLocalVideos",
+        "responses": {
+          "200": {
+            "description": "Local videos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryVideo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Save an Engine-owned local video project and its clip associations",
+        "operationId": "saveLocalVideo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryVideo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved local video",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryVideo"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/v1/library/unlinked-clips": {
+      "get": {
+        "summary": "Find older rendered MP4s without a saved source association",
+        "operationId": "listUnlinkedClips",
+        "responses": {
+          "200": {
+            "description": "Unlinked local clips",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnlinkedClip"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/media/assets/{id}": {
       "get": {
         "summary": "Stream an Engine-owned rendered MP4 by opaque export ID",
@@ -248,13 +366,17 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "Range",
             "in": "header",
             "required": false,
-            "schema": {"type": "string"},
+            "schema": {
+              "type": "string"
+            },
             "description": "Optional single bytes range."
           }
         ],
@@ -262,30 +384,79 @@
           "200": {
             "description": "Complete rendered MP4",
             "headers": {
-              "Content-Length": {"schema": {"type": "integer"}},
-              "Accept-Ranges": {"schema": {"type": "string", "enum": ["bytes"]}}
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "bytes"
+                  ]
+                }
+              }
             },
-            "content": {"video/mp4": {"schema": {"type": "string", "format": "binary"}}}
+            "content": {
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           },
           "206": {
             "description": "Partial rendered MP4",
             "headers": {
-              "Content-Range": {"schema": {"type": "string"}}
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
             },
-            "content": {"video/mp4": {"schema": {"type": "string", "format": "binary"}}}
+            "content": {
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           },
           "401": {
             "description": "Engine token required or invalid when token mode is enabled",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
-          "404": {"$ref": "#/components/responses/NotFound"},
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "413": {
             "description": "Rendered asset exceeds export size limit",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "416": {
             "description": "Requested byte range is invalid",
-            "headers": {"Content-Range": {"schema": {"type": "string"}}}
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       }
@@ -296,33 +467,137 @@
         "operationId": "getSourceMedia",
         "description": "Only absolute paths to media inside the Engine asset directory are accepted. Symlink escapes and files outside this directory are rejected. MP4, M4V, WebM, and MOV up to 1 GiB are supported. A configured Engine bearer token is required.",
         "parameters": [
-          {"name": "path", "in": "query", "required": true, "schema": {"type": "string"}, "description": "Absolute path returned by Engine ingest."},
-          {"name": "Range", "in": "header", "required": false, "schema": {"type": "string"}, "description": "Optional single bytes range."}
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Absolute path returned by Engine ingest."
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional single bytes range."
+          }
         ],
         "responses": {
           "200": {
             "description": "Complete Engine-owned source video",
-            "headers": {"Content-Length": {"schema": {"type": "integer"}}, "Accept-Ranges": {"schema": {"type": "string", "enum": ["bytes"]}}},
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "bytes"
+                  ]
+                }
+              }
+            },
             "content": {
-              "video/mp4": {"schema": {"type": "string", "format": "binary"}},
-              "video/webm": {"schema": {"type": "string", "format": "binary"}},
-              "video/quicktime": {"schema": {"type": "string", "format": "binary"}}
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "video/webm": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "video/quicktime": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
             }
           },
           "206": {
             "description": "Partial Engine-owned source video",
-            "headers": {"Content-Range": {"schema": {"type": "string"}}},
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "video/mp4": {"schema": {"type": "string", "format": "binary"}},
-              "video/webm": {"schema": {"type": "string", "format": "binary"}},
-              "video/quicktime": {"schema": {"type": "string", "format": "binary"}}
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "video/webm": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "video/quicktime": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
             }
           },
-          "400": {"description": "Invalid path", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
-          "401": {"description": "Engine token required or invalid when token mode is enabled", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
-          "404": {"$ref": "#/components/responses/NotFound"},
-          "413": {"description": "Source exceeds the Engine export size limit", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
-          "416": {"description": "Requested byte range is invalid", "headers": {"Content-Range": {"schema": {"type": "string"}}}}
+          "400": {
+            "description": "Invalid path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Engine token required or invalid when token mode is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "description": "Source exceeds the Engine export size limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Requested byte range is invalid",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -412,9 +687,14 @@
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "required": ["file"],
+                "required": [
+                  "file"
+                ],
                 "properties": {
-                  "file": {"type": "string", "format": "binary"}
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
                 }
               }
             }
@@ -425,20 +705,28 @@
             "description": "Validated transcript stored under Engine ownership",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/TranscriptImportResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptImportResponse"
+                }
               }
             }
           },
-          "400": {"$ref": "#/components/responses/BadRequest"},
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "413": {
             "description": "Transcript exceeds 5 MiB",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
-          "500": {"$ref": "#/components/responses/InternalFailure"}
+          "500": {
+            "$ref": "#/components/responses/InternalFailure"
+          }
         }
       }
     },
@@ -448,13 +736,50 @@
         "operationId": "getTranscriptCues",
         "description": "Returns parsed cues for local review or opt-in AI analysis. Only canonical .vtt files inside Engine's asset directory are accepted; a configured Engine bearer token is required. Transcript size is capped at 5 MiB and AI use at 10000 cues with 4000 characters per cue.",
         "parameters": [
-          {"name": "path", "in": "query", "required": true, "schema": {"type": "string"}, "description": "Absolute Engine-owned VTT path."}
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Absolute Engine-owned VTT path."
+          }
         ],
         "responses": {
-          "200": {"description": "Parsed transcript cues", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TranscriptCuesResponse"}}}},
-          "400": {"$ref": "#/components/responses/BadRequest"},
-          "401": {"description": "Engine token required or invalid when token mode is enabled", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}},
-          "413": {"description": "Transcript exceeds the size or cue limits", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}}
+          "200": {
+            "description": "Parsed transcript cues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptCuesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "description": "Engine token required or invalid when token mode is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Transcript exceeds the size or cue limits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -909,6 +1234,475 @@
           }
         }
       }
+    },
+    "/v1/library/consolidate": {
+      "post": {
+        "summary": "Consolidate byte-identical Engine-owned source files while preserving every clip draft and keeping a migration backup",
+        "operationId": "consolidateLocalLibrary",
+        "responses": {
+          "200": {
+            "description": "Consolidation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsolidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspace": {
+      "get": {
+        "summary": "Read durable local creator profiles and project associations",
+        "operationId": "getCreatorWorkspace",
+        "responses": {
+          "200": {
+            "description": "Local creator workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatorWorkspace"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Save durable local creator profiles and project associations",
+        "operationId": "saveCreatorWorkspace",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatorWorkspace"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved creator workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatorWorkspace"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/v1/ai/post-copy": {
+      "post": {
+        "summary": "Suggest platform-specific post copy for one selected clip",
+        "operationId": "generatePostCopy",
+        "description": "Uses an in-memory delegated cloud AI token. Only bounded selected-clip speech and titles leave the device after creator consent. Studio keeps an editable local starter draft when cloud AI is unavailable.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostCopyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validated post copy suggestion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostCopyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "502": {
+            "$ref": "#/components/responses/OutputInvalid"
+          },
+          "503": {
+            "$ref": "#/components/responses/InternalFailure"
+          }
+        }
+      }
+    },
+    "/v1/media/{id}/transfer-metadata": {
+      "get": {
+        "summary": "Hash and inspect an owned rendered clip for authorized transfer",
+        "operationId": "getTransferMetadata",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Local rendered clip manifest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/transfers/youtube": {
+      "post": {
+        "summary": "Stream local rendered bytes to a Backend-authorized YouTube session",
+        "operationId": "transferYouTube",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YouTubeTransfer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transfer receipt; Backend verification and processing confirmation still required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "remote_video_id"
+                  ],
+                  "properties": {
+                    "remote_video_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Provider or unknown transfer outcome; reconcile/resume the same session"
+          }
+        }
+      }
+    },
+    "/v1/ai/subtitle-translation": {
+      "post": {
+        "summary": "Translate subtitle text while retaining cue order and timing",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "language",
+                  "texts"
+                ],
+                "properties": {
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "es",
+                      "pt",
+                      "fr",
+                      "de",
+                      "it"
+                    ]
+                  },
+                  "texts": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 40,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 2000
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Translated texts in input order"
+          },
+          "400": {
+            "description": "Invalid language or cue payload"
+          },
+          "401": {
+            "description": "Cloud AI authorization required"
+          },
+          "502": {
+            "description": "Invalid provider translation"
+          }
+        }
+      }
+    },
+    "/v1/media/remix": {
+      "post": {
+        "summary": "Render a local visual remix with synced Word box",
+        "operationId": "renderRemix",
+        "description": "Requires local Node/Studio Remotion worker and browser. Original source retained; generated UUID MP4 registered as export. Single remix at a time. Does not publish.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "source",
+                  "word_path",
+                  "start",
+                  "end",
+                  "treatment"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "description": "Owned local source media path"
+                  },
+                  "word_path": {
+                    "type": "string",
+                    "description": "Owned VTT with spoken word timing"
+                  },
+                  "start": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "end": {
+                    "type": "number",
+                    "description": "After start, within source duration, max 180 second clip"
+                  },
+                  "treatment": {
+                    "type": "string",
+                    "enum": [
+                      "comedy",
+                      "editorial",
+                      "retro"
+                    ]
+                  },
+                  "settings": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/RemixSettings"
+                      }
+                    ],
+                    "nullable": true,
+                    "description": "Optional saved recipe. Treatment must match request treatment."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registered rendered remix",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderClipResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "description": "Another remix is rendering"
+          },
+          "503": {
+            "description": "Remix runtime unavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalFailure"
+          }
+        }
+      }
+    },
+    "/v1/media/remix-progress": {
+      "get": {
+        "operationId": "remixProgress",
+        "summary": "Current local remix render progress",
+        "responses": {
+          "200": {
+            "description": "Idle, preparing, rendering, complete or failed state with progress from 0 to 1",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "progress": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "updated_at": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ai/remix-plan": {
+      "post": {
+        "summary": "Plan transcript-grounded timed remix tools through the authorized cloud AI gateway",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "word_path",
+                  "start",
+                  "end",
+                  "source_title"
+                ],
+                "properties": {
+                  "word_path": {
+                    "type": "string"
+                  },
+                  "start": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "end": {
+                    "type": "number"
+                  },
+                  "source_title": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "direction": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validated clip-relative RemixPlan v1, model and usage"
+          },
+          "400": {
+            "description": "Invalid owned transcript path, range or missing speech"
+          },
+          "502": {
+            "description": "Invalid model plan; not rendered"
+          },
+          "503": {
+            "description": "Cloud AI authorization unavailable"
+          }
+        }
+      }
+    },
+    "/v1/remix/assets": {
+      "get": {
+        "summary": "List imported local reaction media with preview media IDs",
+        "responses": {
+          "200": {
+            "description": "assets: id, title, tags, license, source_url, attribution, duration, path and media_id"
+          }
+        }
+      },
+      "post": {
+        "summary": "Import and normalize a local reaction movie, GIF or still image",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "title",
+                  "license",
+                  "attribution"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "tags": {
+                    "type": "string"
+                  },
+                  "license": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "attribution": {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  "source_url": {
+                    "type": "string"
+                  },
+                  "start": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3600
+                  },
+                  "duration": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 8
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Normalized local MemeAsset"
+          },
+          "400": {
+            "description": "Invalid metadata, input or decoder failure"
+          },
+          "413": {
+            "description": "Upload over request limit"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -975,6 +1769,183 @@
       }
     },
     "schemas": {
+      "LibraryVideo": {
+        "type": "object",
+        "required": [
+          "media_path",
+          "title",
+          "source_url",
+          "duration_seconds",
+          "size_bytes",
+          "transcript_path",
+          "clips",
+          "recovered"
+        ],
+        "properties": {
+          "media_path": {
+            "type": "string",
+            "description": "Existing video inside the Engine asset directory"
+          },
+          "title": {
+            "type": "string"
+          },
+          "source_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_seconds": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "size_bytes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "transcript_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "clips": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LibraryClip"
+            }
+          },
+          "recovered": {
+            "type": "boolean",
+            "description": "True for files discovered on disk without a prior catalog record"
+          },
+          "content_hash": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Engine-computed BLAKE3 content identity for visual grouping, not a request authority"
+          },
+          "modified_unix_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Source file modification time in Unix milliseconds"
+          }
+        }
+      },
+      "LibraryClip": {
+        "type": "object",
+        "required": [
+          "id",
+          "start",
+          "end",
+          "text",
+          "cue_count",
+          "proposal_source",
+          "caption_text",
+          "burn_subtitles",
+          "format",
+          "output_path"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 160,
+            "description": "Optional creator-facing clip title, separate from subtitle text."
+          },
+          "start": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "cue_count": {
+            "type": "integer"
+          },
+          "proposal_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "caption_text": {
+            "type": "string"
+          },
+          "burn_subtitles": {
+            "type": "boolean"
+          },
+          "format": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Existing Engine-owned MP4 when rendered"
+          },
+          "transcript_path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Engine-owned VTT associated with this clip, including migrated drafts"
+          },
+          "post_copy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedPostCopy"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Editable platform copy kept with the local clip; separate from burned subtitles."
+          },
+          "remix_settings": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RemixSettings"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "UnlinkedClip": {
+        "type": "object",
+        "required": [
+          "path",
+          "name",
+          "size_bytes"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer"
+          }
+        }
+      },
       "HealthResponse": {
         "type": "object",
         "required": [
@@ -1584,9 +2555,82 @@
           },
           "format": {
             "type": "string",
-            "enum": ["source", "vertical_9_16", "vertical_9_16_crop"],
+            "enum": [
+              "source",
+              "vertical_9_16",
+              "vertical_9_16_crop",
+              "vertical_9_16_blur"
+            ],
             "default": "source",
-            "description": "Optional local output framing. vertical_9_16 fits the full source frame within 1080x1920 and pads remaining space; vertical_9_16_crop fills then center-crops the frame and may cut off subjects. Subtitles are burned after framing. source preserves native dimensions."
+            "description": "Optional local output framing. vertical_9_16 fits the full source frame within 1080x1920 and pads remaining space; vertical_9_16_crop fills then center-crops the frame and may cut off subjects. Subtitles are burned after framing. source preserves native dimensions. vertical_9_16_blur fits the source over a blurred background."
+          },
+          "subtitle_style": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "font_size",
+              "bottom_margin",
+              "bold"
+            ],
+            "properties": {
+              "font_size": {
+                "type": "integer",
+                "minimum": 12,
+                "maximum": 40,
+                "default": 28
+              },
+              "bottom_margin": {
+                "type": "integer",
+                "minimum": 10,
+                "maximum": 100,
+                "default": 55
+              },
+              "bold": {
+                "type": "boolean",
+                "default": true
+              },
+              "preset": {
+                "type": "string",
+                "enum": [
+                  "clean",
+                  "bold",
+                  "boxed",
+                  "highlight",
+                  "word_box"
+                ],
+                "default": "bold"
+              },
+              "font_name": {
+                "type": "string",
+                "enum": [
+                  "Arial",
+                  "Verdana",
+                  "DejaVu Sans"
+                ],
+                "default": "Arial"
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$",
+                "default": "#FFFFFF"
+              },
+              "highlight_color": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$",
+                "default": "#D0F26B"
+              },
+              "outline": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5,
+                "default": 3
+              },
+              "keywords": {
+                "type": "string",
+                "maxLength": 500,
+                "description": "Comma-separated words for static emphasis. Empty emphasizes the longest word in each cue. No word animation."
+              }
+            }
           }
         }
       },
@@ -1665,17 +2709,34 @@
       },
       "TranscriptImportResponse": {
         "type": "object",
-        "required": ["transcript_id", "transcript_path", "cue_count", "duration_seconds"],
+        "required": [
+          "transcript_id",
+          "transcript_path",
+          "cue_count",
+          "duration_seconds"
+        ],
         "properties": {
-          "transcript_id": {"type": "string"},
-          "transcript_path": {"type": "string"},
-          "cue_count": {"type": "integer", "minimum": 1},
-          "duration_seconds": {"type": "number", "minimum": 0}
+          "transcript_id": {
+            "type": "string"
+          },
+          "transcript_path": {
+            "type": "string"
+          },
+          "cue_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "duration_seconds": {
+            "type": "number",
+            "minimum": 0
+          }
         }
       },
       "TranscriptCandidatesRequest": {
         "type": "object",
-        "required": ["transcript_path"],
+        "required": [
+          "transcript_path"
+        ],
         "properties": {
           "transcript_path": {
             "type": "string",
@@ -1697,22 +2758,42 @@
       },
       "TranscriptCandidatesResponse": {
         "type": "object",
-        "required": ["candidates"],
+        "required": [
+          "candidates"
+        ],
         "properties": {
           "candidates": {
             "type": "array",
-            "items": {"$ref": "#/components/schemas/TranscriptCandidate"}
+            "items": {
+              "$ref": "#/components/schemas/TranscriptCandidate"
+            }
           }
         }
       },
       "TranscriptCandidate": {
         "type": "object",
-        "required": ["start_seconds", "end_seconds", "text", "cue_count"],
+        "required": [
+          "start_seconds",
+          "end_seconds",
+          "text",
+          "cue_count"
+        ],
         "properties": {
-          "start_seconds": {"type": "number", "minimum": 0},
-          "end_seconds": {"type": "number", "exclusiveMinimum": 0},
-          "text": {"type": "string"},
-          "cue_count": {"type": "integer", "minimum": 1}
+          "start_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "end_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "text": {
+            "type": "string"
+          },
+          "cue_count": {
+            "type": "integer",
+            "minimum": 1
+          }
         }
       },
       "TranscriptDownloadRequest": {
@@ -1770,7 +2851,12 @@
           },
           "language": {
             "type": "string",
-            "default": "en"
+            "default": "auto"
+          },
+          "word_timestamps": {
+            "type": "boolean",
+            "default": false,
+            "description": "Generate audio-derived single-word VTT cues using local Whisper. For Word box, output_path must end in -words.vtt."
           }
         }
       },
@@ -2122,9 +3208,16 @@
       },
       "TranscriptCuesResponse": {
         "type": "object",
-        "required": ["cues"],
+        "required": [
+          "cues"
+        ],
         "properties": {
-          "cues": {"type": "array", "items": {"$ref": "#/components/schemas/TranscriptCue"}}
+          "cues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TranscriptCue"
+            }
+          }
         }
       },
       "ExistingClip": {
@@ -2432,6 +3525,526 @@
           "size_bytes": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "ConsolidationResult": {
+        "type": "object",
+        "required": [
+          "projects_updated",
+          "duplicate_sources_removed",
+          "clips_preserved"
+        ],
+        "properties": {
+          "projects_updated": {
+            "type": "integer"
+          },
+          "duplicate_sources_removed": {
+            "type": "integer"
+          },
+          "clips_preserved": {
+            "type": "integer"
+          }
+        }
+      },
+      "CreatorProfile": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "channelUrl",
+          "defaultClipCount",
+          "daysBetweenPosts",
+          "instagramHandle",
+          "tiktokHandle"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "channelUrl": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "defaultClipCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "daysBetweenPosts": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          },
+          "instagramHandle": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "tiktokHandle": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "subtitleStyle": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "font_size",
+              "bottom_margin",
+              "bold"
+            ],
+            "properties": {
+              "font_size": {
+                "type": "integer",
+                "minimum": 12,
+                "maximum": 40,
+                "default": 28
+              },
+              "bottom_margin": {
+                "type": "integer",
+                "minimum": 10,
+                "maximum": 100,
+                "default": 55
+              },
+              "bold": {
+                "type": "boolean",
+                "default": true
+              },
+              "preset": {
+                "type": "string",
+                "enum": [
+                  "clean",
+                  "bold",
+                  "boxed",
+                  "highlight",
+                  "word_box"
+                ],
+                "default": "bold"
+              },
+              "font_name": {
+                "type": "string",
+                "enum": [
+                  "Arial",
+                  "Verdana",
+                  "DejaVu Sans"
+                ],
+                "default": "Arial"
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$",
+                "default": "#FFFFFF"
+              },
+              "highlight_color": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$",
+                "default": "#D0F26B"
+              },
+              "outline": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5,
+                "default": 3
+              },
+              "keywords": {
+                "type": "string",
+                "maxLength": 500,
+                "description": "Comma-separated words for static emphasis. Empty emphasizes the longest word in each cue. No word animation."
+              }
+            }
+          }
+        }
+      },
+      "CreatorWorkspace": {
+        "type": "object",
+        "required": [
+          "profiles",
+          "activeProfileId",
+          "projectAssignments"
+        ],
+        "properties": {
+          "profiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatorProfile"
+            }
+          },
+          "activeProfileId": {
+            "type": "string"
+          },
+          "projectAssignments": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PostCopyRequest": {
+        "type": "object",
+        "required": [
+          "source_title",
+          "clip_title",
+          "transcript_text"
+        ],
+        "properties": {
+          "source_title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "clip_title": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "transcript_text": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "video_context": {
+            "type": "string",
+            "maxLength": 6000,
+            "description": "Bounded source transcript context used only to infer the overall video mood."
+          },
+          "video_mood": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120,
+            "description": "Previously established mood for this source video; reuse it across clips."
+          }
+        }
+      },
+      "PostCopyDraft": {
+        "type": "object",
+        "required": [
+          "mood",
+          "hook",
+          "youtube_title",
+          "youtube_description",
+          "instagram_caption",
+          "tiktok_caption",
+          "hashtags"
+        ],
+        "properties": {
+          "youtube_title": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "youtube_description": {
+            "type": "string",
+            "maxLength": 4500
+          },
+          "instagram_caption": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "tiktok_caption": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "hashtags": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          "mood": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "hook": {
+            "type": "string",
+            "maxLength": 120
+          }
+        }
+      },
+      "PostCopyResponse": {
+        "type": "object",
+        "required": [
+          "provider",
+          "model",
+          "copy",
+          "usage"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "copy": {
+            "$ref": "#/components/schemas/PostCopyDraft"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/CloudAiUsage"
+          }
+        }
+      },
+      "SavedPostCopy": {
+        "type": "object",
+        "required": [
+          "youtube_title",
+          "youtube_description",
+          "instagram_caption",
+          "tiktok_caption",
+          "hashtags",
+          "source"
+        ],
+        "properties": {
+          "youtube_title": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "youtube_description": {
+            "type": "string",
+            "maxLength": 4500
+          },
+          "instagram_caption": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "tiktok_caption": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "hashtags": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "template",
+              "ai",
+              "edited"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mood": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "hook": {
+            "type": "string",
+            "maxLength": 120
+          }
+        }
+      },
+      "TransferMetadata": {
+        "type": "object",
+        "required": [
+          "size_bytes",
+          "checksum_sha256",
+          "content_type"
+        ],
+        "properties": {
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "checksum_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "content_type": {
+            "const": "video/mp4"
+          }
+        }
+      },
+      "YouTubeTransfer": {
+        "type": "object",
+        "required": [
+          "media_id",
+          "upload_url",
+          "upload_headers",
+          "size_bytes",
+          "checksum_sha256"
+        ],
+        "properties": {
+          "media_id": {
+            "type": "string"
+          },
+          "upload_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Ephemeral Google resumable capability. HTTPS www.googleapis.com exact upload endpoint only; no redirects."
+          },
+          "upload_headers": {
+            "type": "object",
+            "description": "Short-lived Authorization and optional video/mp4 Content-Type; never persisted/logged.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "checksum_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "RemixSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "treatment",
+          "effect",
+          "frequency",
+          "durationMs",
+          "background",
+          "sound",
+          "intensity",
+          "backgroundIntensity",
+          "soundVolume",
+          "dialogueVolume"
+        ],
+        "properties": {
+          "treatment": {
+            "type": "string",
+            "enum": [
+              "comedy",
+              "editorial",
+              "retro"
+            ]
+          },
+          "effect": {
+            "type": "string",
+            "enum": [
+              "none",
+              "impact",
+              "glitch",
+              "shockwave",
+              "freeze",
+              "whip"
+            ]
+          },
+          "frequency": {
+            "type": "string",
+            "enum": [
+              "sparse",
+              "medium",
+              "frequent"
+            ]
+          },
+          "durationMs": {
+            "type": "integer",
+            "enum": [
+              150,
+              300,
+              500
+            ]
+          },
+          "background": {
+            "type": "string",
+            "enum": [
+              "blur",
+              "tunnel",
+              "kaleidoscope"
+            ]
+          },
+          "sound": {
+            "type": "string",
+            "enum": [
+              "none",
+              "impact",
+              "digital",
+              "sweep"
+            ]
+          },
+          "intensity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "backgroundIntensity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "soundVolume": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "dialogueVolume": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "breathingRoom": {
+            "type": "integer",
+            "enum": [
+              2,
+              3,
+              4
+            ],
+            "default": 3,
+            "description": "Minimum clean seconds between 800ms effect bursts."
+          },
+          "artPack": {
+            "type": "string",
+            "enum": [
+              "none",
+              "comic",
+              "collage",
+              "neon",
+              "psychedelic",
+              "minimal"
+            ],
+            "default": "none"
+          },
+          "artIntensity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 50
+          },
+          "stickerSize": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 50
+          },
+          "stickerDensity": {
+            "type": "string",
+            "enum": [
+              "off",
+              "sparse",
+              "normal"
+            ],
+            "default": "sparse"
+          },
+          "palette": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "yellow",
+              "cyan",
+              "pink",
+              "lime",
+              "orange",
+              null
+            ]
           }
         }
       }

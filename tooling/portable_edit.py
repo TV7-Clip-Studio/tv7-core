@@ -49,10 +49,13 @@ def input_options(still):
 def probe(path, still):
     info = json.loads(run(["ffprobe", "-v", "error", *input_options(still),
                            "-show_streams", "-of", "json", str(path)], 30))
-    video = next((s for s in info["streams"] if s["codec_type"] == "video"), None)
+    streams = info.get("streams") if isinstance(info, dict) else None
+    if not isinstance(streams, list) or not all(isinstance(stream, dict) for stream in streams):
+        raise ValueError("ffprobe returned no stream metadata")
+    video = next((stream for stream in streams if stream.get("codec_type") == "video"), None)
     if not video:
         raise ValueError("Asset needs a video or image stream")
-    return video, any(s["codec_type"] == "audio" for s in info["streams"])
+    return video, any(stream.get("codec_type") == "audio" for stream in streams)
 
 
 def load(root, name):

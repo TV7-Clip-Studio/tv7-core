@@ -141,6 +141,7 @@ def fcpxml(plan, assets, total):
     for i, (key, (path, video, audio, _, frames)) in enumerate(assets.items(), 2):
         format_id, asset_id = f"r{i * 2}", f"r{i * 2 + 1}"
         add_format(format_id, video["width"], video["height"])
+        # Stills carry the usable duration defined by the plan validator.
         asset = ET.SubElement(resources, "asset", id=asset_id, name=path.name,
                               start="0s", duration=timing(frames, fps),
                               hasVideo="1", hasAudio=str(int(audio)), format=format_id)

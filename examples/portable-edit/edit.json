@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "title": "A change of scene",
+  "fps": 30,
+  "width": 540,
+  "height": 960,
+  "assets": [
+    {"id": "setup", "path": "setup.mp4", "origin": "capture"},
+    {"id": "reveal", "path": "reveal.mp4", "origin": "blender"},
+    {"id": "card", "path": "card.png", "origin": "pixelorama"}
+  ],
+  "cuts": [
+    {"asset": "setup", "in": 15, "out": 60, "purpose": "Start in motion"},
+    {"asset": "reveal", "in": 0, "out": 45, "purpose": "Cut to the reveal"},
+    {"asset": "card", "in": 0, "out": 15, "purpose": "Hold a final accent"}
+  ]
+}

@@ -44,3 +44,9 @@ for example:
   TV7_MCP_ALLOWED_ROOTS=/Users/you/Documents/TV7,/tmp
 
 If set, all input/output paths must fall under one of those roots.
+
+## Portable edit plans
+
+The separate local `tv7-portable-edit` adapter exposes draft validation, preview
+rendering and timeline interchange over stdio. See the
+[portable edit contract](../../docs/contracts/portable-edit.md) for setup and a runnable example.

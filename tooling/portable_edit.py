@@ -138,11 +138,11 @@ def fcpxml(plan, assets, total):
 
     add_format("r1", plan["width"], plan["height"])
     refs = {}
-    for i, (key, (path, video, audio, still, frames)) in enumerate(assets.items(), 2):
+    for i, (key, (path, video, audio, _, frames)) in enumerate(assets.items(), 2):
         format_id, asset_id = f"r{i * 2}", f"r{i * 2 + 1}"
         add_format(format_id, video["width"], video["height"])
         asset = ET.SubElement(resources, "asset", id=asset_id, name=path.name,
-                              start="0s", duration=timing(0 if still else frames, fps),
+                              start="0s", duration=timing(frames, fps),
                               hasVideo="1", hasAudio=str(int(audio)), format=format_id)
         ET.SubElement(asset, "media-rep", kind="original-media", src=path.as_uri())
         refs[key] = asset_id

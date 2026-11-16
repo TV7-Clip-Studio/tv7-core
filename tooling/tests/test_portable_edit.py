@@ -57,7 +57,10 @@ class PortableEditTest(unittest.TestCase):
                 self.assertFalse(record.get("isError"), record)
                 self.assertEqual(json.loads(record["content"][0]["text"])["frames"], 105)
             self.assertTrue(responses[-1]["result"]["isError"])
-            clips = ET.parse(root / "timeline.fcpxml").findall(".//asset-clip")
+            timeline = ET.parse(root / "timeline.fcpxml")
+            clips = timeline.findall(".//asset-clip")
+            still = timeline.find(".//asset[@name='card.png']")
+            self.assertEqual(still.get("duration"), "30s")
             self.assertEqual([clip.get("offset") for clip in clips], ["0s", "3/2s", "3s"])
             output = subprocess.check_output([
                 "ffprobe", "-v", "error", "-show_streams", "-of", "json", str(root / "preview.mp4"),

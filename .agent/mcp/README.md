@@ -50,3 +50,7 @@ If set, all input/output paths must fall under one of those roots.
 The separate local `tv7-portable-edit` adapter exposes draft validation, preview
 rendering and timeline interchange over stdio. See the
 [portable edit contract](../../docs/contracts/portable-edit.md) for setup and a runnable example.
+
+## Boxy Lady voice pilot
+
+The private Boxy Lady provider is separate from TV7. Two operator-configured local connections currently distinguish synthesis and conversion workers. Consumer setup, lifetime and request/delivery boundaries are documented in [Boxy Lady voice](../../docs/contracts/boxy-lady-voice.md). The connection checker is `python3 tooling/boxy_voice_client.py --config /private/connection.json`; no inference is submitted by this check. Keep private paths out of committed examples.

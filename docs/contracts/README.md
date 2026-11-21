@@ -17,3 +17,5 @@ Cross-repo interface contracts are stored here as canonical artifacts.
 - Product repos should not keep duplicate contract artifacts under repo-local `docs/contracts` unless they are generated scratch output that is immediately published to Core.
 
 - [Portable edit plan and timeline interchange](portable-edit.md)
+
+- [Independent voice service and audition delivery](boxy-lady-voice.md)

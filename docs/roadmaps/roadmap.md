@@ -143,3 +143,10 @@ Status markers in checkbox position:
     **COMPLETED** | CV Publication Agent | 2026-10-29
     - **NOTE**: Human approved publication and MIT licensing. Scope excludes .github-private and uncommitted local work.
     - **NOTE**: All six repositories are public with MIT licenses; anonymous API access verified. Remote histories scanned without credential findings. Conductor precommit-context passed 102 tests; source changes are limited to documentation/licensing.
+
+## Independent voice service integration
+
+- [X] [CO-M01-06-18] Add the Boxy Lady consumer session and verified audition handoff.
+    **COMPLETED** | Architect Agent | 2026-11-21
+    - Validation: isolated release worktree `make check` passed 79 tests; six voice-specific cases cover protocol failures, no retry, integrity, path confinement, partial outcomes and audio receipts. Real private deliveries independently verified. Listening acceptance remains separate.
+    - Scope: generic local MCP client, integrity verification and consumer documentation. Private identities, recordings and model weights remain external.

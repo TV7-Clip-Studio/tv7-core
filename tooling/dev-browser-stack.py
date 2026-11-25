@@ -148,9 +148,13 @@ def up() -> None:
     start("studio", [sys.executable, "-m", "http.server", "8080", "--bind", "127.0.0.1"], STUDIO / "dist", os.environ.copy())
 
 
-def status() -> None:
-    for name in PORTS:
-        print(f"{'[ok]' if healthy(name) else '[X]'} {name}: {HEALTH[name]}")
+def status() -> int:
+    all_healthy = True
+    for name, url in HEALTH.items():
+        is_healthy = healthy(name)
+        print(f"{'[ok]' if is_healthy else '[X]'} {name}: {url}")
+        all_healthy = all_healthy and is_healthy
+    return 0 if all_healthy else 1
 
 
 def stop() -> None:
@@ -167,4 +171,4 @@ def stop() -> None:
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in {"up", "status", "stop"}:
         raise SystemExit("Usage: dev-browser-stack.py {up|status|stop}")
-    {"up": up, "status": status, "stop": stop}[sys.argv[1]]()
+    raise SystemExit({"up": up, "status": status, "stop": stop}[sys.argv[1]]())

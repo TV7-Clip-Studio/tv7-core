@@ -2,6 +2,8 @@
 
 The product is a downloadable Studio. Engine performs heavy video work locally. Backend handles licensing, private approved assets, scheduling, and publishing. Start with the [architecture boundary](docs/architecture/downloadable-studio.md) and the [cohort roles](COHORT.md).
 
+Start with the [fresh clone smoke guide](docs/workflows/fresh-clone-smoke.md) to set up sibling repositories and test the browser stack.
+
 ## Small daily loop
 
 1. Pick one creator-visible slice and name its owner. Check the affected repo's `AGENTS.md`, current code, and relevant API contract.

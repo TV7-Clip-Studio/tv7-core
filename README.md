@@ -2,6 +2,8 @@
 
 `tv7-core` is the foundational operating system, contract hub, and shared developer platform for the **TV7 Clip Studio** ecosystem. It maintains canonical architecture specifications, shared OpenAPI schemas, cross-repository developer toolchains, and multi-service orchestration.
 
+For onboarding, follow the [fresh clone guide](docs/workflows/fresh-clone-smoke.md). With Engine running locally, run `bash tooling/smoke-local-render.sh` to generate, render, and decode a neutral fixture. This checks the local render API. Ask the project maintainer for access to the separate SideQuest demo evidence.
+
 ---
 
 ## 🏛️ Architecture Overview

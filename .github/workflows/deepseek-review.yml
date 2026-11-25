@@ -57,11 +57,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout public TV7 Core review utilities
+      - name: Checkout review utilities at the reusable workflow revision
         uses: actions/checkout@v4
         with:
-          repository: TV7-Clip-Studio/tv7-core
-          ref: main
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           path: temp-tv7-core-docs
           sparse-checkout: |
             docs
